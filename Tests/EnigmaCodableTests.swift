@@ -10,6 +10,7 @@ final class EnigmaCodableTests: XCTestCase {
     )
     return result
   }()
+
   lazy var jsonDecoder: JSONDecoder = {
     let result = JSONDecoder()
     result.nonConformingFloatDecodingStrategy = .convertFromString(
@@ -17,20 +18,22 @@ final class EnigmaCodableTests: XCTestCase {
     )
     return result
   }()
+
   lazy var plistEncoder: PropertyListEncoder = {
     let result = PropertyListEncoder()
     result.outputFormat = .xml
     return result
   }()
+
   lazy var plistDecoder = PropertyListDecoder()
 
-  func check<T: Codable & Equatable>(decode sample: T, exact: Bool = true) throws {
+  func check<T: Codable & Equatable>(decode sample: T) throws {
     let encoded = try Enigma(encode: sample)
     let decoded = try encoded.decode() as T
     XCTAssertEqual(sample, decoded)
     let enjsoned = try jsonEncoder.encode(encoded)
     let dejsoned = try jsonDecoder.decode(Enigma.self, from: enjsoned)
-    if exact { XCTAssertEqual(encoded, dejsoned) }
+    XCTAssertEqual(encoded, dejsoned)
     let jsoned = try dejsoned.decode() as T
     XCTAssertEqual(sample, jsoned)
     if encoded.asArray != nil || encoded.asDictionary != nil {
@@ -92,24 +95,12 @@ final class EnigmaCodableTests: XCTestCase {
     try check(decode: Dicts())
   }
 
-  func testEnigmaFloatKeyDict() throws {
-    try check(decode: [.float(0.5): "0.5"] as [Enigma: String])
-  }
-
-  func testEnigmaDoubleKeyDict() throws {
-    try check(decode: [.double(0.1): "0.1"] as [Enigma: String])
-  }
-
-  func testEnigmaBoolKeyDict() throws {
-    try check(decode: [true: "true", false: "false"] as [Enigma: String])
-  }
-
   func testFloats() throws {
-    try check(decode: Floats(), exact: false)
+    try check(decode: Floats())
   }
 
   func testComplex() throws {
-    try check(decode: Complex(), exact: false)
+    try check(decode: Complex())
   }
 
   func testParseNil() throws {

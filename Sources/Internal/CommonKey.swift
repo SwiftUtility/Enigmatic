@@ -10,22 +10,22 @@ enum CommonKey: Sendable, CodingKey, Equatable {
 
   init(_ key: CodingKey) { self = key.intValue.map(Self.index(_:)) ?? .key(key.stringValue) }
 
-  var intValue: Int? { if case .index(let value) = self { return value } else { return nil } }
+  var intValue: Int? { if case .index(let value) = self { value } else { nil } }
 
   var stringValue: String {
     switch self {
-    case .index(let value): return "\(value)"
-    case .key(let value): return value
+    case .index(let value): "\(value)"
+    case .key(let value): value
     }
   }
 
-  static var `super`: Self { .key("super") }
+  static let `super` = Self.key("super")
 
   static func ==(lhs: Self, rhs: Self) -> Bool {
     switch (lhs, rhs) {
-    case (.index(let lhs), .index(let rhs)): return lhs == rhs
-    case (.key(let lhs), .key(let rhs)): return lhs == rhs
-    default: return false
+    case (.index(let lhs), .index(let rhs)): lhs == rhs
+    case (.key(let lhs), .key(let rhs)): lhs == rhs
+    default: false
     }
   }
 }

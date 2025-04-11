@@ -75,9 +75,9 @@ struct ValueDecoder: Sendable, Decoder, SingleValueDecodingContainer {
   }
 
   func decode<T: Decodable>(_: T.Type) throws -> T {
-    if T.self == Data.self, let value = enigma.asData as? T { return value }
-    else if T.self == Date.self, let value = enigma.asDate as? T { return value }
-    else if T.self == Enigma.self, let value = enigma as? T { return value }
-    else { return try T(from: self) }
+    if T.self == Data.self, let value = enigma.asData as? T { value }
+    else if T.self == Date.self, let value = enigma.asDate as? T { value }
+    else if T.self == Enigma.self, let value = enigma as? T { value }
+    else { try T(from: self) }
   }
 }

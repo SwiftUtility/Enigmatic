@@ -54,19 +54,6 @@ struct Complex: Codable, Equatable {
   var floatKeyDict: [Float: String?] = [0.1: "", 0.0001: nil]
   var doubleKeyDict: [Double: String?] = [0.1: "", 0.0001: nil]
   var optKeyDict: [String?: String?] = ["": nil, nil: "nil"]
-  var enigmaNullKeyDict: [Enigma: String] = [nil: "nil"]
-  var enigmaBoolKeyDict: [Enigma: String] = [
-    true: "bool", -1: "int", 0: "uint",
-    0.1: "double", .float(0.5): "float",
-    "string": "string\nval", [nil]: "[null]", [:]: "[:]",
-  ]
-  var enigmaIntKeyDict: [Enigma: String] = [1: "int"]
-  var enigmaUIntKeyDict: [Enigma: String] = [0: "uint"]
-  var enigmaDoubleKeyDict: [Enigma: String] = [0.1: "double"]
-  var enigmaFloatKeyDict: [Enigma: String] = [.float(0.5): "float"]
-  var enigmaStringKeyDict: [Enigma: String] = ["string": "string\n\"val\""]
-  var enigmaArrayKeyDict: [Enigma: String] = [[]: "[]"]
-  var enigmaDictionaryKeyDict: [Enigma: String] = [[:]: "[:]"]
 }
 
 struct MaxInts: Codable, Equatable {
@@ -131,14 +118,18 @@ struct NilUInts: Codable, Equatable {
 }
 
 struct Floats: Codable, Equatable {
-  var maxFloat = Float.infinity
-  var minFloat = -Float.infinity
-  var maxDouble = Double.infinity
-  var minDouble = -Double.infinity
+  var pinfFloat = Float.infinity
+  var ninfFloat = -Float.infinity
+  var pinfDouble = Double.infinity
+  var ninfDouble = -Double.infinity
   var pbigDouble = 1.111111111111111e307 as Double
+  var plitDouble = 1.111111111111111e-307 as Double
   var pbigFloat = 1.1111111e38 as Float
+  var plitFloat = 1e-38 as Float
   var nbigDouble = -1.111111111111111e307 as Double
+  var nlitDouble = -1.111111111111111e-307 as Double
   var nbigFloat = -1.1111111e38 as Float
+  var nlitFloat = -1e-38 as Float
   var pSemiFloatDouble = 1.1111111e38 as Double
 }
 

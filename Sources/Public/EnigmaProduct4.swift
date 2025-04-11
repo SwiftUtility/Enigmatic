@@ -41,7 +41,7 @@ where A: Encodable, B: Encodable, C: Encodable, D: Encodable {
 extension Enigma.Product4: Equatable
 where A: Equatable, B: Equatable, C: Equatable, D: Equatable {
   public static func ==(lhs: Self, rhs: Self) -> Bool {
-    return lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d
+    lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d
   }
 }
 

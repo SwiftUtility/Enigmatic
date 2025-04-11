@@ -8,10 +8,10 @@ extension Enigma {
     case c(C)
     case d(D)
 
-    public var a: A? { if case .a(let a) = self { return a } else { return nil } }
-    public var b: B? { if case .b(let b) = self { return b } else { return nil } }
-    public var c: C? { if case .c(let c) = self { return c } else { return nil } }
-    public var d: D? { if case .d(let d) = self { return d } else { return nil } }
+    public var a: A? { if case .a(let a) = self { a } else { nil } }
+    public var b: B? { if case .b(let b) = self { b } else { nil } }
+    public var c: C? { if case .c(let c) = self { c } else { nil } }
+    public var d: D? { if case .d(let d) = self { d } else { nil } }
   }
 }
 
@@ -49,11 +49,11 @@ extension Enigma.Coproduct4: Equatable
 where A: Equatable, B: Equatable, C: Equatable, D: Equatable {
   public static func ==(lhs: Self, rhs: Self) -> Bool {
     switch (lhs, rhs) {
-    case (.a(let lhs), .a(let rhs)): return lhs == rhs
-    case (.b(let lhs), .b(let rhs)): return lhs == rhs
-    case (.c(let lhs), .c(let rhs)): return lhs == rhs
-    case (.d(let lhs), .d(let rhs)): return lhs == rhs
-    default: return false
+    case (.a(let lhs), .a(let rhs)): lhs == rhs
+    case (.b(let lhs), .b(let rhs)): lhs == rhs
+    case (.c(let lhs), .c(let rhs)): lhs == rhs
+    case (.d(let lhs), .d(let rhs)): lhs == rhs
+    default: false
     }
   }
 }

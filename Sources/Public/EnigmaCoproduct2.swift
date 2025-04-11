@@ -6,8 +6,8 @@ extension Enigma {
     case a(A)
     case b(B)
 
-    public var a: A? { if case .a(let a) = self { return a } else { return nil } }
-    public var b: B? { if case .b(let b) = self { return b } else { return nil } }
+    public var a: A? { if case .a(let a) = self { a } else { nil } }
+    public var b: B? { if case .b(let b) = self { b } else { nil } }
   }
 }
 
@@ -41,9 +41,9 @@ extension Enigma.Coproduct2: Equatable
 where A: Equatable, B: Equatable {
   public static func ==(lhs: Self, rhs: Self) -> Bool {
     switch (lhs, rhs) {
-    case (.a(let lhs), .a(let rhs)): return lhs == rhs
-    case (.b(let lhs), .b(let rhs)): return lhs == rhs
-    default: return false
+    case (.a(let lhs), .a(let rhs)): lhs == rhs
+    case (.b(let lhs), .b(let rhs)): lhs == rhs
+    default: false
     }
   }
 }

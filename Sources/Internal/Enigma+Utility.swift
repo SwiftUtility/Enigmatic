@@ -64,6 +64,10 @@ extension Enigma {
     }
   }
 
+  var isFloat: Bool {
+    if case .float = self { true } else { false }
+  }
+
   func makeKeyed<K: CodingKey>(path: [CodingKey]) throws -> KeyedDecodingContainer<K> {
     let enigmas = try extract(path: path, make: \.asDictionary)
     return KeyedDecodingContainer(KeyedDecoder<K>(enigmas: enigmas, codingPath: path))
@@ -75,63 +79,63 @@ extension Enigma {
   }
 
   func makeValue(path: [CodingKey]) throws -> ValueDecoder {
-    return ValueDecoder(enigma: self, codingPath: path)
+    ValueDecoder(enigma: self, codingPath: path)
   }
 
   func makeBool(path: [CodingKey]) throws -> Bool {
-    return try extract(path: path, make: \.asBool)
+    try extract(path: path, make: \.asBool)
   }
 
   func makeInt(path: [CodingKey]) throws -> Int {
-    return try extract(path: path, make: \.asInt)
+    try extract(path: path, make: \.asInt)
   }
 
   func makeInt8(path: [CodingKey]) throws -> Int8 {
-    return try extract(path: path, make: \.asInt8)
+    try extract(path: path, make: \.asInt8)
   }
 
   func makeInt16(path: [CodingKey]) throws -> Int16 {
-    return try extract(path: path, make: \.asInt16)
+    try extract(path: path, make: \.asInt16)
   }
 
   func makeInt32(path: [CodingKey]) throws -> Int32 {
-    return try extract(path: path, make: \.asInt32)
+    try extract(path: path, make: \.asInt32)
   }
 
   func makeInt64(path: [CodingKey]) throws -> Int64 {
-    return try extract(path: path, make: \.asInt64)
+    try extract(path: path, make: \.asInt64)
   }
 
   func makeUInt(path: [CodingKey]) throws -> UInt {
-    return try extract(path: path, make: \.asUInt)
+    try extract(path: path, make: \.asUInt)
   }
 
   func makeUInt8(path: [CodingKey]) throws -> UInt8 {
-    return try extract(path: path, make: \.asUInt8)
+    try extract(path: path, make: \.asUInt8)
   }
 
   func makeUInt16(path: [CodingKey]) throws -> UInt16 {
-    return try extract(path: path, make: \.asUInt16)
+    try extract(path: path, make: \.asUInt16)
   }
 
   func makeUInt32(path: [CodingKey]) throws -> UInt32 {
-    return try extract(path: path, make: \.asUInt32)
+    try extract(path: path, make: \.asUInt32)
   }
 
   func makeUInt64(path: [CodingKey]) throws -> UInt64 {
-    return try extract(path: path, make: \.asUInt64)
+    try extract(path: path, make: \.asUInt64)
   }
 
   func makeFloat(path: [CodingKey]) throws -> Float {
-    return try extract(path: path, make: \.asFloat)
+    try extract(path: path, make: \.asFloat)
   }
 
   func makeDouble(path: [CodingKey]) throws -> Double {
-    return try extract(path: path, make: \.asDouble)
+    try extract(path: path, make: \.asDouble)
   }
 
   func makeString(path: [CodingKey]) throws -> String {
-    return try extract(path: path, make: \.asString)
+    try extract(path: path, make: \.asString)
   }
 
   func extract<T: Decodable>(path: [CodingKey], make: (Enigma) -> T?) throws -> T {
@@ -152,10 +156,10 @@ extension Enigma {
 
   func merge(_ other: Self, path: [CommonKey], overwrite: Bool) throws -> Self {
     guard case (.dictionary(var this), .dictionary(let other)) = (self, other) else {
-      if overwrite {
-        return other
+      return if overwrite {
+        other
       } else if self == other {
-        return self
+        self
       } else {
         throw EncodingError.invalidValue(other, EncodingError.Context(
           codingPath: path,

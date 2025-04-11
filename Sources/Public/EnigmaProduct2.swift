@@ -33,7 +33,7 @@ where A: Encodable, B: Encodable {
 extension Enigma.Product2: Equatable
 where A: Equatable, B: Equatable {
   public static func ==(lhs: Self, rhs: Self) -> Bool {
-    return lhs.a == rhs.a && lhs.b == rhs.b
+    lhs.a == rhs.a && lhs.b == rhs.b
   }
 }
 

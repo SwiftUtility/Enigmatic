@@ -9,8 +9,7 @@ struct KeyedDecoder<Key: CodingKey>: Sendable, KeyedDecodingContainerProtocol {
   func contains(_ key: Key) -> Bool { enigmas[key.stringValue] != nil }
 
   func decodeNil(forKey key: Key) throws -> Bool {
-    guard let value = enigmas[key.stringValue] else { return true }
-    return value.isNull
+    enigmas[key.stringValue]?.isNull ?? true
   }
 
   func decode(_: Bool.Type, forKey key: Key) throws -> Bool {
@@ -71,10 +70,10 @@ struct KeyedDecoder<Key: CodingKey>: Sendable, KeyedDecodingContainerProtocol {
 
   func decode<T: Decodable>(_: T.Type, forKey key: Key) throws -> T {
     let value = try value(key)
-    if T.self == Data.self, let value = value.asData as? T { return value }
-    else if T.self == Date.self, let value = value.asDate as? T { return value }
-    else if T.self == Enigma.self, let value = value as? T { return value }
-    else { return try T(from: value.makeValue(path: codingPath + [key])) }
+    return if T.self == Data.self, let value = value.asData as? T { value }
+    else if T.self == Date.self, let value = value.asDate as? T { value }
+    else if T.self == Enigma.self, let value = value as? T { value }
+    else { try T(from: value.makeValue(path: codingPath + [key])) }
   }
 
   func nestedContainer<NestedKey: CodingKey>(
@@ -90,15 +89,14 @@ struct KeyedDecoder<Key: CodingKey>: Sendable, KeyedDecodingContainerProtocol {
 
   func superDecoder() throws -> Decoder {
     if let key = Key(stringValue: "super") {
-      return try superDecoder(forKey: key)
+      try superDecoder(forKey: key)
     } else {
-      let key = CommonKey.super
-      return try value(key).makeValue(path: codingPath + [key])
+      try value(CommonKey.super).makeValue(path: codingPath + [CommonKey.super])
     }
   }
 
   func superDecoder(forKey key: Key) throws -> Decoder {
-    return try value(key).makeValue(path: codingPath + [key])
+    try value(key).makeValue(path: codingPath + [key])
   }
 
   func value<K: CodingKey>(_ key: K) throws -> Enigma {

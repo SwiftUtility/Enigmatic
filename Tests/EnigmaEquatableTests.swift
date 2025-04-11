@@ -2,25 +2,13 @@
 import Foundation
 import XCTest
 
-final class EnigmaHashableTests: XCTestCase {
-  func checkFloat(_ float: Float) {
-    if let double = Double(exactly: float) {
-      checkEq(.float(float), .double(double))
-      checkEq(.float(float), .double(Double(float)))
-      XCTAssertEqual(Double(float), double)
-    } else {
-      checkDif(.float(float), .double(Double(float)))
-    }
-  }
-
+final class EnigmaEquatableTests: XCTestCase {
   func checkEq(_ one: Enigma, _ two: Enigma) {
     XCTAssertEqual(one, two)
-    XCTAssertEqual(one.hashValue, two.hashValue)
   }
 
   func checkDif(_ one: Enigma, _ two: Enigma) {
     XCTAssertNotEqual(one, two)
-    XCTAssertNotEqual(one.hashValue, two.hashValue)
   }
 
   func checkMiscoded<T: Codable & Equatable>(_ sample: T) throws {
@@ -70,24 +58,16 @@ final class EnigmaHashableTests: XCTestCase {
   }
 
   func testFraction() throws {
-    checkFloat(0.1)
-    checkFloat(0.5)
-    checkFloat(.greatestFiniteMagnitude)
+    XCTAssertEqual(Float(0.5 as Double), 0.5 as Float)
+    XCTAssertEqual(Double(0.5 as Float), 0.5 as Double)
     checkEq(.float(0.5), .double(0.5))
+    XCTAssertEqual(Float(0.1 as Double), 0.1 as Float)
+    XCTAssertNotEqual(Double(0.1 as Float), 0.1 as Double)
+    checkEq(.float(0.1), .double(0.1))
     checkEq(.float(.greatestFiniteMagnitude), .double(Double(Float.greatestFiniteMagnitude)))
     XCTAssertNotEqual(Double.nan, Double.nan)
     XCTAssertNotEqual(Enigma.double(Double.nan), Enigma.double(Double.nan))
     XCTAssertNotEqual(Float.nan, Float.nan)
     XCTAssertNotEqual(Enigma.float(Float.nan), Enigma.float(Float.nan))
-  }
-
-  func testNils() throws {
-    try checkMiscoded([nil: "1", .some(nil): "2"] as [Int??: String])
-    try checkMiscoded([nil: "1", .null: "2"] as [Enigma?: String])
-  }
-
-  func testNotEqual() throws {
-    XCTAssertNotEqual(0.1 as Double, Double(0.1 as Float))
-    XCTAssertNotEqual(Enigma.double(0.1), Enigma.float(0.1))
   }
 }

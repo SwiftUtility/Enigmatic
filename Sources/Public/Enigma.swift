@@ -113,50 +113,35 @@ extension Enigma: Equatable {
   ///   * they are both equal Dictionaries
   ///   * they are both equal Strings
   ///   * they are both equal Bools (Bools do not implicitly convert to numerics)
-  ///   * they are both convertible to the same numeric type and values are equal
+  ///   * they are both convertible to the same integer type and values are equal
+  ///   * they are both convertible to decimal type and values are almost equal
   public static func ==(lhs: Self, rhs: Self) -> Bool {
-    if lhs.isNull, rhs.isNull {
-      return true
+    return if lhs.isNull, rhs.isNull {
+      true
     } else if let lhs = lhs.asArray, let rhs = rhs.asArray {
-      return lhs == rhs
+      lhs == rhs
     } else if let lhs = lhs.asDictionary, let rhs = rhs.asDictionary {
-      return lhs == rhs
+      lhs == rhs
     } else if let lhs = lhs.asString, let rhs = rhs.asString {
-      return lhs == rhs
+      lhs == rhs
     } else if let lhs = lhs.asBool, let rhs = rhs.asBool {
-      return lhs == rhs
+      lhs == rhs
     } else if let lhs = lhs.asInt, let rhs = rhs.asInt {
-      return lhs == rhs
+      lhs == rhs
     } else if let lhs = lhs.asUInt, let rhs = rhs.asUInt {
-      return lhs == rhs
-    } else if let lhs = lhs.asDouble, let rhs = rhs.asDouble {
-      return lhs == rhs
+      lhs == rhs
+    } else if lhs.isFloat || rhs.isFloat {
+      Float.isNearlyEqual(lhs.asFloat, rhs.asFloat)
     } else {
-      return false
+      Double.isNearlyEqual(lhs.asDouble, rhs.asDouble)
     }
-  }
-}
-
-extension Enigma: Hashable {
-  /// Hashable implementation
-  public func hash(into hasher: inout Hasher) {
-    if isNull { hasher.combine(nil as Never?) }
-    else if let value = asArray { hasher.combine(value) }
-    else if let value = asDictionary { hasher.combine(value) }
-    else if let value = asString { hasher.combine(value) }
-    else if let value = asBool { hasher.combine(value) }
-    else if let value = asInt { hasher.combine(value) }
-    else if let value = asUInt { hasher.combine(value) }
-    else if let value = asDouble { hasher.combine(value) }
   }
 }
 
 extension Enigma: CustomStringConvertible {
   /// CustomStringConvertible implementation converts to json string
   public var description: String {
-    guard let json = try? String(data: JSONEncoder().encode(self), encoding: .utf8)
-    else { return "" }
-    return json
+    if let json = try? String(data: JSONEncoder().encode(self), encoding: .utf8) { json } else { "" }
   }
 }
 
@@ -173,25 +158,25 @@ extension Enigma: CustomDebugStringConvertible {
   /// CustomDebugStringConvertible implementation
   public var debugDescription: String {
     switch self {
-    case .null: return "null"
-    case .bool(let value): return String(reflecting: value)
-    case .int(let value): return String(reflecting: value)
-    case .int64(let value): return String(reflecting: value)
-    case .int32(let value): return String(reflecting: value)
-    case .int16(let value): return String(reflecting: value)
-    case .int8(let value): return String(reflecting: value)
-    case .uint(let value): return String(reflecting: value)
-    case .uint64(let value): return String(reflecting: value)
-    case .uint32(let value): return String(reflecting: value)
-    case .uint16(let value): return String(reflecting: value)
-    case .uint8(let value): return String(reflecting: value)
-    case .double(let value): return String(reflecting: value)
-    case .float(let value): return String(reflecting: value)
-    case .string(let value): return String(reflecting: value)
-    case .date(let value): return String(reflecting: value)
-    case .data(let value): return String(reflecting: value)
-    case .array(let value): return String(reflecting: value)
-    case .dictionary(let value): return String(reflecting: value)
+    case .null: "null"
+    case .bool(let value): String(reflecting: value)
+    case .int(let value): String(reflecting: value)
+    case .int64(let value): String(reflecting: value)
+    case .int32(let value): String(reflecting: value)
+    case .int16(let value): String(reflecting: value)
+    case .int8(let value): String(reflecting: value)
+    case .uint(let value): String(reflecting: value)
+    case .uint64(let value): String(reflecting: value)
+    case .uint32(let value): String(reflecting: value)
+    case .uint16(let value): String(reflecting: value)
+    case .uint8(let value): String(reflecting: value)
+    case .double(let value): String(reflecting: value)
+    case .float(let value): String(reflecting: value)
+    case .string(let value): String(reflecting: value)
+    case .date(let value): String(reflecting: value)
+    case .data(let value): String(reflecting: value)
+    case .array(let value): String(reflecting: value)
+    case .dictionary(let value): String(reflecting: value)
     }
   }
 }

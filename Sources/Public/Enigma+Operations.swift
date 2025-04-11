@@ -24,326 +24,324 @@ extension Enigma {
   /// Convert Enigma to AnyObject
   ///
   /// - Note: It is usable with JSONSerialization
-  ///   and [Stencil](https://github.com/stencilproject/Stencil/tree/master) render
+  ///   and [Stencil](https://github.com/stencilproject/Stencil) render
   public var asAnyObject: AnyObject {
     switch self {
-    case .null: return NSNull()
-    case .bool(let value): return value as NSNumber
-    case .int(let value): return value as NSNumber
-    case .int64(let value): return value as NSNumber
-    case .int32(let value): return value as NSNumber
-    case .int16(let value): return value as NSNumber
-    case .int8(let value): return value as NSNumber
-    case .uint(let value): return value as NSNumber
-    case .uint64(let value): return value as NSNumber
-    case .uint32(let value): return value as NSNumber
-    case .uint16(let value): return value as NSNumber
-    case .uint8(let value): return value as NSNumber
-    case .double(let value): return value as NSNumber
-    case .float(let value): return value as NSNumber
-    case .string(let value): return value as NSString
-    case .array(let array): return array.map(\.asAnyObject) as NSArray
-    case .dictionary(let dictionary): return dictionary.mapValues(\.asAnyObject) as NSDictionary
-    case .data(let data): return data as NSData
-    case .date(let date): return date as NSDate
+    case .null: NSNull()
+    case .bool(let value): value as NSNumber
+    case .int(let value): value as NSNumber
+    case .int64(let value): value as NSNumber
+    case .int32(let value): value as NSNumber
+    case .int16(let value): value as NSNumber
+    case .int8(let value): value as NSNumber
+    case .uint(let value): value as NSNumber
+    case .uint64(let value): value as NSNumber
+    case .uint32(let value): value as NSNumber
+    case .uint16(let value): value as NSNumber
+    case .uint8(let value): value as NSNumber
+    case .double(let value): value as NSNumber
+    case .float(let value): value as NSNumber
+    case .string(let value): value as NSString
+    case .array(let array): array.map(\.asAnyObject) as NSArray
+    case .dictionary(let dictionary): dictionary.mapValues(\.asAnyObject) as NSDictionary
+    case .data(let data): data as NSData
+    case .date(let date): date as NSDate
     }
   }
 
   /// Test if root value is null
   public var isNull: Bool {
-    if case .null = self { return true } else { return false }
+    if case .null = self { true } else { false }
   }
 
   /// Get value if it is Bool
   public var asBool: Bool? {
-    if case .bool(let value) = self { return value } else { return nil }
+    if case .bool(let value) = self { value } else { nil }
   }
 
   /// Get value if it is representable as Int
   public var asInt: Int? {
     switch self {
-    case .int(let value): return value
-    case .int64(let value): return Int(exactly: value)
-    case .int32(let value): return Int(exactly: value)
-    case .int16(let value): return Int(exactly: value)
-    case .int8(let value): return Int(exactly: value)
-    case .uint(let value): return Int(exactly: value)
-    case .uint64(let value): return Int(exactly: value)
-    case .uint32(let value): return Int(exactly: value)
-    case .uint16(let value): return Int(exactly: value)
-    case .uint8(let value): return Int(exactly: value)
-    case .double(let value): return Int(exactly: value)
-    case .float(let value): return Int(exactly: value)
-    case .date(let value): return Int(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): value
+    case .int64(let value): Int(exactly: value)
+    case .int32(let value): Int(exactly: value)
+    case .int16(let value): Int(exactly: value)
+    case .int8(let value): Int(exactly: value)
+    case .uint(let value): Int(exactly: value)
+    case .uint64(let value): Int(exactly: value)
+    case .uint32(let value): Int(exactly: value)
+    case .uint16(let value): Int(exactly: value)
+    case .uint8(let value): Int(exactly: value)
+    case .double(let value): Int(exactly: value)
+    case .float(let value): Int(exactly: value)
+    case .date(let value): Int(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as Int64
   public var asInt64: Int64? {
     switch self {
-    case .int(let value): return Int64(exactly: value)
-    case .int64(let value): return value
-    case .int32(let value): return Int64(exactly: value)
-    case .int16(let value): return Int64(exactly: value)
-    case .int8(let value): return Int64(exactly: value)
-    case .uint(let value): return Int64(exactly: value)
-    case .uint64(let value): return Int64(exactly: value)
-    case .uint32(let value): return Int64(exactly: value)
-    case .uint16(let value): return Int64(exactly: value)
-    case .uint8(let value): return Int64(exactly: value)
-    case .double(let value): return Int64(exactly: value)
-    case .float(let value): return Int64(exactly: value)
-    case .date(let value): return Int64(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): Int64(exactly: value)
+    case .int64(let value): value
+    case .int32(let value): Int64(exactly: value)
+    case .int16(let value): Int64(exactly: value)
+    case .int8(let value): Int64(exactly: value)
+    case .uint(let value): Int64(exactly: value)
+    case .uint64(let value): Int64(exactly: value)
+    case .uint32(let value): Int64(exactly: value)
+    case .uint16(let value): Int64(exactly: value)
+    case .uint8(let value): Int64(exactly: value)
+    case .double(let value): Int64(exactly: value)
+    case .float(let value): Int64(exactly: value)
+    case .date(let value): Int64(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as Int32
   public var asInt32: Int32? {
     switch self {
-    case .int(let value): return Int32(exactly: value)
-    case .int64(let value): return Int32(exactly: value)
-    case .int32(let value): return value
-    case .int16(let value): return Int32(exactly: value)
-    case .int8(let value): return Int32(exactly: value)
-    case .uint(let value): return Int32(exactly: value)
-    case .uint64(let value): return Int32(exactly: value)
-    case .uint32(let value): return Int32(exactly: value)
-    case .uint16(let value): return Int32(exactly: value)
-    case .uint8(let value): return Int32(exactly: value)
-    case .double(let value): return Int32(exactly: value)
-    case .float(let value): return Int32(exactly: value)
-    case .date(let value): return Int32(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): Int32(exactly: value)
+    case .int64(let value): Int32(exactly: value)
+    case .int32(let value): value
+    case .int16(let value): Int32(exactly: value)
+    case .int8(let value): Int32(exactly: value)
+    case .uint(let value): Int32(exactly: value)
+    case .uint64(let value): Int32(exactly: value)
+    case .uint32(let value): Int32(exactly: value)
+    case .uint16(let value): Int32(exactly: value)
+    case .uint8(let value): Int32(exactly: value)
+    case .double(let value): Int32(exactly: value)
+    case .float(let value): Int32(exactly: value)
+    case .date(let value): Int32(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as Int16
   public var asInt16: Int16? {
     switch self {
-    case .int(let value): return Int16(exactly: value)
-    case .int64(let value): return Int16(exactly: value)
-    case .int32(let value): return Int16(exactly: value)
-    case .int16(let value): return value
-    case .int8(let value): return Int16(exactly: value)
-    case .uint(let value): return Int16(exactly: value)
-    case .uint64(let value): return Int16(exactly: value)
-    case .uint32(let value): return Int16(exactly: value)
-    case .uint16(let value): return Int16(exactly: value)
-    case .uint8(let value): return Int16(exactly: value)
-    case .double(let value): return Int16(exactly: value)
-    case .float(let value): return Int16(exactly: value)
-    case .date(let value): return Int16(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): Int16(exactly: value)
+    case .int64(let value): Int16(exactly: value)
+    case .int32(let value): Int16(exactly: value)
+    case .int16(let value): value
+    case .int8(let value): Int16(exactly: value)
+    case .uint(let value): Int16(exactly: value)
+    case .uint64(let value): Int16(exactly: value)
+    case .uint32(let value): Int16(exactly: value)
+    case .uint16(let value): Int16(exactly: value)
+    case .uint8(let value): Int16(exactly: value)
+    case .double(let value): Int16(exactly: value)
+    case .float(let value): Int16(exactly: value)
+    case .date(let value): Int16(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as Int8
   public var asInt8: Int8? {
     switch self {
-    case .int(let value): return Int8(exactly: value)
-    case .int64(let value): return Int8(exactly: value)
-    case .int32(let value): return Int8(exactly: value)
-    case .int16(let value): return Int8(exactly: value)
-    case .int8(let value): return value
-    case .uint(let value): return Int8(exactly: value)
-    case .uint64(let value): return Int8(exactly: value)
-    case .uint32(let value): return Int8(exactly: value)
-    case .uint16(let value): return Int8(exactly: value)
-    case .uint8(let value): return Int8(exactly: value)
-    case .double(let value): return Int8(exactly: value)
-    case .float(let value): return Int8(exactly: value)
-    case .date(let value): return Int8(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): Int8(exactly: value)
+    case .int64(let value): Int8(exactly: value)
+    case .int32(let value): Int8(exactly: value)
+    case .int16(let value): Int8(exactly: value)
+    case .int8(let value): value
+    case .uint(let value): Int8(exactly: value)
+    case .uint64(let value): Int8(exactly: value)
+    case .uint32(let value): Int8(exactly: value)
+    case .uint16(let value): Int8(exactly: value)
+    case .uint8(let value): Int8(exactly: value)
+    case .double(let value): Int8(exactly: value)
+    case .float(let value): Int8(exactly: value)
+    case .date(let value): Int8(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as UInt
   public var asUInt: UInt? {
     switch self {
-    case .int(let value): return UInt(exactly: value)
-    case .int64(let value): return UInt(exactly: value)
-    case .int32(let value): return UInt(exactly: value)
-    case .int16(let value): return UInt(exactly: value)
-    case .int8(let value): return UInt(exactly: value)
-    case .uint(let value): return value
-    case .uint64(let value): return UInt(exactly: value)
-    case .uint32(let value): return UInt(exactly: value)
-    case .uint16(let value): return UInt(exactly: value)
-    case .uint8(let value): return UInt(exactly: value)
-    case .double(let value): return UInt(exactly: value)
-    case .float(let value): return UInt(exactly: value)
-    case .date(let value): return UInt(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): UInt(exactly: value)
+    case .int64(let value): UInt(exactly: value)
+    case .int32(let value): UInt(exactly: value)
+    case .int16(let value): UInt(exactly: value)
+    case .int8(let value): UInt(exactly: value)
+    case .uint(let value): value
+    case .uint64(let value): UInt(exactly: value)
+    case .uint32(let value): UInt(exactly: value)
+    case .uint16(let value): UInt(exactly: value)
+    case .uint8(let value): UInt(exactly: value)
+    case .double(let value): UInt(exactly: value)
+    case .float(let value): UInt(exactly: value)
+    case .date(let value): UInt(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as UInt64
   public var asUInt64: UInt64? {
     switch self {
-    case .int(let value): return UInt64(exactly: value)
-    case .int64(let value): return UInt64(exactly: value)
-    case .int32(let value): return UInt64(exactly: value)
-    case .int16(let value): return UInt64(exactly: value)
-    case .int8(let value): return UInt64(exactly: value)
-    case .uint(let value): return UInt64(exactly: value)
-    case .uint64(let value): return value
-    case .uint32(let value): return UInt64(exactly: value)
-    case .uint16(let value): return UInt64(exactly: value)
-    case .uint8(let value): return UInt64(exactly: value)
-    case .double(let value): return UInt64(exactly: value)
-    case .float(let value): return UInt64(exactly: value)
-    case .date(let value): return UInt64(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): UInt64(exactly: value)
+    case .int64(let value): UInt64(exactly: value)
+    case .int32(let value): UInt64(exactly: value)
+    case .int16(let value): UInt64(exactly: value)
+    case .int8(let value): UInt64(exactly: value)
+    case .uint(let value): UInt64(exactly: value)
+    case .uint64(let value): value
+    case .uint32(let value): UInt64(exactly: value)
+    case .uint16(let value): UInt64(exactly: value)
+    case .uint8(let value): UInt64(exactly: value)
+    case .double(let value): UInt64(exactly: value)
+    case .float(let value): UInt64(exactly: value)
+    case .date(let value): UInt64(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as UInt32
   public var asUInt32: UInt32? {
     switch self {
-    case .int(let value): return UInt32(exactly: value)
-    case .int64(let value): return UInt32(exactly: value)
-    case .int32(let value): return UInt32(exactly: value)
-    case .int16(let value): return UInt32(exactly: value)
-    case .int8(let value): return UInt32(exactly: value)
-    case .uint(let value): return UInt32(exactly: value)
-    case .uint64(let value): return UInt32(exactly: value)
-    case .uint32(let value): return value
-    case .uint16(let value): return UInt32(exactly: value)
-    case .uint8(let value): return UInt32(exactly: value)
-    case .double(let value): return UInt32(exactly: value)
-    case .float(let value): return UInt32(exactly: value)
-    case .date(let value): return UInt32(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): UInt32(exactly: value)
+    case .int64(let value): UInt32(exactly: value)
+    case .int32(let value): UInt32(exactly: value)
+    case .int16(let value): UInt32(exactly: value)
+    case .int8(let value): UInt32(exactly: value)
+    case .uint(let value): UInt32(exactly: value)
+    case .uint64(let value): UInt32(exactly: value)
+    case .uint32(let value): value
+    case .uint16(let value): UInt32(exactly: value)
+    case .uint8(let value): UInt32(exactly: value)
+    case .double(let value): UInt32(exactly: value)
+    case .float(let value): UInt32(exactly: value)
+    case .date(let value): UInt32(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as UInt16
   public var asUInt16: UInt16? {
     switch self {
-    case .int(let value): return UInt16(exactly: value)
-    case .int64(let value): return UInt16(exactly: value)
-    case .int32(let value): return UInt16(exactly: value)
-    case .int16(let value): return UInt16(exactly: value)
-    case .int8(let value): return UInt16(exactly: value)
-    case .uint(let value): return UInt16(exactly: value)
-    case .uint64(let value): return UInt16(exactly: value)
-    case .uint32(let value): return UInt16(exactly: value)
-    case .uint16(let value): return value
-    case .uint8(let value): return UInt16(exactly: value)
-    case .double(let value): return UInt16(exactly: value)
-    case .float(let value): return UInt16(exactly: value)
-    case .date(let value): return UInt16(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): UInt16(exactly: value)
+    case .int64(let value): UInt16(exactly: value)
+    case .int32(let value): UInt16(exactly: value)
+    case .int16(let value): UInt16(exactly: value)
+    case .int8(let value): UInt16(exactly: value)
+    case .uint(let value): UInt16(exactly: value)
+    case .uint64(let value): UInt16(exactly: value)
+    case .uint32(let value): UInt16(exactly: value)
+    case .uint16(let value): value
+    case .uint8(let value): UInt16(exactly: value)
+    case .double(let value): UInt16(exactly: value)
+    case .float(let value): UInt16(exactly: value)
+    case .date(let value): UInt16(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as UInt8
   public var asUInt8: UInt8? {
     switch self {
-    case .int(let value): return UInt8(exactly: value)
-    case .int64(let value): return UInt8(exactly: value)
-    case .int32(let value): return UInt8(exactly: value)
-    case .int16(let value): return UInt8(exactly: value)
-    case .int8(let value): return UInt8(exactly: value)
-    case .uint(let value): return UInt8(exactly: value)
-    case .uint64(let value): return UInt8(exactly: value)
-    case .uint32(let value): return UInt8(exactly: value)
-    case .uint16(let value): return UInt8(exactly: value)
-    case .uint8(let value): return value
-    case .double(let value): return UInt8(exactly: value)
-    case .float(let value): return UInt8(exactly: value)
-    case .date(let value): return UInt8(exactly: value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): UInt8(exactly: value)
+    case .int64(let value): UInt8(exactly: value)
+    case .int32(let value): UInt8(exactly: value)
+    case .int16(let value): UInt8(exactly: value)
+    case .int8(let value): UInt8(exactly: value)
+    case .uint(let value): UInt8(exactly: value)
+    case .uint64(let value): UInt8(exactly: value)
+    case .uint32(let value): UInt8(exactly: value)
+    case .uint16(let value): UInt8(exactly: value)
+    case .uint8(let value): value
+    case .double(let value): UInt8(exactly: value)
+    case .float(let value): UInt8(exactly: value)
+    case .date(let value): UInt8(exactly: value.timeIntervalSinceReferenceDate)
+    default: nil
     }
   }
 
   /// Get value if it is representable as Float
   public var asFloat: Float? {
     switch self {
-    case .int(let value): return Float(value)
-    case .int64(let value): return Float(value)
-    case .int32(let value): return Float(value)
-    case .int16(let value): return Float(value)
-    case .int8(let value): return Float(value)
-    case .uint(let value): return Float(value)
-    case .uint64(let value): return Float(value)
-    case .uint32(let value): return Float(value)
-    case .uint16(let value): return Float(value)
-    case .uint8(let value): return Float(value)
-    case .double(let value):
-        let result = Float(value)
-        return if result.isFinite || !value.isFinite { result } else { nil }
-    case .float(let value): return value
-    case .date(let value): return Float(value.timeIntervalSinceReferenceDate)
-    default: return nil
+    case .int(let value): Float(value)
+    case .int64(let value): Float(value)
+    case .int32(let value): Float(value)
+    case .int16(let value): Float(value)
+    case .int8(let value): Float(value)
+    case .uint(let value): Float(value)
+    case .uint64(let value): Float(value)
+    case .uint32(let value): Float(value)
+    case .uint16(let value): Float(value)
+    case .uint8(let value): Float(value)
+    case .double(let value): value.asFloat
+    case .float(let value): value
+    case .date(let value): value.timeIntervalSinceReferenceDate.asFloat
+    default: nil
     }
   }
 
   /// Get value if it is representable as Double
   public var asDouble: Double? {
     switch self {
-    case .int(let value): return Double(value)
-    case .int64(let value): return Double(value)
-    case .int32(let value): return Double(value)
-    case .int16(let value): return Double(value)
-    case .int8(let value): return Double(value)
-    case .uint(let value): return Double(value)
-    case .uint64(let value): return Double(value)
-    case .uint32(let value): return Double(value)
-    case .uint16(let value): return Double(value)
-    case .uint8(let value): return Double(value)
-    case .double(let value): return value
-    case .float(let value): return Double(value)
-    case .date(let value): return value.timeIntervalSinceReferenceDate
-    default: return nil
+    case .int(let value): Double(value)
+    case .int64(let value): Double(value)
+    case .int32(let value): Double(value)
+    case .int16(let value): Double(value)
+    case .int8(let value): Double(value)
+    case .uint(let value): Double(value)
+    case .uint64(let value): Double(value)
+    case .uint32(let value): Double(value)
+    case .uint16(let value): Double(value)
+    case .uint8(let value): Double(value)
+    case .double(let value): value
+    case .float(let value): Double(value)
+    case .date(let value): value.timeIntervalSinceReferenceDate
+    default: nil
     }
   }
 
   /// Get value if it is representable as String
   public var asString: String? {
-    if case .string(let value) = self { return value } else { return nil }
+    if case .string(let value) = self { value } else { nil }
   }
 
   /// Get value if it is exactly Data
   public var asData: Data? {
-    if case .data(let value) = self { return value } else { return nil }
+    if case .data(let value) = self { value } else { nil }
   }
 
   /// Get value if it is exactly Date
   public var asDate: Date? {
     switch self {
-    case .int(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .int64(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .int32(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .int16(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .int8(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .uint(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .uint64(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .uint32(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .uint16(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .uint8(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .double(let value): return Date(timeIntervalSinceReferenceDate: value)
-    case .float(let value): return Date(timeIntervalSinceReferenceDate: Double(value))
-    case .date(let value): return value
-    default: return nil
+    case .int(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .int64(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .int32(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .int16(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .int8(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .uint(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .uint64(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .uint32(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .uint16(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .uint8(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .double(let value): Date(timeIntervalSinceReferenceDate: value)
+    case .float(let value): Date(timeIntervalSinceReferenceDate: Double(value))
+    case .date(let value): value
+    default: nil
     }
   }
 
   /// Get value if it is Array, emply Dictionary or Data
   public var asArray: [Self]? {
     switch self {
-    case .array(let value): return value
-    case .dictionary([:]): return []
-    case .data(let data): return data.map(Enigma.uint8(_:))
-    default: return nil
+    case .array(let value): value
+    case .dictionary([:]): []
+    case .data(let data): data.map(Enigma.uint8(_:))
+    default: nil
     }
   }
 
   /// Get value if it is Dictionary
   public var asDictionary: [String: Self]? {
-    if case .dictionary(let value) = self { return value } else { return nil }
+    if case .dictionary(let value) = self { value } else { nil }
   }
 
   /// Get value if it is Array, emply Dictionary or Data, empty array otherwise
@@ -361,8 +359,7 @@ extension Enigma {
   /// Get or set value if it is present, index is correct and root element is Array
   public subscript(_ index: Int) -> Self? {
     get {
-      guard let array = asArray, index < array.count else { return nil }
-      return array[index]
+      if let array = asArray, index < array.count { array[index] } else { nil }
     }
     set {
       guard let newValue = newValue, var array = asArray, index < array.count
@@ -375,8 +372,7 @@ extension Enigma {
   /// Get, add or overwrite value
   public subscript(_ index: Int, or defaultValue: Self) -> Self {
     get {
-      guard let array = asArray, index < array.count else { return defaultValue }
-      return array[index]
+      if let array = asArray, index < array.count { array[index] } else { defaultValue }
     }
     set {
       var array: [Self]
@@ -390,8 +386,7 @@ extension Enigma {
   /// Get, add, overwrite or delete value
   public subscript(_ key: String) -> Self? {
     get {
-      guard case .dictionary(let value) = self else { return nil }
-      return value[key]
+      if case .dictionary(let value) = self { value[key] } else { nil }
     }
     set {
       guard case .dictionary(var value) = self else { return }
@@ -403,8 +398,7 @@ extension Enigma {
   /// Get or add or overwrite value
   public subscript(_ key: String, or defaultValue: Self) -> Self {
     get {
-      guard case .dictionary(let value) = self else { return defaultValue }
-      return value[key] ?? defaultValue
+      if case .dictionary(let value) = self { value[key] ?? defaultValue } else { defaultValue }
     }
     set {
       var dictionary: [String: Self]
