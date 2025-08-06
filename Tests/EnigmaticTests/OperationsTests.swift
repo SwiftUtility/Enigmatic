@@ -2,7 +2,7 @@
 import Foundation
 import XCTest
 
-final class EnigmaOperations: XCTestCase {
+final class OperationsTests: XCTestCase {
   func check<T: Codable & Equatable>(value: T, enigma: Enigma) throws {
     let decoded = try enigma.decode() as T
     XCTAssertEqual(value, decoded)

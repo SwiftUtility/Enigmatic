@@ -5,7 +5,7 @@ struct UnkeyedEncoder: Sendable, UnkeyedEncodingContainer {
   let codingPath: [CodingKey]
   var count: Int = 0
 
-  var key: CommonKey { .index(count) }
+  var key: Enigma.Pin { .int(count) }
 
   mutating func encodeNil() throws {
     try context.store(value: .null, path: codingPath + [key])

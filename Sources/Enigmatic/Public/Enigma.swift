@@ -21,6 +21,136 @@ public enum Enigma: @unchecked Sendable {
   case dictionary([String: Self])
   case data(Data)
   case date(Date)
+
+  /// Create Enigma tree from AnyObject
+  ///
+  /// - Note: It is usable with JSONSerialization and [Yams](https://github.com/jpsim/Yams) parser load function output
+  public init(cast any: Any?) throws {
+    try self.init(any: any, pins: [])
+  }
+
+  /// Create Enigma tree by encoding Encodable instance
+  public init<T: Encodable>(encode value: T) throws {
+    let context = EncoderContext()
+    try value.encode(to: context.makeValue(path: []))
+    guard let enigma = context.enigma else {
+      throw EncodingError.invalidValue(value, EncodingError.Context(
+        codingPath: [],
+        debugDescription: "encoded to nothing"
+      ))
+    }
+    self = enigma
+  }
+
+  /// Get value if it is Array, emply Dictionary or Data, empty array otherwise
+  public var array: [Self] {
+    get { asArray ?? [] }
+    set { self = .array(newValue) }
+  }
+
+  /// Get value if it is Dictionary, empty dictionary otherwise
+  public var dictionary: [String: Self] {
+    get { asDictionary ?? [:] }
+    set { self = .dictionary(newValue) }
+  }
+
+  /// Get or set value if it is present, index is correct and root element is Array
+  public subscript(_ index: Int) -> Self? {
+    get {
+      if let array = asArray, array.indices.contains(index) { array[index] } else { nil }
+    }
+    set {
+      guard let newValue, var array = asArray, array.indices.contains(index) else { return }
+      array[index] = newValue
+      self = .array(array)
+    }
+  }
+
+  /// Get, add, overwrite or delete value
+  public subscript(_ key: String) -> Self? {
+    get {
+      if case .dictionary(let value) = self { value[key] } else { nil }
+    }
+    set {
+      guard let newValue, case .dictionary(var value) = self else { return }
+      value[key] = newValue
+      self = .dictionary(value)
+    }
+  }
+
+  /// Get or set value if it is encoded/decoded successfully
+  public subscript<T: Codable>(_ _: T.Type) -> T? {
+    get { try? makeValue(path: []).decode(T.self) }
+    set {
+      guard let newValue else { return }
+      guard let value = try? merge(Self(encode: newValue), pins: [], overwrite: true) else { return }
+      self = value
+    }
+  }
+
+  /// Attempt to decode value
+  public func decode<T: Decodable>(_: T.Type = T.self, at pins: [Pin] = []) throws -> T {
+    var this = self
+    for depth in pins.indices {
+      switch pins[depth] {
+      case .int(let index):
+        guard let array = asArray else {
+          throw DecodingError.dataCorrupted(DecodingError.Context(
+            codingPath: Array(pins[0...depth]),
+            debugDescription: "Not an array"
+          ))
+        }
+        guard array.indices.contains(index) else {
+          throw DecodingError.dataCorrupted(DecodingError.Context(
+            codingPath: Array(pins[0...depth]),
+            debugDescription: "Not in bounds \(index)"
+          ))
+        }
+        this = array[index]
+      case .str(let str):
+        guard let dictionary = asDictionary else {
+          throw DecodingError.dataCorrupted(DecodingError.Context(
+            codingPath: Array(pins[0...depth]),
+            debugDescription: "Not a dictionary"
+          ))
+        }
+        guard let value = dictionary[str] else {
+          throw DecodingError.dataCorrupted(DecodingError.Context(
+            codingPath: Array(pins[0...depth]),
+            debugDescription: "No key \(str)"
+          ))
+        }
+        this = value
+      }
+    }
+    return try this.makeValue(path: pins).decode(T.self)
+  }
+
+  /// Attempt to merge current and encoded ortagonal value
+  public mutating func encode<T: Encodable>(_ value: T, at pins: [Pin] = []) throws {
+    try self.access(pins: pins, depth: 0) { this in
+      this = try this.merge(Self(encode: value), pins: [], overwrite: false)
+    }
+  }
+
+  /// Attempt to write encoded value overwriting original
+  public mutating func merge<T: Encodable>(_ value: T, at pins: [Pin] = []) throws {
+    try self.access(pins: pins, depth: 0) { this in
+      this = try this.merge(Self(encode: value), pins: [], overwrite: true)
+    }
+  }
+
+  public mutating func update<T: Codable>(
+    _: T.Type = T.self,
+    at pins: [Pin] = [],
+    block: (inout T) throws -> Void
+  ) throws {
+    try self.access(pins: pins, depth: 0) { this in
+      var value = try this.decode() as T
+      try block(&value)
+      this = try this.merge(Self(encode: value), pins: [], overwrite: true)
+    }
+  }
 }
 
 extension Enigma: Decodable {
@@ -141,16 +271,27 @@ extension Enigma: Equatable {
 extension Enigma: CustomStringConvertible {
   /// CustomStringConvertible implementation converts to json string
   public var description: String {
-    if let json = try? String(data: JSONEncoder().encode(self), encoding: .utf8) { json } else { "" }
-  }
-}
-
-extension Enigma: LosslessStringConvertible {
-  /// LosslessStringConvertible implementation converts from json string
-  public init?(_ description: String) {
-    guard let result = try? JSONDecoder().decode(Enigma.self, from: Data(description.utf8))
-    else { return nil }
-    self = result
+    switch self {
+    case .null: "null"
+    case .bool(let value): String(describing: value)
+    case .int(let value): String(describing: value)
+    case .int64(let value): String(describing: value)
+    case .int32(let value): String(describing: value)
+    case .int16(let value): String(describing: value)
+    case .int8(let value): String(describing: value)
+    case .uint(let value): String(describing: value)
+    case .uint64(let value): String(describing: value)
+    case .uint32(let value): String(describing: value)
+    case .uint16(let value): String(describing: value)
+    case .uint8(let value): String(describing: value)
+    case .double(let value): String(describing: value)
+    case .float(let value): String(describing: value)
+    case .string(let value): String(describing: value)
+    case .date(let value): String(describing: value)
+    case .data(let value): String(describing: value)
+    case .array(let value): String(describing: value)
+    case .dictionary(let value): String(describing: value)
+    }
   }
 }
 

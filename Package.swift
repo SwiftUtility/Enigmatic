@@ -6,20 +6,10 @@ import PackageDescription
 let package = Package(
   name: "Enigmatic",
   products: [
-    .library(
-      name: "Enigmatic",
-      targets: ["Enigmatic"]
-    ),
+    .library(name: "Enigmatic", targets: ["Enigmatic"]),
   ],
   targets: [
-    .target(
-      name: "Enigmatic",
-      path: "Sources"
-    ),
-    .testTarget(
-      name: "EnigmaticTests",
-      dependencies: ["Enigmatic"],
-      path: "Tests"
-    ),
+    .target(name: "Enigmatic"),
+    .testTarget(name: "EnigmaticTests", dependencies: ["Enigmatic"]),
   ]
 )

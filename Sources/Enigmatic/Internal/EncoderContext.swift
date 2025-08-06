@@ -1,5 +1,3 @@
-import Foundation
-
 final class EncoderContext: @unchecked Sendable {
   var enigma: Enigma?
 
@@ -31,7 +29,7 @@ final class EncoderContext: @unchecked Sendable {
     }
     let key = path[deep]
     let deep = deep + 1
-    if case .index(let index) = key as? CommonKey {
+    if case .int(let index) = key as? Enigma.Pin {
       var array: [Enigma]
       if let enigma = enigma {
         switch enigma {

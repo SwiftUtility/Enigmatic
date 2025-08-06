@@ -2,7 +2,7 @@
 import Foundation
 import XCTest
 
-final class EnigmaEquatableTests: XCTestCase {
+final class EquatableTests: XCTestCase {
   func checkEq(_ one: Enigma, _ two: Enigma) {
     XCTAssertEqual(one, two)
   }

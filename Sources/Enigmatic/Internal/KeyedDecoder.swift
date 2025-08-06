@@ -91,7 +91,7 @@ struct KeyedDecoder<Key: CodingKey>: Sendable, KeyedDecodingContainerProtocol {
     if let key = Key(stringValue: "super") {
       try superDecoder(forKey: key)
     } else {
-      try value(CommonKey.super).makeValue(path: codingPath + [CommonKey.super])
+      try value(Enigma.Pin.super).makeValue(path: codingPath + [Enigma.Pin.super])
     }
   }
 

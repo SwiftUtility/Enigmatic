@@ -1,32 +1,19 @@
 import Foundation
 
 extension Enigma {
-  init(any: Any?, path: [CommonKey]) throws {
+  init(any: Any?, pins: [Pin]) throws {
     if any == nil || any is NSNull {
       self = .null
-    } else if let value = any as? [AnyHashable: Any?] {
-      var dictionary: [String: Enigma] = [:]
-      for (key, value) in value {
-        let key = key.description
-        try dictionary[key] = Self(any: value, path: path + [CommonKey.key(key)])
-      }
-      self = .dictionary(dictionary)
-    } else if let value = any as? [Any?] {
-      var array: [Self] = []
-      for (index, value) in value.enumerated() {
-        try array.append(Self(any: value, path: path + [CommonKey.index(index)]))
-      }
-      self = .array(array)
     } else if let value = any as? Data {
       self = .data(value)
     } else if let value = any as? Date {
       self = .date(value)
     } else if let value = any as? String {
       self = .string(value)
-    } else if let value = any as? Bool {
-      self = .bool(value)
     } else if let value = any as? NSNumber {
-      if let value = UInt8(exactly: value) {
+      if CFGetTypeID(value) == CFBooleanGetTypeID() {
+        self = .bool(value.boolValue)
+      } else if let value = UInt8(exactly: value) {
         self = .uint8(value)
       } else if let value = Int8(exactly: value) {
         self = .int8(value)
@@ -52,13 +39,26 @@ extension Enigma {
         self = .double(value)
       } else {
         throw DecodingError.dataCorrupted(DecodingError.Context(
-          codingPath: path,
-          debugDescription: "NSNumber not either Int nor UInt nor Float nor Double"
+          codingPath: pins,
+          debugDescription: "NSNumber type not determined: \(value.stringValue)"
         ))
       }
+    } else if let value = any as? [AnyHashable: Any?] {
+      var dictionary: [String: Enigma] = [:]
+      for (key, value) in value {
+        let key = key.description
+        try dictionary[key] = Self(any: value, pins: pins + [Pin.str(key)])
+      }
+      self = .dictionary(dictionary)
+    } else if let value = any as? [Any?] {
+      var array: [Self] = []
+      for (index, value) in value.enumerated() {
+        try array.append(Self(any: value, pins: pins + [Pin.int(index)]))
+      }
+      self = .array(array)
     } else {
       throw DecodingError.dataCorrupted(DecodingError.Context(
-        codingPath: path,
+        codingPath: pins,
         debugDescription: "Neither value nor array nor dictionary"
       ))
     }
@@ -66,6 +66,17 @@ extension Enigma {
 
   var isFloat: Bool {
     if case .float = self { true } else { false }
+  }
+
+  var isArray: Bool {
+    switch self {
+    case .array, .dictionary([:]), .data: true
+    default: false
+    }
+  }
+
+  var isDictionart: Bool {
+    if case .dictionary = self { true } else { false }
   }
 
   func makeKeyed<K: CodingKey>(path: [CodingKey]) throws -> KeyedDecodingContainer<K> {
@@ -154,7 +165,7 @@ extension Enigma {
     return result
   }
 
-  func merge(_ other: Self, path: [CommonKey], overwrite: Bool) throws -> Self {
+  func merge(_ other: Self, pins: [Pin], overwrite: Bool) throws -> Self {
     guard case (.dictionary(var this), .dictionary(let other)) = (self, other) else {
       return if overwrite {
         other
@@ -162,18 +173,55 @@ extension Enigma {
         self
       } else {
         throw EncodingError.invalidValue(other, EncodingError.Context(
-          codingPath: path,
+          codingPath: pins,
           debugDescription: "attempt to change \(debugDescription)"
         ))
       }
     }
     for (key, value) in other {
       if let result = this[key] {
-        this[key] = try result.merge(value, path: path + [.key(key)], overwrite: overwrite)
+        this[key] = try result.merge(value, pins: pins + [.str(key)], overwrite: overwrite)
       } else {
         this[key] = value
       }
     }
     return .dictionary(this)
+  }
+
+  mutating func access(pins: [Pin], depth: Int, block: (inout Self) throws -> Void) throws {
+    guard depth < pins.count else { return try block(&self) }
+    switch pins[depth] {
+    case .int(let index):
+      guard var array = asArray else {
+        throw DecodingError.dataCorrupted(DecodingError.Context(
+          codingPath: Array(pins[0...depth]),
+          debugDescription: "Not an array"
+        ))
+      }
+      guard array.indices.contains(index) else {
+        throw DecodingError.dataCorrupted(DecodingError.Context(
+          codingPath: Array(pins[0...depth]),
+          debugDescription: "Not in bounds \(index)"
+        ))
+      }
+      try array[index].access(pins: pins, depth: depth + 1, block: block)
+      self = .array(array)
+    case .str(let str):
+      guard var dictionary = asDictionary else {
+        throw DecodingError.dataCorrupted(DecodingError.Context(
+          codingPath: Array(pins[0...depth]),
+          debugDescription: "Not a dictionary"
+        ))
+      }
+      guard var value = dictionary[str] else {
+        throw DecodingError.dataCorrupted(DecodingError.Context(
+          codingPath: Array(pins[0...depth]),
+          debugDescription: "No key \(str)"
+        ))
+      }
+      try value.access(pins: pins, depth: depth + 1, block: block)
+      dictionary[str] = value
+      self = .dictionary(dictionary)
+    }
   }
 }

@@ -81,6 +81,7 @@ struct ValueEncoder: Sendable, Encoder, SingleValueEncodingContainer {
   mutating func encode<T: Encodable>(_ value: T) throws {
     if let value = value as? Data { try context.store(value: .data(value), path: codingPath) }
     else if let value = value as? Date { try context.store(value: .date(value), path: codingPath) }
+    else if let value = value as? Enigma { try context.store(value: value, path: codingPath) }
     else { try value.encode(to: self) }
   }
 }

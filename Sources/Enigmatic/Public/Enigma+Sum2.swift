@@ -1,8 +1,6 @@
-import Foundation
-
 extension Enigma {
-  /// Sum type that is either A or B
-  public enum Coproduct2<A, B>{
+  /// Coproduct type that is either A or B
+  public enum Sum2<A, B>{
     case a(A)
     case b(B)
 
@@ -11,7 +9,7 @@ extension Enigma {
   }
 }
 
-extension Enigma.Coproduct2: Decodable
+extension Enigma.Sum2: Decodable
 where A: Decodable, B: Decodable {
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
@@ -27,7 +25,7 @@ where A: Decodable, B: Decodable {
   }
 }
 
-extension Enigma.Coproduct2: Encodable
+extension Enigma.Sum2: Encodable
 where A: Encodable, B: Encodable {
   public func encode(to encoder: Encoder) throws {
     switch self {
@@ -37,7 +35,7 @@ where A: Encodable, B: Encodable {
   }
 }
 
-extension Enigma.Coproduct2: Equatable
+extension Enigma.Sum2: Equatable
 where A: Equatable, B: Equatable {
   public static func ==(lhs: Self, rhs: Self) -> Bool {
     switch (lhs, rhs) {
@@ -48,7 +46,7 @@ where A: Equatable, B: Equatable {
   }
 }
 
-extension Enigma.Coproduct2: Hashable
+extension Enigma.Sum2: Hashable
 where A: Hashable, B: Hashable {
   public func hash(into hasher: inout Hasher) {
     switch self {

@@ -91,7 +91,7 @@ struct KeyedEncoder<Key: CodingKey>: Sendable, KeyedEncodingContainerProtocol {
   }
 
   mutating func superEncoder() -> Encoder {
-    let path = codingPath + [CommonKey.super]
+    let path = codingPath + [Enigma.Pin.super]
     try? context.store(value: .dictionary([:]), path: path)
     return context.makeValue(path: path)
   }

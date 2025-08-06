@@ -7,7 +7,7 @@ struct UnkeyedDecoder: Sendable, UnkeyedDecodingContainer {
 
   var count: Int? { enigmas.count }
   var isAtEnd: Bool { currentIndex >= enigmas.count }
-  var key: CommonKey { .index(currentIndex) }
+  var key: Enigma.Pin { .int(currentIndex) }
   var value: Enigma {
     get throws {
       guard currentIndex < enigmas.count else {

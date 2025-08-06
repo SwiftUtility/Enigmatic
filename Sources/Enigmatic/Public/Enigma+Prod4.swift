@@ -1,8 +1,6 @@
-import Foundation
-
 extension Enigma {
   /// Product type by merging A, B, C and D
-  public struct Product4<A, B, C, D> {
+  public struct Prod4<A, B, C, D> {
     public var a: A
     public var b: B
     public var c: C
@@ -17,7 +15,7 @@ extension Enigma {
   }
 }
 
-extension Enigma.Product4: Decodable
+extension Enigma.Prod4: Decodable
 where A: Decodable, B: Decodable, C: Decodable, D: Decodable {
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
@@ -28,7 +26,7 @@ where A: Decodable, B: Decodable, C: Decodable, D: Decodable {
   }
 }
 
-extension Enigma.Product4: Encodable
+extension Enigma.Prod4: Encodable
 where A: Encodable, B: Encodable, C: Encodable, D: Encodable {
   public func encode(to encoder: Encoder) throws {
     try a.encode(to: encoder)
@@ -38,14 +36,14 @@ where A: Encodable, B: Encodable, C: Encodable, D: Encodable {
   }
 }
 
-extension Enigma.Product4: Equatable
+extension Enigma.Prod4: Equatable
 where A: Equatable, B: Equatable, C: Equatable, D: Equatable {
   public static func ==(lhs: Self, rhs: Self) -> Bool {
     lhs.a == rhs.a && lhs.b == rhs.b && lhs.c == rhs.c && lhs.d == rhs.d
   }
 }
 
-extension Enigma.Product4: Hashable
+extension Enigma.Prod4: Hashable
 where A: Hashable, B: Hashable, C: Hashable, D: Hashable {
   public func hash(into hasher: inout Hasher) {
     a.hash(into: &hasher)
