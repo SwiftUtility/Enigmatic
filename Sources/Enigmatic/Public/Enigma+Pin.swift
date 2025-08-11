@@ -3,11 +3,17 @@ extension Enigma {
     case int(Int)
     case str(String)
 
-    init(_ key: CodingKey) {
+    init(_ key: borrowing CodingKey) {
       self = if let intValue = key.intValue { .int(intValue) } else { .str(key.stringValue) }
     }
 
+    public var isInt: Bool {
+      if case .int = self { true } else { false }
+    }
+
     public static let `super` = Self.str("super")
+    public static let head = Self.int(Int.min)
+    public static let tail = Self.int(Int.max)
   }
 }
 

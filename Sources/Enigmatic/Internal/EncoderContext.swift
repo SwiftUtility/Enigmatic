@@ -1,29 +1,29 @@
-final class EncoderContext: @unchecked Sendable {
+final class EncoderContext {
   var enigma: Enigma?
 
-  func store(value: Enigma, path: [CodingKey]) throws {
+  func store(value: borrowing Enigma, path: borrowing [CodingKey]) throws {
     enigma = try patch(enigma: enigma, value: value, path: path, deep: 0)
   }
 
-  func makeKeyed<K: CodingKey>(path: [CodingKey]) -> KeyedEncodingContainer<K> {
-    KeyedEncodingContainer(KeyedEncoder<K>(context: self, codingPath: path))
+  func makeKeyed<K: CodingKey>(path: borrowing [CodingKey]) -> KeyedEncodingContainer<K> {
+    KeyedEncodingContainer(KeyedEncoder<K>(context: self, codingPath: copy path))
   }
 
-  func makeUnkeyed(path: [CodingKey]) -> UnkeyedEncoder {
-    UnkeyedEncoder(context: self, codingPath: path)
+  func makeUnkeyed(path: borrowing [CodingKey]) -> UnkeyedEncoder {
+    UnkeyedEncoder(context: self, codingPath: copy path)
   }
 
-  func makeValue(path: [CodingKey]) -> ValueEncoder {
-    ValueEncoder(context: self, codingPath: path)
+  func makeValue(path: borrowing [CodingKey]) -> ValueEncoder {
+    ValueEncoder(context: self, codingPath: copy path)
   }
 
-  func patch(enigma: Enigma?, value: Enigma, path: [CodingKey], deep: Int) throws -> Enigma {
+  func patch(enigma: Enigma?, value: Enigma, path: borrowing [CodingKey], deep: Int) throws -> Enigma {
     guard deep < path.count else {
       guard let enigma = enigma else { return value }
       guard enigma != value else { return enigma }
       guard enigma != .dictionary([:]) else { return value }
       throw EncodingError.invalidValue(value, EncodingError.Context(
-        codingPath: path,
+        codingPath: copy path,
         debugDescription: "attempt to change \(enigma.debugDescription)"
       ))
     }
@@ -37,7 +37,7 @@ final class EncoderContext: @unchecked Sendable {
         case .dictionary([:]): array = []
         default:
           throw EncodingError.invalidValue(value, EncodingError.Context(
-            codingPath: path,
+            codingPath: copy path,
             debugDescription: "attempt to change index \(index) of \(enigma.debugDescription)"
           ))
         }
@@ -59,7 +59,7 @@ final class EncoderContext: @unchecked Sendable {
         case .dictionary(let value): dictionary = value
         default:
           throw EncodingError.invalidValue(value, EncodingError.Context(
-            codingPath: path,
+            codingPath: copy path,
             debugDescription: "attempt to change key \(key) of \(enigma.debugDescription)"
           ))
         }

@@ -1,7 +1,7 @@
 import Foundation
 
 extension Enigma {
-  init(any: Any?, pins: [Pin]) throws {
+  init(any: Any?, pins: borrowing [Pin]) throws {
     if any == nil || any is NSNull {
       self = .null
     } else if let value = any as? Data {
@@ -79,93 +79,93 @@ extension Enigma {
     if case .dictionary = self { true } else { false }
   }
 
-  func makeKeyed<K: CodingKey>(path: [CodingKey]) throws -> KeyedDecodingContainer<K> {
+  func makeKeyed<K: CodingKey>(path: borrowing [CodingKey]) throws -> KeyedDecodingContainer<K> {
     let enigmas = try extract(path: path, make: \.asDictionary)
-    return KeyedDecodingContainer(KeyedDecoder<K>(enigmas: enigmas, codingPath: path))
+    return KeyedDecodingContainer(KeyedDecoder<K>(enigmas: enigmas, codingPath: copy path))
   }
 
-  func makeUnkeyed(path: [CodingKey]) throws -> UnkeyedDecoder {
+  func makeUnkeyed(path: borrowing [CodingKey]) throws -> UnkeyedDecoder {
     let enigmas = try extract(path: path, make: \.asArray)
-    return UnkeyedDecoder(enigmas: enigmas, codingPath: path)
+    return UnkeyedDecoder(enigmas: enigmas, codingPath: copy path)
   }
 
-  func makeValue(path: [CodingKey]) throws -> ValueDecoder {
-    ValueDecoder(enigma: self, codingPath: path)
+  func makeValue(path: borrowing [CodingKey]) throws -> ValueDecoder {
+    ValueDecoder(enigma: self, codingPath: copy path)
   }
 
-  func makeBool(path: [CodingKey]) throws -> Bool {
+  func makeBool(path: borrowing [CodingKey]) throws -> Bool {
     try extract(path: path, make: \.asBool)
   }
 
-  func makeInt(path: [CodingKey]) throws -> Int {
+  func makeInt(path: borrowing [CodingKey]) throws -> Int {
     try extract(path: path, make: \.asInt)
   }
 
-  func makeInt8(path: [CodingKey]) throws -> Int8 {
+  func makeInt8(path: borrowing [CodingKey]) throws -> Int8 {
     try extract(path: path, make: \.asInt8)
   }
 
-  func makeInt16(path: [CodingKey]) throws -> Int16 {
+  func makeInt16(path: borrowing [CodingKey]) throws -> Int16 {
     try extract(path: path, make: \.asInt16)
   }
 
-  func makeInt32(path: [CodingKey]) throws -> Int32 {
+  func makeInt32(path: borrowing [CodingKey]) throws -> Int32 {
     try extract(path: path, make: \.asInt32)
   }
 
-  func makeInt64(path: [CodingKey]) throws -> Int64 {
+  func makeInt64(path: borrowing [CodingKey]) throws -> Int64 {
     try extract(path: path, make: \.asInt64)
   }
 
-  func makeUInt(path: [CodingKey]) throws -> UInt {
+  func makeUInt(path: borrowing [CodingKey]) throws -> UInt {
     try extract(path: path, make: \.asUInt)
   }
 
-  func makeUInt8(path: [CodingKey]) throws -> UInt8 {
+  func makeUInt8(path: borrowing [CodingKey]) throws -> UInt8 {
     try extract(path: path, make: \.asUInt8)
   }
 
-  func makeUInt16(path: [CodingKey]) throws -> UInt16 {
+  func makeUInt16(path: borrowing [CodingKey]) throws -> UInt16 {
     try extract(path: path, make: \.asUInt16)
   }
 
-  func makeUInt32(path: [CodingKey]) throws -> UInt32 {
+  func makeUInt32(path: borrowing [CodingKey]) throws -> UInt32 {
     try extract(path: path, make: \.asUInt32)
   }
 
-  func makeUInt64(path: [CodingKey]) throws -> UInt64 {
+  func makeUInt64(path: borrowing [CodingKey]) throws -> UInt64 {
     try extract(path: path, make: \.asUInt64)
   }
 
-  func makeFloat(path: [CodingKey]) throws -> Float {
+  func makeFloat(path: borrowing [CodingKey]) throws -> Float {
     try extract(path: path, make: \.asFloat)
   }
 
-  func makeDouble(path: [CodingKey]) throws -> Double {
+  func makeDouble(path: borrowing [CodingKey]) throws -> Double {
     try extract(path: path, make: \.asDouble)
   }
 
-  func makeString(path: [CodingKey]) throws -> String {
+  func makeString(path: borrowing [CodingKey]) throws -> String {
     try extract(path: path, make: \.asString)
   }
 
-  func extract<T: Decodable>(path: [CodingKey], make: (Enigma) -> T?) throws -> T {
+  func extract<T: Decodable>(path: borrowing [CodingKey], make: (borrowing Self) -> T?) throws -> T {
     guard !isNull else {
       throw DecodingError.valueNotFound(T.self, DecodingError.Context(
-        codingPath: path,
+        codingPath: copy path,
         debugDescription: "null insted of \(T.self)"
       ))
     }
     guard let result = make(self) else {
       throw DecodingError.typeMismatch(T.self, DecodingError.Context(
-        codingPath: path,
+        codingPath: copy path,
         debugDescription: "Not \(T.self): \(debugDescription)"
       ))
     }
     return result
   }
 
-  func merge(_ other: Self, pins: [Pin], overwrite: Bool) throws -> Self {
+  func merge(_ other: Self, pins: borrowing [Pin], overwrite: Bool) throws -> Self {
     guard case (.dictionary(var this), .dictionary(let other)) = (self, other) else {
       return if overwrite {
         other
@@ -188,7 +188,7 @@ extension Enigma {
     return .dictionary(this)
   }
 
-  mutating func access(pins: [Pin], depth: Int, block: (inout Self) throws -> Void) throws {
+  mutating func access(pins: borrowing [Pin], depth: Int, block: (inout Self) throws -> Void) throws {
     guard depth < pins.count else { return try block(&self) }
     switch pins[depth] {
     case .int(let index):
@@ -222,6 +222,64 @@ extension Enigma {
       try value.access(pins: pins, depth: depth + 1, block: block)
       dictionary[str] = value
       self = .dictionary(dictionary)
+    }
+  }
+
+  mutating func update<T>(pins: borrowing [Pin], depth: Int, block: (inout Self) throws -> T) rethrows -> T {
+    guard depth < pins.count else { return try block(&self) }
+    switch pins[depth] {
+    case .int(let int):
+      var array = asArray ?? []
+      defer { self = .array(array) }
+      if int < 0 {
+        if int < -array.count {
+          var value = Self.null
+          defer { array = [value] + array }
+          return try value.update(pins: pins, depth: depth + 1, block: block)
+        } else {
+          return try array[array.count - int].update(pins: pins, depth: depth + 1, block: block)
+        }
+      } else {
+        if int < array.count {
+          return try array[int].update(pins: pins, depth: depth + 1, block: block)
+        } else {
+          var value = Self.null
+          defer { array.append(value) }
+          return try value.update(pins: pins, depth: depth + 1, block: block)
+        }
+      }
+    case .str(let str):
+      var dictionary = asDictionary ?? [:]
+      defer { self = .dictionary(dictionary) }
+      var value = dictionary[str] ?? Self.null
+      defer { dictionary[str] = value }
+      return try value.update(pins: pins, depth: depth + 1, block: block)
+    }
+  }
+
+  mutating func filter(
+    pins: inout [Pin],
+    isIncluded: (borrowing Self, borrowing [Pin]) -> Bool
+  ) {
+    let pin = pins.count
+    pins.append(.super)
+    defer { _ = pins.popLast() }
+    if var dict = asDictionary {
+      defer { self = .dictionary(dict) }
+      for (key, var value) in dict {
+        pins[pin] = .str(key)
+        value.filter(pins: &pins, isIncluded: isIncluded)
+        dict[key] = if isIncluded(value, pins) { value } else { nil }
+      }
+    } else if var array = asArray {
+      defer { self = .array(array) }
+      for index in array.indices.reversed() {
+        pins[pin] = .int(index)
+        array[index].filter(pins: &pins, isIncluded: isIncluded)
+        if !isIncluded(array[index], pins) {
+          array.remove(at: index)
+        }
+      }
     }
   }
 }

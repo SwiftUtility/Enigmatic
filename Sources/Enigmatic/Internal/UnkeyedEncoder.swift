@@ -1,6 +1,6 @@
 import Foundation
 
-struct UnkeyedEncoder: Sendable, UnkeyedEncodingContainer {
+struct UnkeyedEncoder: UnkeyedEncodingContainer {
   let context: EncoderContext
   let codingPath: [CodingKey]
   var count: Int = 0

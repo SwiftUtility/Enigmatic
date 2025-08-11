@@ -1,3 +1,8 @@
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma {
   /// Coproduct type that is either A or B
   public enum Sum2<A, B>{
@@ -9,6 +14,11 @@ extension Enigma {
   }
 }
 
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Sum2: Decodable
 where A: Decodable, B: Decodable {
   public init(from decoder: Decoder) throws {
@@ -25,6 +35,11 @@ where A: Decodable, B: Decodable {
   }
 }
 
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Sum2: Encodable
 where A: Encodable, B: Encodable {
   public func encode(to encoder: Encoder) throws {
@@ -35,6 +50,11 @@ where A: Encodable, B: Encodable {
   }
 }
 
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Sum2: Equatable
 where A: Equatable, B: Equatable {
   public static func ==(lhs: Self, rhs: Self) -> Bool {
@@ -46,6 +66,11 @@ where A: Equatable, B: Equatable {
   }
 }
 
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Sum2: Hashable
 where A: Hashable, B: Hashable {
   public func hash(into hasher: inout Hasher) {

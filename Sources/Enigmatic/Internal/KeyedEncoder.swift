@@ -1,6 +1,6 @@
 import Foundation
 
-struct KeyedEncoder<Key: CodingKey>: Sendable, KeyedEncodingContainerProtocol {
+struct KeyedEncoder<Key: CodingKey>: KeyedEncodingContainerProtocol {
   let context: EncoderContext
   let codingPath: [CodingKey]
 

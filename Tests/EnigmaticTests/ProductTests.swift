@@ -56,6 +56,26 @@ final class ProdTests: XCTestCase {
     XCTAssertEqual(encoded, enigma)
   }
 
+  @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
+  func testProd() throws {
+    let a = A()
+    let b = B()
+    let c = C()
+    let d = D()
+    let product = Enigma.Prod<A, B, C, D>(values: (a, b, c, d))
+    let encoded = try Enigma(encode: product)
+    try check(value: a, enigma: encoded)
+    try check(value: b, enigma: encoded)
+    try check(value: c, enigma: encoded)
+    try check(value: d, enigma: encoded)
+    try check(value: product, enigma: encoded)
+    var enigma = try Enigma(encode: a)
+    try enigma.encode(b)
+    try enigma.encode(c)
+    try enigma.encode(d)
+    XCTAssertEqual(encoded, enigma)
+  }
+
   func testSum2A() throws {
     let a = A()
     let product = Enigma.Sum2<A, B>.a(a)
@@ -123,6 +143,56 @@ final class ProdTests: XCTestCase {
   func testSum4D() throws {
     let d = D()
     let product = Enigma.Sum4<A, B, C, D>.d(d)
+    let encoded = try Enigma(encode: product)
+    try check(value: d, enigma: encoded)
+    try check(value: product, enigma: encoded)
+  }
+
+  @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
+  func testSum() throws {
+    let a = A()
+    let c = C()
+    let product = Enigma.Sum<A, B, C, D>(values: (a, nil, c, nil))
+    let encoded = try Enigma(encode: product)
+    try check(value: a, enigma: encoded)
+    try check(value: c, enigma: encoded)
+    try check(value: product, enigma: encoded)
+    var enigma = try Enigma(encode: a)
+    try enigma.encode(c)
+    XCTAssertEqual(encoded, enigma)
+  }
+
+  @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
+  func testSumA() throws {
+    let a = A()
+    let product = Enigma.Sum<A, B, C, D>(values: (a, nil, nil, nil))
+    let encoded = try Enigma(encode: product)
+    try check(value: a, enigma: encoded)
+    try check(value: product, enigma: encoded)
+  }
+
+  @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
+  func testSumB() throws {
+    let b = B()
+    let product = Enigma.Sum<A, B, C, D>(values: (nil, b, nil, nil))
+    let encoded = try Enigma(encode: product)
+    try check(value: b, enigma: encoded)
+    try check(value: product, enigma: encoded)
+  }
+
+  @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
+  func testSumC() throws {
+    let c = C()
+    let product = Enigma.Sum<A, B, C, D>(values: (nil, nil, c, nil))
+    let encoded = try Enigma(encode: product)
+    try check(value: c, enigma: encoded)
+    try check(value: product, enigma: encoded)
+  }
+
+  @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
+  func testSumD() throws {
+    let d = D()
+    let product = Enigma.Sum<A, B, C, D>(values: (nil, nil, nil, d))
     let encoded = try Enigma(encode: product)
     try check(value: d, enigma: encoded)
     try check(value: product, enigma: encoded)

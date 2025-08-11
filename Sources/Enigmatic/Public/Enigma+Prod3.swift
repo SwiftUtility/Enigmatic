@@ -1,3 +1,8 @@
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma {
   /// Product type by merging A, B and C
   public struct Prod3<A, B, C> {
@@ -13,6 +18,11 @@ extension Enigma {
   }
 }
 
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Prod3: Decodable
 where A: Decodable, B: Decodable, C: Decodable {
   public init(from decoder: Decoder) throws {
@@ -23,6 +33,11 @@ where A: Decodable, B: Decodable, C: Decodable {
   }
 }
 
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Prod3: Encodable
 where A: Encodable, B: Encodable, C: Encodable {
   public func encode(to encoder: Encoder) throws {
@@ -32,6 +47,11 @@ where A: Encodable, B: Encodable, C: Encodable {
   }
 }
 
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Prod3: Equatable
 where A: Equatable, B: Equatable, C: Equatable {
   public static func ==(lhs: Self, rhs: Self) -> Bool {
@@ -39,6 +59,11 @@ where A: Equatable, B: Equatable, C: Equatable {
   }
 }
 
+@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
+@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
+@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
+@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Prod3: Hashable
 where A: Hashable, B: Hashable, C: Hashable {
   public func hash(into hasher: inout Hasher) {

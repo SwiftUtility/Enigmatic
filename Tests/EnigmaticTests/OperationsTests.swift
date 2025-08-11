@@ -51,4 +51,17 @@ final class OperationsTests: XCTestCase {
     XCTAssertEqual(enigma[[Int].self], [3])
     XCTAssertEqual(enigma, [3])
   }
+
+  func testPinSubscript() throws {
+    var enigma = try Enigma(encode: [1])
+    enigma[[.head]] = 0
+    XCTAssertEqual(enigma, [0, 1])
+    enigma[[.tail]] = 2
+    XCTAssertEqual(enigma, [0, 1, 2])
+    enigma[["a"]] = true
+    enigma[["b"]] = false
+    XCTAssertEqual(enigma, ["a": true, "b": false])
+    enigma[["b", 0, "c"]] = false
+    XCTAssertEqual(enigma, ["a": true, "b": [["c": false]]])
+  }
 }

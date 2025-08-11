@@ -1,7 +1,7 @@
 import Foundation
 
 /// Container type to allow partial or multi step encoding and decoding operations
-public enum Enigma: @unchecked Sendable {
+public enum Enigma: Sendable {
   case null
   case bool(Bool)
   case int(Int)
@@ -88,8 +88,42 @@ public enum Enigma: @unchecked Sendable {
     }
   }
 
+  /// Get or set value unconditionally
+  public subscript(_ pins: [Pin]) -> Self {
+    get {
+      var result = self
+      for pin in pins {
+        switch pin {
+        case .int(let int):
+          if let array = result.asArray {
+            if int < 0 {
+              if int < -array.count {
+                return .null
+              } else {
+                result = array[array.count - int]
+              }
+            } else {
+              if int < array.count {
+                result = array[int]
+              } else {
+                return .null
+              }
+            }
+          }
+        case .str(let str):
+          guard let dictionary = result.asDictionary, let value = dictionary[str] else { return .null }
+          result = value
+        }
+      }
+      return result
+    }
+    set {
+      update(pins: pins, depth: 0) { $0 = newValue }
+    }
+  }
+
   /// Attempt to decode value
-  public func decode<T: Decodable>(_: T.Type = T.self, at pins: [Pin] = []) throws -> T {
+  public func decode<T: Decodable>(_: T.Type = T.self, at pins: borrowing [Pin] = []) throws -> T {
     var this = self
     for depth in pins.indices {
       switch pins[depth] {
@@ -127,14 +161,14 @@ public enum Enigma: @unchecked Sendable {
   }
 
   /// Attempt to merge current and encoded ortagonal value
-  public mutating func encode<T: Encodable>(_ value: T, at pins: [Pin] = []) throws {
+  public mutating func encode<T: Encodable>(_ value: T, at pins: borrowing [Pin] = []) throws {
     try self.access(pins: pins, depth: 0) { this in
       this = try this.merge(Self(encode: value), pins: [], overwrite: false)
     }
   }
 
   /// Attempt to write encoded value overwriting original
-  public mutating func merge<T: Encodable>(_ value: T, at pins: [Pin] = []) throws {
+  public mutating func merge<T: Encodable>(_ value: T, at pins: borrowing [Pin] = []) throws {
     try self.access(pins: pins, depth: 0) { this in
       this = try this.merge(Self(encode: value), pins: [], overwrite: true)
     }
@@ -142,7 +176,7 @@ public enum Enigma: @unchecked Sendable {
 
   public mutating func update<T: Codable>(
     _: T.Type = T.self,
-    at pins: [Pin] = [],
+    at pins: borrowing [Pin] = [],
     block: (inout T) throws -> Void
   ) throws {
     try self.access(pins: pins, depth: 0) { this in
@@ -150,6 +184,13 @@ public enum Enigma: @unchecked Sendable {
       try block(&value)
       this = try this.merge(Self(encode: value), pins: [], overwrite: true)
     }
+  }
+
+  public mutating func filter(
+    isIncluded: (borrowing Self, borrowing [Pin]) -> Bool
+  ) {
+    var pins: [Pin] = []
+    filter(pins: &pins, isIncluded: isIncluded)
   }
 }
 

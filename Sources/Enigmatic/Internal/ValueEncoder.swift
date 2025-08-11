@@ -1,6 +1,6 @@
 import Foundation
 
-struct ValueEncoder: Sendable, Encoder, SingleValueEncodingContainer {
+struct ValueEncoder: Encoder, SingleValueEncodingContainer {
   let context: EncoderContext
   let codingPath: [CodingKey]
 
