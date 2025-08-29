@@ -30,7 +30,7 @@ public enum Enigma: Sendable {
   }
 
   /// Create Enigma tree by encoding Encodable instance
-  public init<T: Encodable>(encode value: T) throws {
+  public init(encode value: any Encodable) throws {
     let context = EncoderContext()
     try value.encode(to: context.makeValue(path: []))
     guard let enigma = context.enigma else {
@@ -42,155 +42,33 @@ public enum Enigma: Sendable {
     self = enigma
   }
 
-  /// Get value if it is Array, emply Dictionary or Data, empty array otherwise
-  public var array: [Self] {
-    get { asArray ?? [] }
-    set { self = .array(newValue) }
-  }
-
-  /// Get value if it is Dictionary, empty dictionary otherwise
-  public var dictionary: [String: Self] {
-    get { asDictionary ?? [:] }
-    set { self = .dictionary(newValue) }
-  }
-
-  /// Get or set value if it is present, index is correct and root element is Array
+  /// Get set, or remove value if it is present.
   public subscript(_ index: Int) -> Self? {
-    get {
-      if let array = asArray, array.indices.contains(index) { array[index] } else { nil }
-    }
-    set {
-      guard let newValue, var array = asArray, array.indices.contains(index) else { return }
-      array[index] = newValue
-      self = .array(array)
-    }
+    get { getValue(pins: [.int(index)]) }
+    set { if let value = setValue(newValue, pins: [.int(index)]) { self = value } }
   }
 
-  /// Get, add, overwrite or delete value
+  /// Get set, or remove value if it is present.
   public subscript(_ key: String) -> Self? {
-    get {
-      if case .dictionary(let value) = self { value[key] } else { nil }
-    }
-    set {
-      guard let newValue, case .dictionary(var value) = self else { return }
-      value[key] = newValue
-      self = .dictionary(value)
-    }
+    get { getValue(pins: [.str(key)]) }
+    set { if let value = setValue(newValue, pins: [.str(key)]) { self = value } }
   }
 
-  /// Get or set value if it is encoded/decoded successfully
-  public subscript<T: Codable>(_ _: T.Type) -> T? {
-    get { try? makeValue(path: []).decode(T.self) }
-    set {
-      guard let newValue else { return }
-      guard let value = try? merge(Self(encode: newValue), pins: [], overwrite: true) else { return }
-      self = value
-    }
+  /// Get, set or remove value at pins path if it is present. Does not remove root object
+  public subscript(_ pins: [Pin]) -> Self? {
+    get { getValue(pins: pins) }
+    set { if let value = setValue(newValue, pins: pins) { self = value } }
   }
 
-  /// Get or set value unconditionally
-  public subscript(_ pins: [Pin]) -> Self {
-    get {
-      var result = self
-      for pin in pins {
-        switch pin {
-        case .int(let int):
-          if let array = result.asArray {
-            if int < 0 {
-              if int < -array.count {
-                return .null
-              } else {
-                result = array[array.count - int]
-              }
-            } else {
-              if int < array.count {
-                result = array[int]
-              } else {
-                return .null
-              }
-            }
-          }
-        case .str(let str):
-          guard let dictionary = result.asDictionary, let value = dictionary[str] else { return .null }
-          result = value
-        }
-      }
-      return result
-    }
-    set {
-      update(pins: pins, depth: 0) { $0 = newValue }
-    }
+  /// Get or set value at pins path if it is present.
+  public subscript(_ pins: [Pin], or fallback: @autoclosure () -> Self) -> Self {
+    get { getValue(pins: pins) ?? fallback() }
+    set { if let value = setValue(newValue, pins: pins) { self = value } }
   }
 
   /// Attempt to decode value
-  public func decode<T: Decodable>(_: T.Type = T.self, at pins: borrowing [Pin] = []) throws -> T {
-    var this = self
-    for depth in pins.indices {
-      switch pins[depth] {
-      case .int(let index):
-        guard let array = asArray else {
-          throw DecodingError.dataCorrupted(DecodingError.Context(
-            codingPath: Array(pins[0...depth]),
-            debugDescription: "Not an array"
-          ))
-        }
-        guard array.indices.contains(index) else {
-          throw DecodingError.dataCorrupted(DecodingError.Context(
-            codingPath: Array(pins[0...depth]),
-            debugDescription: "Not in bounds \(index)"
-          ))
-        }
-        this = array[index]
-      case .str(let str):
-        guard let dictionary = asDictionary else {
-          throw DecodingError.dataCorrupted(DecodingError.Context(
-            codingPath: Array(pins[0...depth]),
-            debugDescription: "Not a dictionary"
-          ))
-        }
-        guard let value = dictionary[str] else {
-          throw DecodingError.dataCorrupted(DecodingError.Context(
-            codingPath: Array(pins[0...depth]),
-            debugDescription: "No key \(str)"
-          ))
-        }
-        this = value
-      }
-    }
-    return try this.makeValue(path: pins).decode(T.self)
-  }
-
-  /// Attempt to merge current and encoded ortagonal value
-  public mutating func encode<T: Encodable>(_ value: T, at pins: borrowing [Pin] = []) throws {
-    try self.access(pins: pins, depth: 0) { this in
-      this = try this.merge(Self(encode: value), pins: [], overwrite: false)
-    }
-  }
-
-  /// Attempt to write encoded value overwriting original
-  public mutating func merge<T: Encodable>(_ value: T, at pins: borrowing [Pin] = []) throws {
-    try self.access(pins: pins, depth: 0) { this in
-      this = try this.merge(Self(encode: value), pins: [], overwrite: true)
-    }
-  }
-
-  public mutating func update<T: Codable>(
-    _: T.Type = T.self,
-    at pins: borrowing [Pin] = [],
-    block: (inout T) throws -> Void
-  ) throws {
-    try self.access(pins: pins, depth: 0) { this in
-      var value = try this.decode() as T
-      try block(&value)
-      this = try this.merge(Self(encode: value), pins: [], overwrite: true)
-    }
-  }
-
-  public mutating func filter(
-    isIncluded: (borrowing Self, borrowing [Pin]) -> Bool
-  ) {
-    var pins: [Pin] = []
-    filter(pins: &pins, isIncluded: isIncluded)
+  public func decode<T: Decodable>(_: T.Type = T.self) throws -> T {
+    try makeValue(path: []).decode(T.self)
   }
 }
 
@@ -286,7 +164,7 @@ extension Enigma: Equatable {
   ///   * they are both equal Bools (Bools do not implicitly convert to numerics)
   ///   * they are both convertible to the same integer type and values are equal
   ///   * they are both convertible to decimal type and values are almost equal
-  public static func ==(lhs: Self, rhs: Self) -> Bool {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
     return if lhs.isNull, rhs.isNull {
       true
     } else if let lhs = lhs.asArray, let rhs = rhs.asArray {
@@ -364,51 +242,83 @@ extension Enigma: CustomDebugStringConvertible {
 }
 
 extension Enigma: ExpressibleByNilLiteral {
-  public init(nilLiteral: ()) { self = .null }
+  public init(nilLiteral: ()) {
+    self = .null
+  }
 }
 
 extension Enigma: ExpressibleByBooleanLiteral {
-  public init(booleanLiteral value: BooleanLiteralType) { self = .bool(value) }
+  public init(booleanLiteral value: BooleanLiteralType) {
+    self = .bool(value)
+  }
 }
 
 extension Enigma: ExpressibleByIntegerLiteral {
   public init(integerLiteral value: IntegerLiteralType) {
-    if let value = UInt8(exactly: value) { self = .uint8(value) }
-    else if let value = Int8(exactly: value) { self = .int8(value) }
-    else if let value = UInt16(exactly: value) { self = .uint16(value) }
-    else if let value = Int16(exactly: value) { self = .int16(value) }
-    else if let value = UInt32(exactly: value) { self = .uint32(value) }
-    else if let value = Int32(exactly: value) { self = .int32(value) }
-    else if let value = UInt64(exactly: value) { self = .uint64(value) }
-    else if let value = Int64(exactly: value) { self = .int64(value) }
-    else if let value = UInt(exactly: value) { self = .uint(value) }
-    else { self = .int(value) }
+    self = if let value = UInt8(exactly: value) {
+      .uint8(value)
+    } else if let value = Int8(exactly: value) {
+      .int8(value)
+    } else if let value = UInt16(exactly: value) {
+      .uint16(value)
+    } else if let value = Int16(exactly: value) {
+      .int16(value)
+    } else if let value = UInt32(exactly: value) {
+      .uint32(value)
+    } else if let value = Int32(exactly: value) {
+      .int32(value)
+    } else if let value = UInt64(exactly: value) {
+      .uint64(value)
+    } else if let value = Int64(exactly: value) {
+      .int64(value)
+    } else if let value = UInt(exactly: value) {
+      .uint(value)
+    } else {
+      .int(value)
+    }
   }
 }
 
 extension Enigma: ExpressibleByFloatLiteral {
   public init(floatLiteral value: FloatLiteralType) {
-    if let value = UInt8(exactly: value) { self = .uint8(value) }
-    else if let value = Int8(exactly: value) { self = .int8(value) }
-    else if let value = UInt16(exactly: value) { self = .uint16(value) }
-    else if let value = Int16(exactly: value) { self = .int16(value) }
-    else if let value = UInt32(exactly: value) { self = .uint32(value) }
-    else if let value = Int32(exactly: value) { self = .int32(value) }
-    else if let value = UInt64(exactly: value) { self = .uint64(value) }
-    else if let value = Int64(exactly: value) { self = .int64(value) }
-    else if let value = UInt(exactly: value) { self = .uint(value) }
-    else if let value = Int(exactly: value) { self = .int(value) }
-    else if let value = Float(exactly: value) { self = .float(value) }
-    else { self = .double(value) }
+    self = if let value = UInt8(exactly: value) {
+      .uint8(value)
+    } else if let value = Int8(exactly: value) {
+      .int8(value)
+    } else if let value = UInt16(exactly: value) {
+      .uint16(value)
+    } else if let value = Int16(exactly: value) {
+      .int16(value)
+    } else if let value = UInt32(exactly: value) {
+      .uint32(value)
+    } else if let value = Int32(exactly: value) {
+      .int32(value)
+    } else if let value = UInt64(exactly: value) {
+      .uint64(value)
+    } else if let value = Int64(exactly: value) {
+      .int64(value)
+    } else if let value = UInt(exactly: value) {
+      .uint(value)
+    } else if let value = Int(exactly: value) {
+      .int(value)
+    } else if let value = Float(exactly: value) {
+      .float(value)
+    } else {
+      .double(value)
+    }
   }
 }
 
 extension Enigma: ExpressibleByStringLiteral {
-  public init(stringLiteral value: StringLiteralType) { self = .string(value) }
+  public init(stringLiteral value: StringLiteralType) {
+    self = .string(value)
+  }
 }
 
 extension Enigma: ExpressibleByArrayLiteral {
-  public init(arrayLiteral elements: Enigma...) { self = .array(elements) }
+  public init(arrayLiteral elements: Enigma...) {
+    self = .array(elements)
+  }
 }
 
 extension Enigma: ExpressibleByDictionaryLiteral {

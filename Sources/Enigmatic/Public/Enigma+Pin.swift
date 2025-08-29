@@ -18,11 +18,20 @@ extension Enigma {
 }
 
 extension Enigma.Pin: Equatable {
-  public static func ==(lhs: Self, rhs: Self) -> Bool {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
     switch (lhs, rhs) {
     case (.int(let lhs), .int(let rhs)): lhs == rhs
     case (.str(let lhs), .str(let rhs)): lhs == rhs
     default: false
+    }
+  }
+}
+
+extension Enigma.Pin: Hashable {
+  public func hash(into hasher: inout Hasher) {
+    switch self {
+    case .int(let value): hasher.combine(value)
+    case .str(let value): hasher.combine(value)
     }
   }
 }

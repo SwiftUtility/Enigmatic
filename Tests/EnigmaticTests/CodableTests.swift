@@ -7,7 +7,7 @@ final class CodableTests: XCTestCase {
     let encoded = try Enigma(encode: sample)
     let decoded = try encoded.decode() as T
     XCTAssertEqual(sample, decoded)
-    let erased = encoded.asAnyObject
+    let erased = encoded.anyObject
     let restored = try Enigma(cast: erased)
     XCTAssertEqual(encoded, restored)
     let enjsoned = try Helper.enjson(encoded)
@@ -16,16 +16,22 @@ final class CodableTests: XCTestCase {
     let jsoned = try dejsoned.decode() as T
     XCTAssertEqual(sample, jsoned)
     if encoded.asArray != nil || encoded.asDictionary != nil {
-      let reference = try Helper.deplist(Enigma.self, from: Helper.enplist(sample))
-      XCTAssertEqual(encoded, reference)
-      let enplisted = try Helper.enplist(encoded)
-      let deplisted = try Helper.deplist(Enigma.self, from: enplisted)
-      XCTAssertEqual(encoded, deplisted)
-      let plisted = try deplisted.decode() as T
-      XCTAssertEqual(sample, plisted)
+      XCTAssertEqual(encoded, try Helper.deplist(Enigma.self, from: Helper.enxml(sample)))
+      XCTAssertEqual(encoded, try Helper.deplist(Enigma.self, from: Helper.enbin(sample)))
+      let enxmled = try Helper.enxml(encoded)
+      let dexmled = try Helper.deplist(Enigma.self, from: enxmled)
+      XCTAssertEqual(encoded, dexmled)
+      XCTAssertEqual(sample, try dexmled.decode())
+      let enbined = try Helper.enxml(encoded)
+      let debined = try Helper.deplist(Enigma.self, from: enbined)
+      XCTAssertEqual(encoded, debined)
+      XCTAssertEqual(sample, try debined.decode())
+    } else {
+      XCTAssertThrowsError(try Helper.enxml(encoded))
+      XCTAssertThrowsError(try Helper.enbin(encoded))
     }
     if canSerialize {
-      let serialized = try Helper.serialize(encoded.asAnyObject)
+      let serialized = try Helper.serialize(encoded.anyObject)
       let deserialized = try Enigma(cast: Helper.deserialize(serialized))
       XCTAssertEqual(encoded, deserialized)
     }
@@ -139,7 +145,7 @@ final class CodableTests: XCTestCase {
     let enigma1 = try Enigma(cast: [key1: 1])
     let enigma2 = try Enigma(cast: [key2: 1])
     XCTAssertEqual(enigma1, enigma2)
-    XCTAssertEqual(enigma1.asAnyObject, enigma2.asAnyObject)
+    XCTAssertEqual(enigma1.anyObject, enigma2.anyObject)
   }
 
   func testSupers() throws {

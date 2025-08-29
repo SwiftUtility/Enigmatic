@@ -3,58 +3,107 @@ import Foundation
 import XCTest
 
 final class PerformanceTests: XCTestCase {
-  func measureAvarage(run count: Int = 1000, _ block: () throws -> Void) rethrows -> Double {
-    try block()
+  func measureAvarage<T>(run count: Int = 1000, _ block: () throws -> T, call: StaticString = #function) rethrows {
+    _ = try block()
     let start = DispatchTime.now()
-    for _ in 0..<count { try block() }
+    for _ in 0..<count {
+      try autoreleasepool {
+        _ = try block()
+      }
+    }
     let end = DispatchTime.now()
-    return Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000 / Double(count)
+    let time = Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / Double(count)
+    let formatted = time.formatted(.number.precision(.fractionLength(3)))
+    print("Performance of \(call): \(formatted) ns")
   }
 
-  func testDecodeingTime() throws {
-    let json = try Helper.enjson(Complex())
-
-    let direct = try measureAvarage {
-      _ = try Helper.dejson(Complex.self, from: json)
-    }
-
-    let decode = try measureAvarage {
-      _ = try Helper.dejson(Enigma.self, from: json)
-    }
-
-    let serialize = try measureAvarage {
-      _ = try Enigma(cast: Helper.deserialize(json))
-    }
-
-    decode.between(direct * 16, and: direct * 64)
-    serialize.between(direct * 2, and: direct * 8)
+  func testDecodeJsonDirect() throws {
+    let value = try Helper.enjson(Regular())
+    try measureAvarage { try Helper.dejson(Regular.self, from: value) }
   }
 
-  func testEncodingTime() throws {
-    let regular = Regular()
-    let enigma = try Enigma(encode: regular)
-
-    let direct = try measureAvarage {
-      _ = try Helper.enjson(regular)
-    }
-
-    let encode = try measureAvarage {
-      _ = try Helper.enjson(enigma)
-    }
-
-    let serialize = try measureAvarage {
-      _ = try Helper.serialize(enigma.asAnyObject)
-    }
-
-    encode.between(direct * 0.5, and: direct * 2)
-    serialize.between(direct * 0.5, and: direct * 2)
+  func testDecodeXmlPlistDirect() throws {
+    let value = try Helper.enxml(Regular())
+    try measureAvarage { try Helper.deplist(Regular.self, from: value) }
   }
-}
 
-extension Double {
-  func between(_ a: Double, and b: Double) {
-    XCTAssertGreaterThan(self, a)
-    XCTAssertLessThan(self, b)
+  func testDecodeBinPlistDirect() throws {
+    let value = try Helper.enbin(Regular())
+    try measureAvarage { try Helper.deplist(Regular.self, from: value) }
+  }
 
+  func testDecodeJsonEnigma() throws {
+    let value = try Helper.enjson(Regular())
+    try measureAvarage { try Helper.dejson(Enigma.self, from: value) }
+  }
+
+  func testDecodeXmlPlistEnigma() throws {
+    let value = try Helper.enxml(Regular())
+    try measureAvarage { try Helper.deplist(Enigma.self, from: value) }
+  }
+
+  func testDecodeBinPlistEnigma() throws {
+    let value = try Helper.enbin(Regular())
+    try measureAvarage { try Helper.deplist(Enigma.self, from: value) }
+  }
+
+  func testDeserializeJson() throws {
+    let value = try Helper.enjson(Regular())
+    try measureAvarage { try Helper.deserialize(value) }
+  }
+
+  func testCastEnigma() throws {
+    let value = try Helper.deserialize(Helper.enjson(Regular()))
+    try measureAvarage { try Enigma(cast: value) }
+  }
+
+  func testDecodeEnigma() throws {
+    let value = try Enigma(encode: Regular())
+    try measureAvarage { try value.decode(Regular.self) }
+  }
+
+  func testEncodeJsonDirect() throws {
+    let value = Regular()
+    try measureAvarage { try Helper.enjson(value) }
+  }
+
+  func testEncodeJsonEnigma() throws {
+    let value = try Enigma(encode: Regular())
+    try measureAvarage { try Helper.enjson(value) }
+  }
+
+  func testEncodeXmlDirect() throws {
+    let value = Regular()
+    try measureAvarage { try Helper.enxml(value) }
+  }
+
+  func testEncodeXmlEnigma() throws {
+    let value = try Enigma(encode: Regular())
+    try measureAvarage { try Helper.enxml(value) }
+  }
+
+  func testEncodeBinDirect() throws {
+    let value = Regular()
+    try measureAvarage { try Helper.enbin(value) }
+  }
+
+  func testEncodeBinEnigma() throws {
+    let value = try Enigma(encode: Regular())
+    try measureAvarage { try Helper.enbin(value) }
+  }
+
+  func testEncodeEnigma() throws {
+    let value = Regular()
+    try measureAvarage { try Enigma(encode: value) }
+  }
+
+  func testSerializeEnigma() throws {
+    let value = try Enigma(encode: Regular()).anyObject
+    try measureAvarage { try Helper.serialize(value) }
+  }
+
+  func testAnyObjectEnigma() throws {
+    let value = try Enigma(encode: Regular())
+    measureAvarage { value.anyObject }
   }
 }

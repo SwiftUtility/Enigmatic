@@ -4,9 +4,13 @@ struct KeyedDecoder<Key: CodingKey>: Sendable, KeyedDecodingContainerProtocol {
   let enigmas: [String: Enigma]
   let codingPath: [CodingKey]
 
-  var allKeys: [Key] { enigmas.keys.compactMap(Key.init(stringValue:)) }
+  var allKeys: [Key] {
+    enigmas.keys.compactMap(Key.init(stringValue:))
+  }
 
-  func contains(_ key: Key) -> Bool { enigmas[key.stringValue] != nil }
+  func contains(_ key: Key) -> Bool {
+    enigmas[key.stringValue] != nil
+  }
 
   func decodeNil(forKey key: Key) throws -> Bool {
     enigmas[key.stringValue]?.isNull ?? true
@@ -70,10 +74,15 @@ struct KeyedDecoder<Key: CodingKey>: Sendable, KeyedDecodingContainerProtocol {
 
   func decode<T: Decodable>(_: T.Type, forKey key: Key) throws -> T {
     let value = try value(key)
-    return if T.self == Data.self, let value = value.asData as? T { value }
-    else if T.self == Date.self, let value = value.asDate as? T { value }
-    else if T.self == Enigma.self, let value = value as? T { value }
-    else { try T(from: value.makeValue(path: codingPath + [key])) }
+    return if T.self == Data.self, let value = value.asData as? T {
+      value
+    } else if T.self == Date.self, let value = value.asDate as? T {
+      value
+    } else if T.self == Enigma.self, let value = value as? T {
+      value
+    } else {
+      try T(from: value.makeValue(path: codingPath + [key]))
+    }
   }
 
   func nestedContainer<NestedKey: CodingKey>(

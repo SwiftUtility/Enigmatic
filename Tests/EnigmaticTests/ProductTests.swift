@@ -2,7 +2,7 @@
 import Foundation
 import XCTest
 
-final class ProdTests: XCTestCase {
+final class ContainersTests: XCTestCase {
   func check<T: Codable & Equatable>(value: T, enigma: Enigma) throws {
     let decoded = try enigma.decode() as T
     XCTAssertEqual(value, decoded)
@@ -17,7 +17,7 @@ final class ProdTests: XCTestCase {
     try check(value: b, enigma: encoded)
     try check(value: product, enigma: encoded)
     var enigma = try Enigma(encode: a)
-    try enigma.encode(b)
+    try enigma.merge(encode: b, or: Enigma.fail)
     XCTAssertEqual(encoded, enigma)
   }
 
@@ -32,8 +32,8 @@ final class ProdTests: XCTestCase {
     try check(value: c, enigma: encoded)
     try check(value: product, enigma: encoded)
     var enigma = try Enigma(encode: a)
-    try enigma.encode(b)
-    try enigma.encode(c)
+    try enigma.merge(encode: b, or: Enigma.fail)
+    try enigma.merge(encode: c, or: Enigma.fail)
     XCTAssertEqual(encoded, enigma)
   }
 
@@ -50,9 +50,9 @@ final class ProdTests: XCTestCase {
     try check(value: d, enigma: encoded)
     try check(value: product, enigma: encoded)
     var enigma = try Enigma(encode: a)
-    try enigma.encode(b)
-    try enigma.encode(c)
-    try enigma.encode(d)
+    try enigma.merge(encode: b, or: Enigma.fail)
+    try enigma.merge(encode: c, or: Enigma.fail)
+    try enigma.merge(encode: d, or: Enigma.fail)
     XCTAssertEqual(encoded, enigma)
   }
 
@@ -62,7 +62,7 @@ final class ProdTests: XCTestCase {
     let b = B()
     let c = C()
     let d = D()
-    let product = Enigma.Prod<A, B, C, D>(values: (a, b, c, d))
+    let product = Enigma.Prod(values: (a, b, c, d))
     let encoded = try Enigma(encode: product)
     try check(value: a, enigma: encoded)
     try check(value: b, enigma: encoded)
@@ -70,9 +70,9 @@ final class ProdTests: XCTestCase {
     try check(value: d, enigma: encoded)
     try check(value: product, enigma: encoded)
     var enigma = try Enigma(encode: a)
-    try enigma.encode(b)
-    try enigma.encode(c)
-    try enigma.encode(d)
+    try enigma.merge(encode: b, or: Enigma.fail)
+    try enigma.merge(encode: c, or: Enigma.fail)
+    try enigma.merge(encode: d, or: Enigma.fail)
     XCTAssertEqual(encoded, enigma)
   }
 
@@ -158,7 +158,7 @@ final class ProdTests: XCTestCase {
     try check(value: c, enigma: encoded)
     try check(value: product, enigma: encoded)
     var enigma = try Enigma(encode: a)
-    try enigma.encode(c)
+    try enigma.merge(encode: c, or: Enigma.fail)
     XCTAssertEqual(encoded, enigma)
   }
 

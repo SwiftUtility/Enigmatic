@@ -1,9 +1,10 @@
 import Foundation
 
-class Helper {
+class Helper: @unchecked Sendable {
   private let jsonEncoder = JSONEncoder()
   private let jsonDecoder = JSONDecoder()
-  private let plistEncoder = PropertyListEncoder()
+  private let xmlEncoder = PropertyListEncoder()
+  private let binEncoder = PropertyListEncoder()
   private let plistDecoder = PropertyListDecoder()
 
   private init() {
@@ -13,7 +14,8 @@ class Helper {
     jsonDecoder.nonConformingFloatDecodingStrategy = .convertFromString(
       positiveInfinity: "Infinity", negativeInfinity: "-Infinity", nan: "NaN"
     )
-    plistEncoder.outputFormat = .xml
+    xmlEncoder.outputFormat = .xml
+    binEncoder.outputFormat = .binary
   }
 
   private static let shared = Helper()
@@ -26,8 +28,12 @@ class Helper {
     try shared.jsonDecoder.decode(T.self, from: data)
   }
 
-  static func enplist<T: Encodable>(_ value: T) throws -> Data {
-    try shared.plistEncoder.encode(value)
+  static func enxml<T: Encodable>(_ value: T) throws -> Data {
+    try shared.xmlEncoder.encode(value)
+  }
+
+  static func enbin<T: Encodable>(_ value: T) throws -> Data {
+    try shared.binEncoder.encode(value)
   }
 
   static func deplist<T: Decodable>(_: T.Type = T.self, from data: Data) throws -> T {

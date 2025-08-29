@@ -4,9 +4,13 @@ struct ValueDecoder: Sendable, Decoder, SingleValueDecodingContainer {
   let enigma: Enigma
   let codingPath: [CodingKey]
 
-  var userInfo: [CodingUserInfoKey: Any] { [:] }
+  var userInfo: [CodingUserInfoKey: Any] {
+    [:]
+  }
 
-  func singleValueContainer() throws -> SingleValueDecodingContainer { self }
+  func singleValueContainer() throws -> SingleValueDecodingContainer {
+    self
+  }
 
   func unkeyedContainer() throws -> UnkeyedDecodingContainer {
     try enigma.makeUnkeyed(path: codingPath)
@@ -16,7 +20,9 @@ struct ValueDecoder: Sendable, Decoder, SingleValueDecodingContainer {
     try enigma.makeKeyed(path: codingPath)
   }
 
-  func decodeNil() -> Bool { enigma.isNull }
+  func decodeNil() -> Bool {
+    enigma.isNull
+  }
 
   func decode(_: Bool.Type) throws -> Bool {
     try enigma.makeBool(path: codingPath)
@@ -75,9 +81,14 @@ struct ValueDecoder: Sendable, Decoder, SingleValueDecodingContainer {
   }
 
   func decode<T: Decodable>(_: T.Type) throws -> T {
-    if T.self == Data.self, let value = enigma.asData as? T { value }
-    else if T.self == Date.self, let value = enigma.asDate as? T { value }
-    else if T.self == Enigma.self, let value = enigma as? T { value }
-    else { try T(from: self) }
+    if T.self == Data.self, let value = enigma.asData as? T {
+      value
+    } else if T.self == Date.self, let value = enigma.asDate as? T {
+      value
+    } else if T.self == Enigma.self, let value = enigma as? T {
+      value
+    } else {
+      try T(from: self)
+    }
   }
 }

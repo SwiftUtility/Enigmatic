@@ -33,7 +33,7 @@ class ParentUnkeyed: Codable {
       try super.encode(to: container.superEncoder())
     }
 
-    static func ==(lhs: DefaultKeyedChild, rhs: DefaultKeyedChild) -> Bool {
+    static func == (lhs: DefaultKeyedChild, rhs: DefaultKeyedChild) -> Bool {
       lhs.string == rhs.string && lhs.ints == rhs.ints
     }
 
@@ -62,7 +62,7 @@ class ParentUnkeyed: Codable {
       try super.encode(to: container.superEncoder(forKey: Keys.parent))
     }
 
-    static func ==(lhs: CustomKeyedChild, rhs: CustomKeyedChild) -> Bool {
+    static func == (lhs: CustomKeyedChild, rhs: CustomKeyedChild) -> Bool {
       lhs.string == rhs.string && lhs.ints == rhs.ints
     }
 
@@ -92,7 +92,7 @@ class ParentUnkeyed: Codable {
       try super.encode(to: container.superEncoder())
     }
 
-    static func ==(lhs: ValueUnkeyedChild, rhs: ValueUnkeyedChild) -> Bool {
+    static func == (lhs: ValueUnkeyedChild, rhs: ValueUnkeyedChild) -> Bool {
       lhs.string == rhs.string && lhs.ints == rhs.ints
     }
   }
@@ -122,7 +122,7 @@ class ParentUnkeyed: Codable {
       try super.encode(to: container.superEncoder())
     }
 
-    static func ==(lhs: ArrayUnkeyedChild, rhs: ArrayUnkeyedChild) -> Bool {
+    static func == (lhs: ArrayUnkeyedChild, rhs: ArrayUnkeyedChild) -> Bool {
       lhs.strings == rhs.strings && lhs.ints == rhs.ints
     }
   }

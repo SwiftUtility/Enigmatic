@@ -5,9 +5,18 @@ struct UnkeyedDecoder: Sendable, UnkeyedDecodingContainer {
   let codingPath: [CodingKey]
   var currentIndex: Int = 0
 
-  var count: Int? { enigmas.count }
-  var isAtEnd: Bool { currentIndex >= enigmas.count }
-  var key: Enigma.Pin { .int(currentIndex) }
+  var count: Int? {
+    enigmas.count
+  }
+
+  var isAtEnd: Bool {
+    currentIndex >= enigmas.count
+  }
+
+  var key: Enigma.Pin {
+    .int(currentIndex)
+  }
+
   var value: Enigma {
     get throws {
       guard currentIndex < enigmas.count else {
@@ -85,10 +94,15 @@ struct UnkeyedDecoder: Sendable, UnkeyedDecodingContainer {
   mutating func decode<T: Decodable>(_: T.Type) throws -> T {
     let value = try value
     let result: T
-    if T.self == Data.self, let value = value.asData as? T { result = value }
-    else if T.self == Date.self, let value = value.asDate as? T { result = value }
-    else if T.self == Enigma.self, let value = value as? T { result = value }
-    else { result = try T(from: value.makeValue(path: codingPath + [key])) }
+    if T.self == Data.self, let value = value.asData as? T {
+      result = value
+    } else if T.self == Date.self, let value = value.asDate as? T {
+      result = value
+    } else if T.self == Enigma.self, let value = value as? T {
+      result = value
+    } else {
+      result = try T(from: value.makeValue(path: codingPath + [key]))
+    }
     currentIndex += 1
     return result
   }

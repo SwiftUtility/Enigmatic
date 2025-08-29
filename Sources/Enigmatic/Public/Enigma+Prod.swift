@@ -6,6 +6,9 @@ extension Enigma {
 }
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
+extension Enigma.Prod: Sendable where repeat each Value: Sendable {}
+
+@available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Enigma.Prod: Decodable where repeat each Value: Decodable {
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
@@ -24,7 +27,7 @@ extension Enigma.Prod: Encodable where repeat each Value: Encodable {
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Enigma.Prod: Equatable where repeat each Value: Equatable {
-  public static func ==(lhs: Self, rhs: Self) -> Bool {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
     for (lhs, rhs) in repeat (each lhs.values, each rhs.values) {
       guard lhs == rhs else { return false }
     }

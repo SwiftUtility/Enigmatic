@@ -8,48 +8,23 @@ final class OperationsTests: XCTestCase {
     XCTAssertEqual(value, decoded)
   }
 
-  func testEncode() throws {
-    var a = A()
-    var enigma = try Enigma(encode: a)
-    XCTAssertEqual(enigma[A.self], a)
-    XCTAssertNoThrow(try enigma.encode(a))
-    let b = B()
-    XCTAssertNoThrow(try enigma.encode(b))
-    XCTAssertEqual(enigma[B.self], b)
-    a.int1 += 1
-    XCTAssertThrowsError(try enigma.encode(a))
-  }
-
   func testMerge() throws {
     var a = A()
-    let b = B()
     var enigma = try Enigma(encode: a)
-    XCTAssertEqual(enigma[A.self], a)
-    XCTAssertNoThrow(try enigma.encode(a))
-    XCTAssertNoThrow(try enigma.encode(b))
-    XCTAssertEqual(enigma[B.self], b)
+    XCTAssertEqual(try enigma.decode(), a)
+    XCTAssertThrowsError(try enigma.merging(encode: a, or: Enigma.fail))
+    XCTAssertNoThrow(try enigma.merging(encode: a, or: Enigma.skipEqual))
+    XCTAssertNoThrow(try enigma.merging(encode: a, or: Enigma.replace))
     a.int1 += 1
-    XCTAssertNotEqual(enigma[A.self], a)
-    XCTAssertNoThrow(try enigma.merge(a))
-    XCTAssertEqual(enigma[A.self], a)
-  }
-
-  func testArray() throws {
-    var enigma = try Enigma(encode: [1])
-    XCTAssertEqual(enigma[[Int].self], [1])
-    XCTAssertEqual(enigma[0], .int(1))
-    XCTAssertNoThrow(try enigma.encode([1]))
-    XCTAssertEqual(enigma[[Int].self], [1])
-    XCTAssertThrowsError(try enigma.encode([2]))
-    XCTAssertEqual(enigma[[Int].self], [1])
-    XCTAssertNoThrow(try enigma.merge([2]))
-    XCTAssertEqual(enigma[[Int].self], [2])
-    XCTAssertEqual(enigma, [2])
-    XCTAssertEqual(enigma[0]?[Int.self], 2)
-    XCTAssertEqual(enigma[0], 2)
-    enigma[0]?[Int.self] = 3
-    XCTAssertEqual(enigma[[Int].self], [3])
-    XCTAssertEqual(enigma, [3])
+    XCTAssertThrowsError(try enigma.merging(encode: a, or: Enigma.fail))
+    XCTAssertThrowsError(try enigma.merging(encode: a, or: Enigma.skipEqual))
+    XCTAssertNoThrow(try enigma.merge(encode: a, or: Enigma.replace))
+    let b = B()
+    XCTAssertNoThrow(try enigma.merging(encode: b, or: Enigma.skipEqual))
+    XCTAssertNoThrow(try enigma.merging(encode: b, or: Enigma.replace))
+    XCTAssertNoThrow(try enigma.merge(encode: b, or: Enigma.fail))
+    XCTAssertEqual(try enigma.decode(), b)
+    XCTAssertEqual(try enigma.decode(), a)
   }
 
   func testPinSubscript() throws {
@@ -58,10 +33,14 @@ final class OperationsTests: XCTestCase {
     XCTAssertEqual(enigma, [0, 1])
     enigma[[.tail]] = 2
     XCTAssertEqual(enigma, [0, 1, 2])
+    enigma[[1]] = nil
+    XCTAssertEqual(enigma, [0, 2])
     enigma[["a"]] = true
     enigma[["b"]] = false
     XCTAssertEqual(enigma, ["a": true, "b": false])
     enigma[["b", 0, "c"]] = false
     XCTAssertEqual(enigma, ["a": true, "b": [["c": false]]])
+    enigma[["b", 0]] = nil
+    XCTAssertEqual(enigma, ["a": true, "b": []])
   }
 }

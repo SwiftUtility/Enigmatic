@@ -16,25 +16,18 @@ extension Enigma {
   }
 }
 
-@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
-@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
-@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
-@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
-@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
+extension Enigma.Prod2: Sendable
+where A: Sendable, B: Sendable {}
+
 extension Enigma.Prod2: Decodable
 where A: Decodable, B: Decodable {
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
     self.a = try container.decode(A.self)
     self.b = try container.decode(B.self)
-  } 
+  }
 }
 
-@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
-@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
-@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
-@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
-@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Prod2: Encodable
 where A: Encodable, B: Encodable {
   public func encode(to encoder: Encoder) throws {
@@ -43,23 +36,13 @@ where A: Encodable, B: Encodable {
   }
 }
 
-@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
-@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
-@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
-@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
-@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Prod2: Equatable
 where A: Equatable, B: Equatable {
-  public static func ==(lhs: Self, rhs: Self) -> Bool {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.a == rhs.a && lhs.b == rhs.b
   }
 }
 
-@available(macOS, deprecated: 14.0, message: "Use Enigma.Prod instead")
-@available(iOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
-@available(tvOS, deprecated: 17.0, message: "Use Enigma.Prod instead")
-@available(watchOS, deprecated: 10.0, message: "Use Enigma.Prod instead")
-@available(visionOS, deprecated, message: "Use Enigma.Prod instead")
 extension Enigma.Prod2: Hashable
 where A: Hashable, B: Hashable {
   public func hash(into hasher: inout Hasher) {

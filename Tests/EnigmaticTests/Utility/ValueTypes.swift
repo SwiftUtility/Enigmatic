@@ -5,7 +5,7 @@ struct Ninja: Codable, Equatable {
   init() {}
   init(from decoder: Decoder) throws { self = Self() }
   func encode(to encoder: Encoder) throws {}
-  static func ==(lhs: Self, rhs: Self) -> Bool { true }
+  static func == (lhs: Self, rhs: Self) -> Bool { true }
 }
 
 struct True: Codable, Equatable {
@@ -93,11 +93,11 @@ struct OptInts: Codable, Equatable {
 }
 
 struct NilInts: Codable, Equatable {
-  var int: Int? = nil
-  var int64: Int64? = nil
-  var int32: Int32? = nil
-  var int16: Int16? = nil
-  var int8: Int8? = nil
+  var int: Int?
+  var int64: Int64?
+  var int32: Int32?
+  var int16: Int16?
+  var int8: Int8?
 }
 
 struct MaxUInts: Codable, Equatable {
@@ -117,11 +117,11 @@ struct OptUInts: Codable, Equatable {
 }
 
 struct NilUInts: Codable, Equatable {
-  var int: UInt? = nil
-  var int64: UInt64? = nil
-  var int32: UInt32? = nil
-  var int16: UInt16? = nil
-  var int8: UInt8? = nil
+  var int: UInt?
+  var int64: UInt64?
+  var int32: UInt32?
+  var int16: UInt16?
+  var int8: UInt8?
 }
 
 struct Floats: Codable, Equatable {
@@ -158,28 +158,28 @@ struct OptCustom: Codable, Equatable {
 }
 
 struct NilCustom: Codable, Equatable {
-  var url: URL? = nil
-  var bool: Bool? = nil
-  var string: String? = nil
+  var url: URL?
+  var bool: Bool?
+  var string: String?
 }
 
 struct DateValues: Codable, Equatable {
   var date = Date(timeIntervalSinceReferenceDate: 1)
   var optDate: Date? = Date(timeIntervalSince1970: 1)
-  var nilDate: Date? = nil
+  var nilDate: Date?
 }
 
 struct DataValues: Codable, Equatable {
   var data = Data("Hello Data".utf8)
   var optData: Data? = Data("Hello Data".utf8)
-  var nilData: Data? = nil
+  var nilData: Data?
 }
 
 struct Arrays: Codable, Equatable {
   var array: [Int] = [1, 2]
   var empArray: [Int] = []
   var optArray: [Int]? = [1, 2]
-  var nilArray: [Int]? = nil
+  var nilArray: [Int]?
   var dictsArray: [[Int: Int?]?] = [[1: 1, 2: nil], [3: 3], [:], nil]
 }
 
@@ -187,7 +187,7 @@ struct Dicts: Codable, Equatable {
   var dict: [String: Int] = ["": 0, "one": 1, "two": 2]
   var empDict: [String: Int] = [:]
   var optDict: [String: Int]? = ["": 0, "one": 1, "two": 2]
-  var nilDict: [String: Int]? = nil
+  var nilDict: [String: Int]?
   var intDict: [Int: Int] = [1: 1, 2: 2]
   var intKeyDict: [IntKeys: Int?] = [.zero: nil, .one: 1, .two: 2]
   var strKeyDict: [StringKeys: Bool?] = [.zero: nil, .one: true, .two: false]

@@ -1,7 +1,10 @@
 import Foundation
 
 extension Enigma {
-  init(any: Any?, pins: borrowing [Pin]) throws {
+  init(
+    any: Any?,
+    pins: borrowing [Pin]
+  ) throws {
     if any == nil || any is NSNull {
       self = .null
     } else if let value = any as? Data {
@@ -62,21 +65,6 @@ extension Enigma {
         debugDescription: "Neither value nor array nor dictionary"
       ))
     }
-  }
-
-  var isFloat: Bool {
-    if case .float = self { true } else { false }
-  }
-
-  var isArray: Bool {
-    switch self {
-    case .array, .dictionary([:]), .data: true
-    default: false
-    }
-  }
-
-  var isDictionart: Bool {
-    if case .dictionary = self { true } else { false }
   }
 
   func makeKeyed<K: CodingKey>(path: borrowing [CodingKey]) throws -> KeyedDecodingContainer<K> {
@@ -149,7 +137,10 @@ extension Enigma {
     try extract(path: path, make: \.asString)
   }
 
-  func extract<T: Decodable>(path: borrowing [CodingKey], make: (borrowing Self) -> T?) throws -> T {
+  func extract<T: Decodable>(
+    path: borrowing [CodingKey],
+    make: (borrowing Self) -> T?
+  ) throws -> T {
     guard !isNull else {
       throw DecodingError.valueNotFound(T.self, DecodingError.Context(
         codingPath: copy path,
@@ -165,121 +156,95 @@ extension Enigma {
     return result
   }
 
-  func merge(_ other: Self, pins: borrowing [Pin], overwrite: Bool) throws -> Self {
-    guard case (.dictionary(var this), .dictionary(let other)) = (self, other) else {
-      return if overwrite {
-        other
-      } else if self == other {
-        self
-      } else {
-        throw EncodingError.invalidValue(other, EncodingError.Context(
-          codingPath: pins,
-          debugDescription: "attempt to change \(debugDescription)"
-        ))
+  func collectPins(
+    into pins: inout [[Pin]],
+    current: inout [Pin]
+  ) {
+    switch self {
+    case .array(let value):
+      for (index, element) in value.enumerated() {
+        current.append(.int(index))
+        defer { current.removeLast() }
+        element.collectPins(into: &pins, current: &current)
       }
-    }
-    for (key, value) in other {
-      if let result = this[key] {
-        this[key] = try result.merge(value, pins: pins + [.str(key)], overwrite: overwrite)
-      } else {
-        this[key] = value
+    case .dictionary(let value):
+      for (key, element) in value {
+        current.append(.str(key))
+        defer { current.removeLast() }
+        element.collectPins(into: &pins, current: &current)
       }
+    default: break
     }
-    return .dictionary(this)
+    pins.append(current)
   }
 
-  mutating func access(pins: borrowing [Pin], depth: Int, block: (inout Self) throws -> Void) throws {
-    guard depth < pins.count else { return try block(&self) }
+  func getValue(
+    pins: [Pin]
+  ) -> Self? {
+    var result = self
+    for pin in pins {
+      switch pin {
+      case .int(let int):
+        guard let array = result.asArray, array.indices.contains(int) else { return nil }
+        result = array[int]
+      case .str(let str):
+        guard let dictionary = result.asDictionary, let value = dictionary[str] else { return nil }
+        result = value
+      }
+    }
+    return result
+  }
+
+  func setValue(
+    _ value: Self?,
+    pins: borrowing [Pin],
+    depth: Int = 0
+  ) -> Self? {
+    guard depth < pins.count else { return value }
     switch pins[depth] {
     case .int(let index):
       guard var array = asArray else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(
-          codingPath: Array(pins[0...depth]),
-          debugDescription: "Not an array"
-        ))
+        guard let value = Self.null.setValue(value, pins: pins, depth: depth + 1) else { return self }
+        return .array([value])
       }
       guard array.indices.contains(index) else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(
-          codingPath: Array(pins[0...depth]),
-          debugDescription: "Not in bounds \(index)"
-        ))
+        guard let value = Self.null.setValue(value, pins: pins, depth: depth + 1) else { return self }
+        return if index < array.count { .array([value] + array) } else { .array(array + [value]) }
       }
-      try array[index].access(pins: pins, depth: depth + 1, block: block)
-      self = .array(array)
-    case .str(let str):
+      guard let value = array[index].setValue(value, pins: pins, depth: depth + 1) else {
+        array.remove(at: index)
+        return .array(array)
+      }
+      array[index] = value
+      return .array(array)
+    case .str(let key):
       guard var dictionary = asDictionary else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(
-          codingPath: Array(pins[0...depth]),
-          debugDescription: "Not a dictionary"
-        ))
+        guard let value = Self.null.setValue(value, pins: pins, depth: depth + 1) else { return self }
+        return .dictionary([key: value])
       }
-      guard var value = dictionary[str] else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(
-          codingPath: Array(pins[0...depth]),
-          debugDescription: "No key \(str)"
-        ))
+      guard let element = dictionary[key] else {
+        guard let value = Self.null.setValue(value, pins: pins, depth: depth + 1) else { return self }
+        dictionary[key] = value
+        return .dictionary(dictionary)
       }
-      try value.access(pins: pins, depth: depth + 1, block: block)
-      dictionary[str] = value
-      self = .dictionary(dictionary)
+      dictionary[key] = element.setValue(value, pins: pins, depth: depth + 1)
+      return .dictionary(dictionary)
     }
   }
 
-  mutating func update<T>(pins: borrowing [Pin], depth: Int, block: (inout Self) throws -> T) rethrows -> T {
-    guard depth < pins.count else { return try block(&self) }
-    switch pins[depth] {
-    case .int(let int):
-      var array = asArray ?? []
-      defer { self = .array(array) }
-      if int < 0 {
-        if int < -array.count {
-          var value = Self.null
-          defer { array = [value] + array }
-          return try value.update(pins: pins, depth: depth + 1, block: block)
-        } else {
-          return try array[array.count - int].update(pins: pins, depth: depth + 1, block: block)
-        }
-      } else {
-        if int < array.count {
-          return try array[int].update(pins: pins, depth: depth + 1, block: block)
-        } else {
-          var value = Self.null
-          defer { array.append(value) }
-          return try value.update(pins: pins, depth: depth + 1, block: block)
-        }
-      }
-    case .str(let str):
-      var dictionary = asDictionary ?? [:]
-      defer { self = .dictionary(dictionary) }
-      var value = dictionary[str] ?? Self.null
-      defer { dictionary[str] = value }
-      return try value.update(pins: pins, depth: depth + 1, block: block)
-    }
-  }
-
-  mutating func filter(
+  func merge<E: Error>(
+    _ other: Self,
     pins: inout [Pin],
-    isIncluded: (borrowing Self, borrowing [Pin]) -> Bool
-  ) {
-    let pin = pins.count
-    pins.append(.super)
-    defer { _ = pins.popLast() }
-    if var dict = asDictionary {
-      defer { self = .dictionary(dict) }
-      for (key, var value) in dict {
-        pins[pin] = .str(key)
-        value.filter(pins: &pins, isIncluded: isIncluded)
-        dict[key] = if isIncluded(value, pins) { value } else { nil }
-      }
-    } else if var array = asArray {
-      defer { self = .array(array) }
-      for index in array.indices.reversed() {
-        pins[pin] = .int(index)
-        array[index].filter(pins: &pins, isIncluded: isIncluded)
-        if !isIncluded(array[index], pins) {
-          array.remove(at: index)
-        }
-      }
+    resolve: ([Pin], Self, Self) throws(E) -> Self
+  ) throws(E) -> Self {
+    guard case (.dictionary(var this), .dictionary(let other)) = (self, other) else {
+      return try resolve(pins, self, other)
     }
+    for (key, value) in other {
+      pins.append(.str(key))
+      defer { pins.removeLast() }
+      this[key] = try this[key]?.merge(value, pins: &pins, resolve: resolve) ?? value
+    }
+    return .dictionary(this)
   }
 }

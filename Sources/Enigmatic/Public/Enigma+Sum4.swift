@@ -18,11 +18,9 @@ extension Enigma {
   }
 }
 
-@available(macOS, deprecated: 14.0, message: "Use Enigma.Sum instead")
-@available(iOS, deprecated: 17.0, message: "Use Enigma.Sum instead")
-@available(tvOS, deprecated: 17.0, message: "Use Enigma.Sum instead")
-@available(watchOS, deprecated: 10.0, message: "Use Enigma.Sum instead")
-@available(visionOS, deprecated, message: "Use Enigma.Sum instead")
+extension Enigma.Sum4: Sendable
+where A: Sendable, B: Sendable, C: Sendable, D: Sendable {}
+
 extension Enigma.Sum4: Decodable
 where A: Decodable, B: Decodable, C: Decodable, D: Decodable {
   public init(from decoder: Decoder) throws {
@@ -41,11 +39,6 @@ where A: Decodable, B: Decodable, C: Decodable, D: Decodable {
   }
 }
 
-@available(macOS, deprecated: 14.0, message: "Use Enigma.Sum instead")
-@available(iOS, deprecated: 17.0, message: "Use Enigma.Sum instead")
-@available(tvOS, deprecated: 17.0, message: "Use Enigma.Sum instead")
-@available(watchOS, deprecated: 10.0, message: "Use Enigma.Sum instead")
-@available(visionOS, deprecated, message: "Use Enigma.Sum instead")
 extension Enigma.Sum4: Encodable
 where A: Encodable, B: Encodable, C: Encodable, D: Encodable {
   public func encode(to encoder: Encoder) throws {
@@ -58,14 +51,9 @@ where A: Encodable, B: Encodable, C: Encodable, D: Encodable {
   }
 }
 
-@available(macOS, deprecated: 14.0, message: "Use Enigma.Sum instead")
-@available(iOS, deprecated: 17.0, message: "Use Enigma.Sum instead")
-@available(tvOS, deprecated: 17.0, message: "Use Enigma.Sum instead")
-@available(watchOS, deprecated: 10.0, message: "Use Enigma.Sum instead")
-@available(visionOS, deprecated, message: "Use Enigma.Sum instead")
 extension Enigma.Sum4: Equatable
 where A: Equatable, B: Equatable, C: Equatable, D: Equatable {
-  public static func ==(lhs: Self, rhs: Self) -> Bool {
+  public static func == (lhs: Self, rhs: Self) -> Bool {
     switch (lhs, rhs) {
     case (.a(let lhs), .a(let rhs)): lhs == rhs
     case (.b(let lhs), .b(let rhs)): lhs == rhs
@@ -76,11 +64,6 @@ where A: Equatable, B: Equatable, C: Equatable, D: Equatable {
   }
 }
 
-@available(macOS, deprecated: 14.0, message: "Use Enigma.Sum instead")
-@available(iOS, deprecated: 17.0, message: "Use Enigma.Sum instead")
-@available(tvOS, deprecated: 17.0, message: "Use Enigma.Sum instead")
-@available(watchOS, deprecated: 10.0, message: "Use Enigma.Sum instead")
-@available(visionOS, deprecated, message: "Use Enigma.Sum instead")
 extension Enigma.Sum4: Hashable
 where A: Hashable, B: Hashable, C: Hashable, D: Hashable {
   public func hash(into hasher: inout Hasher) {
