@@ -27,20 +27,49 @@ final class OperationsTests: XCTestCase {
     XCTAssertEqual(try enigma.decode(), a)
   }
 
-  func testPinSubscript() throws {
-    var enigma = try Enigma(encode: [1])
-    enigma[[.head]] = 0
+  func testPinsSubscript() throws {
+    var enigma = [0] as Enigma
+    enigma[1] = 1
     XCTAssertEqual(enigma, [0, 1])
-    enigma[[.tail]] = 2
+    enigma[2] = 2
+    XCTAssertEqual(enigma, [0, 1, 2])
+    enigma[1] = nil
+    XCTAssertEqual(enigma, [0, 2])
+    enigma[-1] = 1
+    XCTAssertEqual(enigma, [0, 2])
+    enigma[1] = 1
+    XCTAssertEqual(enigma, [0, 1])
+    enigma[2] = ["a": true, "b": [[:]]]
+    XCTAssertEqual(enigma, [0, 1, ["a": true, "b": [[:]]]])
+    enigma[2, "b", 1, "c"] = false
+    XCTAssertEqual(enigma, [0, 1, ["a": true, "b": [[:], ["c": false]]]])
+    enigma[2, "b", 0, "c"] = true
+    XCTAssertEqual(enigma, [0, 1, ["a": true, "b": [["c": true], ["c": false]]]])
+    XCTAssertEqual(enigma[2, "b", 0, "c"], true)
+    XCTAssertEqual(enigma[2, "b", 1], ["c": false])
+    enigma[2, "b", 2, "c", or: []].array.append(2)
+    XCTAssertEqual(enigma[2, "b", 2, "c"], [2])
+  }
+
+  func testIntPinArraySubscript() throws {
+    var enigma = [0] as Enigma
+    enigma[[1]] = 1
+    XCTAssertEqual(enigma, [0, 1])
+    enigma[[2]] = 2
     XCTAssertEqual(enigma, [0, 1, 2])
     enigma[[1]] = nil
     XCTAssertEqual(enigma, [0, 2])
-    enigma[["a"]] = true
-    enigma[["b"]] = false
-    XCTAssertEqual(enigma, ["a": true, "b": false])
-    enigma[["b", 0, "c"]] = false
-    XCTAssertEqual(enigma, ["a": true, "b": [["c": false]]])
-    enigma[["b", 0]] = nil
-    XCTAssertEqual(enigma, ["a": true, "b": []])
+    enigma[[1]] = 1
+    XCTAssertEqual(enigma, [0, 1])
+    enigma[[2]] = ["a": true, "b": [[:]]]
+    XCTAssertEqual(enigma, [0, 1, ["a": true, "b": [[:]]]])
+    enigma[[2, "b", 1, "c"]] = false
+    XCTAssertEqual(enigma, [0, 1, ["a": true, "b": [[:], ["c": false]]]])
+    enigma[[2, "b", 0, "c"]] = true
+    XCTAssertEqual(enigma, [0, 1, ["a": true, "b": [["c": true], ["c": false]]]])
+    XCTAssertEqual(enigma[[2, "b", 0, "c"]], true)
+    XCTAssertEqual(enigma[[2, "b", 1]], ["c": false])
+    enigma[[2, "b", 2, "c"], or: []].array.append(2)
+    XCTAssertEqual(enigma[2, "b", 2, "c"], [2])
   }
 }

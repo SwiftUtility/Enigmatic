@@ -12,8 +12,6 @@ extension Enigma {
     }
 
     public static let `super` = Self.str("super")
-    public static let head = Self.int(Int.min)
-    public static let tail = Self.int(Int.max)
   }
 }
 

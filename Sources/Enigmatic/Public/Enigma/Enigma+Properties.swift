@@ -1,11 +1,10 @@
 import Foundation
 
 public extension Enigma {
-  /// Convert Enigma to AnyObject
+  /// Convert Enigma to AnyObject usable with [Stencil](https://github.com/stencilproject/Stencil) render
   ///
-  /// - Note: It is usable with JSONSerialization
-  ///   and [Stencil](https://github.com/stencilproject/Stencil) render
-  var anyObject: NSObject {
+  /// - Warning: It is not guaranteed to be compatible with JSONSerialization or PropertyListSerialization
+  var rawObject: NSObject {
     switch self {
     case .null: NSNull()
     case .bool(let value): value as NSNumber
@@ -22,10 +21,48 @@ public extension Enigma {
     case .double(let value): value as NSNumber
     case .float(let value): value as NSNumber
     case .string(let value): value as NSString
-    case .array(let array): array.map(\.anyObject) as NSArray
-    case .dictionary(let dictionary): dictionary.mapValues(\.anyObject) as NSDictionary
-    case .data(let data): Array(data) as NSArray
-    case .date(let date): date.timeIntervalSinceReferenceDate as NSNumber
+    case .array(let value): value.map(\.rawObject) as NSArray
+    case .dictionary(let value): value.mapValues(\.rawObject) as NSDictionary
+    case .data(let value): value as NSData
+    case .date(let value): value as NSDate
+    }
+  }
+
+  var rawAny: Any {
+    switch self {
+    case .null: (nil as Any?) as Any
+    case .bool(let value): value
+    case .int(let value): value
+    case .int64(let value): value
+    case .int32(let value): value
+    case .int16(let value): value
+    case .int8(let value): value
+    case .uint(let value): value
+    case .uint64(let value): value
+    case .uint32(let value): value
+    case .uint16(let value): value
+    case .uint8(let value): value
+    case .double(let value): value
+    case .float(let value): value
+    case .string(let value): value
+    case .array(let value): value.map(\.rawAny)
+    case .dictionary(let value): value.mapValues(\.rawAny)
+    case .data(let value): value
+    case .date(let value): value
+    }
+  }
+
+  /// Convert Enigma to NSObject compatible with PropertyListSerialization
+  var plistObject: NSObject {
+    get throws(EncodingError) {
+      try Reducer.reduce(seed: [], self, Self.makePlistObject(reducer:))
+    }
+  }
+
+  /// Convert Enigma to NSObject compatible with JSONSerialization
+  var jsonObject: NSObject {
+    get throws(EncodingError) {
+      try Reducer.reduce(seed: [], self, Self.makeJsonObject(reducer:))
     }
   }
 
@@ -45,7 +82,6 @@ public extension Enigma {
     var result: [[Pin]] = []
     var current: [Pin] = []
     collectPins(into: &result, current: &current)
-    result.removeLast()
     return result
   }
 
@@ -54,15 +90,8 @@ public extension Enigma {
     if case .null = self { true } else { false }
   }
 
-  var isFloat: Bool {
-    if case .float = self { true } else { false }
-  }
-
   var isArray: Bool {
-    switch self {
-    case .array, .dictionary([:]), .data: true
-    default: false
-    }
+    if case .array = self { true } else { false }
   }
 
   var isDictionary: Bool {
@@ -89,7 +118,6 @@ public extension Enigma {
     case .uint8(let value): Int(exactly: value)
     case .double(let value): Int(exactly: value)
     case .float(let value): Int(exactly: value)
-    case .date(let value): Int(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -109,7 +137,6 @@ public extension Enigma {
     case .uint8(let value): Int64(exactly: value)
     case .double(let value): Int64(exactly: value)
     case .float(let value): Int64(exactly: value)
-    case .date(let value): Int64(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -129,7 +156,6 @@ public extension Enigma {
     case .uint8(let value): Int32(exactly: value)
     case .double(let value): Int32(exactly: value)
     case .float(let value): Int32(exactly: value)
-    case .date(let value): Int32(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -149,7 +175,6 @@ public extension Enigma {
     case .uint8(let value): Int16(exactly: value)
     case .double(let value): Int16(exactly: value)
     case .float(let value): Int16(exactly: value)
-    case .date(let value): Int16(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -169,7 +194,6 @@ public extension Enigma {
     case .uint8(let value): Int8(exactly: value)
     case .double(let value): Int8(exactly: value)
     case .float(let value): Int8(exactly: value)
-    case .date(let value): Int8(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -189,7 +213,6 @@ public extension Enigma {
     case .uint8(let value): UInt(exactly: value)
     case .double(let value): UInt(exactly: value)
     case .float(let value): UInt(exactly: value)
-    case .date(let value): UInt(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -209,7 +232,6 @@ public extension Enigma {
     case .uint8(let value): UInt64(exactly: value)
     case .double(let value): UInt64(exactly: value)
     case .float(let value): UInt64(exactly: value)
-    case .date(let value): UInt64(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -229,7 +251,6 @@ public extension Enigma {
     case .uint8(let value): UInt32(exactly: value)
     case .double(let value): UInt32(exactly: value)
     case .float(let value): UInt32(exactly: value)
-    case .date(let value): UInt32(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -249,7 +270,6 @@ public extension Enigma {
     case .uint8(let value): UInt16(exactly: value)
     case .double(let value): UInt16(exactly: value)
     case .float(let value): UInt16(exactly: value)
-    case .date(let value): UInt16(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -269,7 +289,6 @@ public extension Enigma {
     case .uint8(let value): value
     case .double(let value): UInt8(exactly: value)
     case .float(let value): UInt8(exactly: value)
-    case .date(let value): UInt8(exactly: value.timeIntervalSinceReferenceDate)
     default: nil
     }
   }
@@ -277,19 +296,18 @@ public extension Enigma {
   /// Get value if it is representable as Float
   var asFloat: Float? {
     switch self {
-    case .int(let value): Float(value)
-    case .int64(let value): Float(value)
-    case .int32(let value): Float(value)
-    case .int16(let value): Float(value)
-    case .int8(let value): Float(value)
-    case .uint(let value): Float(value)
-    case .uint64(let value): Float(value)
-    case .uint32(let value): Float(value)
-    case .uint16(let value): Float(value)
-    case .uint8(let value): Float(value)
+    case .int(let value): Float(exactly: value)
+    case .int64(let value): Float(exactly: value)
+    case .int32(let value): Float(exactly: value)
+    case .int16(let value): Float(exactly: value)
+    case .int8(let value): Float(exactly: value)
+    case .uint(let value): Float(exactly: value)
+    case .uint64(let value): Float(exactly: value)
+    case .uint32(let value): Float(exactly: value)
+    case .uint16(let value): Float(exactly: value)
+    case .uint8(let value): Float(exactly: value)
     case .double(let value): value.asFloat
     case .float(let value): value
-    case .date(let value): value.timeIntervalSinceReferenceDate.asFloat
     default: nil
     }
   }
@@ -297,19 +315,18 @@ public extension Enigma {
   /// Get value if it is representable as Double
   var asDouble: Double? {
     switch self {
-    case .int(let value): Double(value)
-    case .int64(let value): Double(value)
-    case .int32(let value): Double(value)
-    case .int16(let value): Double(value)
-    case .int8(let value): Double(value)
-    case .uint(let value): Double(value)
-    case .uint64(let value): Double(value)
-    case .uint32(let value): Double(value)
-    case .uint16(let value): Double(value)
-    case .uint8(let value): Double(value)
+    case .int(let value): Double(exactly: value)
+    case .int64(let value): Double(exactly: value)
+    case .int32(let value): Double(exactly: value)
+    case .int16(let value): Double(exactly: value)
+    case .int8(let value): Double(exactly: value)
+    case .uint(let value): Double(exactly: value)
+    case .uint64(let value): Double(exactly: value)
+    case .uint32(let value): Double(exactly: value)
+    case .uint16(let value): Double(exactly: value)
+    case .uint8(let value): Double(exactly: value)
     case .double(let value): value
     case .float(let value): Double(value)
-    case .date(let value): value.timeIntervalSinceReferenceDate
     default: nil
     }
   }
@@ -331,12 +348,7 @@ public extension Enigma {
 
   /// Get value if it is Array, emply Dictionary or Data
   var asArray: [Self]? {
-    switch self {
-    case .array(let value): value
-    case .dictionary([:]): []
-    case .data(let data): data.map(Enigma.uint8(_:))
-    default: nil
-    }
+    if case .array(let value) = self { value } else { nil }
   }
 
   /// Get value if it is Dictionary

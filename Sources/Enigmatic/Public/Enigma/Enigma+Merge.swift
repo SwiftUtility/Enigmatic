@@ -12,13 +12,13 @@ public extension Enigma {
   }
 
   /// Attempt to combine value with original
-  func merging<E: Error>(_ other: Self, or resolve: ([Pin], Self, Self) throws(E) -> Self) throws(E) -> Self {
+  consuming func merging<E: Error>(_ other: Self, or resolve: ([Pin], Self, Self) throws(E) -> Self) throws(E) -> Self {
     var pins: [Pin] = []
     return try merge(other, pins: &pins, resolve: resolve)
   }
 
   /// Attempt to write encoded value merging with original
-  func merging(encode value: any Encodable, or resolve: ([Pin], Self, Self) throws -> Self) throws -> Self {
+  consuming func merging(encode value: any Encodable, or resolve: ([Pin], Self, Self) throws -> Self) throws -> Self {
     var pins: [Pin] = []
     return try merge(Enigma(encode: value), pins: &pins, resolve: resolve)
   }

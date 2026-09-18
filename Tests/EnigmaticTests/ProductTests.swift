@@ -200,6 +200,7 @@ final class ContainersTests: XCTestCase {
 
   func testInterleaved() throws {
     XCTAssertThrowsError(try Enigma(encode: Enigma.Prod2(a: True(), b: False())))
-    XCTAssertNoThrow(try Enigma(encode: Enigma.Prod2(a: True(), b: True())))
+    XCTAssertThrowsError(try Enigma(encode: Enigma.Prod2(a: True(), b: True())))
+    XCTAssertNoThrow(try Enigma(encode: Enigma.Prod2(a: Box(value: A()), b: Box(value: B()))))
   }
 }

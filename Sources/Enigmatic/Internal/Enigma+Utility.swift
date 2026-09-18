@@ -1,165 +1,12 @@
 import Foundation
+import CoreFoundation
 
 extension Enigma {
-  init(
-    any: Any?,
-    pins: borrowing [Pin]
-  ) throws {
-    if any == nil || any is NSNull {
-      self = .null
-    } else if let value = any as? Data {
-      self = .data(value)
-    } else if let value = any as? Date {
-      self = .date(value)
-    } else if let value = any as? String {
-      self = .string(value)
-    } else if let value = any as? NSNumber {
-      if CFGetTypeID(value) == CFBooleanGetTypeID() {
-        self = .bool(value.boolValue)
-      } else if let value = UInt8(exactly: value) {
-        self = .uint8(value)
-      } else if let value = Int8(exactly: value) {
-        self = .int8(value)
-      } else if let value = UInt16(exactly: value) {
-        self = .uint16(value)
-      } else if let value = Int16(exactly: value) {
-        self = .int16(value)
-      } else if let value = UInt32(exactly: value) {
-        self = .uint32(value)
-      } else if let value = Int32(exactly: value) {
-        self = .int32(value)
-      } else if let value = UInt64(exactly: value) {
-        self = .uint64(value)
-      } else if let value = Int64(exactly: value) {
-        self = .int64(value)
-      } else if let value = UInt(exactly: value) {
-        self = .uint(value)
-      } else if let value = Int(exactly: value) {
-        self = .int(value)
-      } else if let value = Float(exactly: value) {
-        self = .float(value)
-      } else if let value = Double(exactly: value) {
-        self = .double(value)
-      } else {
-        throw DecodingError.dataCorrupted(DecodingError.Context(
-          codingPath: pins,
-          debugDescription: "NSNumber type not determined: \(value.stringValue)"
-        ))
-      }
-    } else if let value = any as? [AnyHashable: Any?] {
-      var dictionary: [String: Enigma] = [:]
-      for (key, value) in value {
-        let key = key.description
-        try dictionary[key] = Self(any: value, pins: pins + [Pin.str(key)])
-      }
-      self = .dictionary(dictionary)
-    } else if let value = any as? [Any?] {
-      var array: [Self] = []
-      for (index, value) in value.enumerated() {
-        try array.append(Self(any: value, pins: pins + [Pin.int(index)]))
-      }
-      self = .array(array)
-    } else {
-      throw DecodingError.dataCorrupted(DecodingError.Context(
-        codingPath: pins,
-        debugDescription: "Neither value nor array nor dictionary"
-      ))
-    }
-  }
-
-  func makeKeyed<K: CodingKey>(path: borrowing [CodingKey]) throws -> KeyedDecodingContainer<K> {
-    let enigmas = try extract(path: path, make: \.asDictionary)
-    return KeyedDecodingContainer(KeyedDecoder<K>(enigmas: enigmas, codingPath: copy path))
-  }
-
-  func makeUnkeyed(path: borrowing [CodingKey]) throws -> UnkeyedDecoder {
-    let enigmas = try extract(path: path, make: \.asArray)
-    return UnkeyedDecoder(enigmas: enigmas, codingPath: copy path)
-  }
-
-  func makeValue(path: borrowing [CodingKey]) throws -> ValueDecoder {
-    ValueDecoder(enigma: self, codingPath: copy path)
-  }
-
-  func makeBool(path: borrowing [CodingKey]) throws -> Bool {
-    try extract(path: path, make: \.asBool)
-  }
-
-  func makeInt(path: borrowing [CodingKey]) throws -> Int {
-    try extract(path: path, make: \.asInt)
-  }
-
-  func makeInt8(path: borrowing [CodingKey]) throws -> Int8 {
-    try extract(path: path, make: \.asInt8)
-  }
-
-  func makeInt16(path: borrowing [CodingKey]) throws -> Int16 {
-    try extract(path: path, make: \.asInt16)
-  }
-
-  func makeInt32(path: borrowing [CodingKey]) throws -> Int32 {
-    try extract(path: path, make: \.asInt32)
-  }
-
-  func makeInt64(path: borrowing [CodingKey]) throws -> Int64 {
-    try extract(path: path, make: \.asInt64)
-  }
-
-  func makeUInt(path: borrowing [CodingKey]) throws -> UInt {
-    try extract(path: path, make: \.asUInt)
-  }
-
-  func makeUInt8(path: borrowing [CodingKey]) throws -> UInt8 {
-    try extract(path: path, make: \.asUInt8)
-  }
-
-  func makeUInt16(path: borrowing [CodingKey]) throws -> UInt16 {
-    try extract(path: path, make: \.asUInt16)
-  }
-
-  func makeUInt32(path: borrowing [CodingKey]) throws -> UInt32 {
-    try extract(path: path, make: \.asUInt32)
-  }
-
-  func makeUInt64(path: borrowing [CodingKey]) throws -> UInt64 {
-    try extract(path: path, make: \.asUInt64)
-  }
-
-  func makeFloat(path: borrowing [CodingKey]) throws -> Float {
-    try extract(path: path, make: \.asFloat)
-  }
-
-  func makeDouble(path: borrowing [CodingKey]) throws -> Double {
-    try extract(path: path, make: \.asDouble)
-  }
-
-  func makeString(path: borrowing [CodingKey]) throws -> String {
-    try extract(path: path, make: \.asString)
-  }
-
-  func extract<T: Decodable>(
-    path: borrowing [CodingKey],
-    make: (borrowing Self) -> T?
-  ) throws -> T {
-    guard !isNull else {
-      throw DecodingError.valueNotFound(T.self, DecodingError.Context(
-        codingPath: copy path,
-        debugDescription: "null insted of \(T.self)"
-      ))
-    }
-    guard let result = make(self) else {
-      throw DecodingError.typeMismatch(T.self, DecodingError.Context(
-        codingPath: copy path,
-        debugDescription: "Not \(T.self): \(debugDescription)"
-      ))
-    }
-    return result
-  }
-
   func collectPins(
     into pins: inout [[Pin]],
     current: inout [Pin]
   ) {
+    if !pins.isEmpty { pins.append(current) }
     switch self {
     case .array(let value):
       for (index, element) in value.enumerated() {
@@ -175,7 +22,6 @@ extension Enigma {
       }
     default: break
     }
-    pins.append(current)
   }
 
   func getValue(
@@ -195,40 +41,56 @@ extension Enigma {
     return result
   }
 
-  func setValue(
-    _ value: Self?,
-    pins: borrowing [Pin],
-    depth: Int = 0
-  ) -> Self? {
-    guard depth < pins.count else { return value }
-    switch pins[depth] {
-    case .int(let index):
-      guard var array = asArray else {
-        guard let value = Self.null.setValue(value, pins: pins, depth: depth + 1) else { return self }
-        return .array([value])
+  mutating func delValue(pins: inout ArraySlice<Pin>) {
+    guard let pin = pins.first else { return }
+    pins = pins.dropFirst()
+    switch pin {
+    case .int(let int):
+      guard case .array(var array) = self, array.indices.contains(int) else { return }
+      self = .null
+      defer { self = .array(array) }
+      if pins.isEmpty {
+        array.remove(at: int)
+      } else {
+        array[int].delValue(pins: &pins)
       }
-      guard array.indices.contains(index) else {
-        guard let value = Self.null.setValue(value, pins: pins, depth: depth + 1) else { return self }
-        return if index < array.count { .array([value] + array) } else { .array(array + [value]) }
-      }
-      guard let value = array[index].setValue(value, pins: pins, depth: depth + 1) else {
-        array.remove(at: index)
-        return .array(array)
-      }
-      array[index] = value
-      return .array(array)
     case .str(let key):
-      guard var dictionary = asDictionary else {
-        guard let value = Self.null.setValue(value, pins: pins, depth: depth + 1) else { return self }
-        return .dictionary([key: value])
+      guard case .dictionary(var dictionary) = self else { return }
+      self = .null
+      defer { self = .dictionary(dictionary) }
+      if pins.isEmpty {
+        dictionary.removeValue(forKey: key)
+      } else {
+        dictionary[key]?.delValue(pins: &pins)
       }
-      guard let element = dictionary[key] else {
-        guard let value = Self.null.setValue(value, pins: pins, depth: depth + 1) else { return self }
-        dictionary[key] = value
-        return .dictionary(dictionary)
-      }
-      dictionary[key] = element.setValue(value, pins: pins, depth: depth + 1)
-      return .dictionary(dictionary)
+    }
+  }
+
+  mutating func setValue(
+    _ value: Self,
+    pins: inout ArraySlice<Pin>,
+  ) {
+    guard let pin = pins.first else { return self = value }
+    pins = pins.dropFirst()
+    lazy var enigma = switch pins.first {
+    case .int?: Enigma.array([])
+    case .str?: Enigma.dictionary([:])
+    case .none: Enigma.null
+    }
+    switch pin {
+    case .int(let index):
+      guard case .array(var array) = self else { return }
+      self = .null
+      defer { self = .array(array) }
+      guard !array.indices.contains(index) else { return array[index].setValue(value, pins: &pins) }
+      guard index == array.count else { return }
+      enigma.setValue(value, pins: &pins)
+      array.append(enigma)
+    case .str(let key):
+      guard case .dictionary(var dictionary) = self else { return }
+      self = .null
+      defer { self = .dictionary(dictionary) }
+      dictionary[key, default: enigma].setValue(value, pins: &pins)
     }
   }
 
@@ -247,4 +109,209 @@ extension Enigma {
     }
     return .dictionary(this)
   }
+
+  static func make(anyObject reducer: inout Reducer<[Pin], Any?>) throws(DecodingError) -> Self {
+    if reducer.value == nil || reducer.value is NSNull {
+      return .null
+    } else if let value = reducer.value as? String {
+      return .string(value)
+    } else if let value = reducer.value as? NSNumber {
+      if CFGetTypeID(value) == CFBooleanGetTypeID() {
+        return .bool(value.boolValue)
+      } else {
+        switch value.objCType.pointee {
+        case ObjCType.signedLong: return .int(value.intValue)
+        case ObjCType.unsignedLong: return .uint(value.uintValue)
+        case ObjCType.double: return .double(value.doubleValue)
+        case ObjCType.float: return .float(value.floatValue)
+        case ObjCType.bool: return .bool(value.boolValue)
+        case ObjCType.signedChar: return .int8(value.int8Value)
+        case ObjCType.unsignedChar: return .uint8(value.uint8Value)
+        case ObjCType.signedShort: return .int16(value.int16Value)
+        case ObjCType.unsignedShort: return .uint16(value.uint16Value)
+        case ObjCType.signedInt: return .int32(value.int32Value)
+        case ObjCType.unsignedInt: return .uint32(value.uint32Value)
+        case ObjCType.signedLongLong: return .int64(value.int64Value)
+        case ObjCType.unsignedLongLong: return .uint64(value.uint64Value)
+        default:
+          throw DecodingError.dataCorrupted(DecodingError.Context(
+            codingPath: reducer.store,
+            debugDescription: "NSNumber type not determined objCType=\(value.objCType.pointee)"
+          ))
+        }
+      }
+    } else if let value = reducer.value as? [AnyHashable: Any?] {
+      var dictionary: [String: Enigma] = [:]
+      dictionary.reserveCapacity(value.count)
+      for (key, value) in value {
+        let key = key.description
+        guard !dictionary.keys.contains(key) else {
+          throw DecodingError.dataCorrupted(DecodingError.Context(
+            codingPath: reducer.store,
+            debugDescription: "Collision during dictionary conversion for key \(key)"
+          ))
+        }
+        reducer.store.append(.str(key))
+        defer { reducer.store.removeLast() }
+        try dictionary[key] = reducer.reduce(next: value, make(anyObject:))
+      }
+      return .dictionary(dictionary)
+    } else if let value = reducer.value as? [Any?] {
+      var array: [Self] = []
+      array.reserveCapacity(value.count)
+      for (index, value) in value.enumerated() {
+        reducer.store.append(.int(index))
+        defer { reducer.store.removeLast() }
+        try array.append(reducer.reduce(next: value, make(anyObject:)))
+      }
+      return .array(array)
+    } else if let value = reducer.value as? Data {
+      return .data(value)
+    } else if let value = reducer.value as? Date {
+      return .date(value)
+    } else {
+      throw DecodingError.dataCorrupted(DecodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "Neither value nor array nor dictionary"
+      ))
+    }
+  }
+
+  static func makePlistObject(reducer: inout Reducer<[Pin], Self>) throws(EncodingError) -> NSObject {
+    switch reducer.value {
+    case .null:
+      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "Can not convert null to PropertyListSerialization compatible NSObject"
+      ))
+    case .bool(let value):
+      return value as NSNumber
+    case .int(let value):
+      return value as NSNumber
+    case .int64(let value):
+      return value as NSNumber
+    case .int32(let value):
+      return value as NSNumber
+    case .int16(let value):
+      return value as NSNumber
+    case .int8(let value):
+      return value as NSNumber
+    case .uint(let value):
+      return value as NSNumber
+    case .uint64(let value):
+      return value as NSNumber
+    case .uint32(let value):
+      return value as NSNumber
+    case .uint16(let value):
+      return value as NSNumber
+    case .uint8(let value):
+      return value as NSNumber
+    case .double(let value):
+      return value as NSNumber
+    case .float(let value):
+      return value as NSNumber
+    case .string(let value):
+      return value as NSString
+    case .array(let value):
+      var array: [NSObject] = []
+      array.reserveCapacity(value.count)
+      for (index, value) in value.enumerated() {
+        reducer.store.append(.int(index))
+        defer { reducer.store.removeLast() }
+        try array.append(reducer.reduce(next: value, Self.makePlistObject(reducer:)))
+      }
+      return NSArray(array: array)
+    case .dictionary(let value):
+      var dictionary: [AnyHashable: NSObject] = [:]
+      dictionary.reserveCapacity(value.count)
+      for (key, value) in value {
+        reducer.store.append(.str(key))
+        defer { reducer.store.removeLast() }
+        try dictionary[key] = reducer.reduce(next: value, Self.makePlistObject(reducer:))
+      }
+      return NSDictionary(dictionary: dictionary)
+    case .data(let value):
+      return value as NSData
+    case .date(let value):
+      return value as NSDate
+    }
+  }
+
+  static func makeJsonObject(reducer: inout Reducer<[Pin], Self>) throws(EncodingError) -> NSObject {
+    switch reducer.value {
+    case .null: return NSNull()
+    case .bool(let value): return value as NSNumber
+    case .int(let value): return value as NSNumber
+    case .int64(let value): return value as NSNumber
+    case .int32(let value): return value as NSNumber
+    case .int16(let value): return value as NSNumber
+    case .int8(let value): return value as NSNumber
+    case .uint(let value): return value as NSNumber
+    case .uint64(let value): return value as NSNumber
+    case .uint32(let value): return value as NSNumber
+    case .uint16(let value): return value as NSNumber
+    case .uint8(let value): return value as NSNumber
+    case .double(let value):
+      return try chechJson(value: value, object: value as NSNumber, pins: reducer.store)
+    case .float(let value):
+      return try chechJson(value: value, object: value as NSNumber, pins: reducer.store)
+    case .string(let value): return value as NSString
+    case .array(let value):
+      var array: [NSObject] = []
+      array.reserveCapacity(value.count)
+      for (index, value) in value.enumerated() {
+        reducer.store.append(.int(index))
+        defer { reducer.store.removeLast() }
+        try array.append(reducer.reduce(next: value, Self.makeJsonObject(reducer:)))
+      }
+      return NSArray(array: array)
+    case .dictionary(let value):
+      var dictionary: [AnyHashable: NSObject] = [:]
+      dictionary.reserveCapacity(value.count)
+      for (key, value) in value {
+        reducer.store.append(.str(key))
+        defer { reducer.store.removeLast() }
+        try dictionary[key] = reducer.reduce(next: value, Self.makeJsonObject(reducer:))
+      }
+      return NSDictionary(dictionary: dictionary)
+    case .data(let value):
+      throw EncodingError.invalidValue(value, EncodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "Can not convert Data to JSONSerialization compatible NSObject"
+      ))
+    case .date(let value):
+      throw EncodingError.invalidValue(value, EncodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "Can not convert Date to JSONSerialization compatible NSObject"
+      ))
+    }
+  }
+
+  static func chechJson(
+    value: some BinaryFloatingPoint,
+    object: NSObject,
+    pins: borrowing [Pin]
+  ) throws(EncodingError) -> NSObject {
+    guard !value.isFinite else { return object }
+    throw EncodingError.invalidValue(value, EncodingError.Context(
+      codingPath: pins,
+      debugDescription: "Can not convert infinite or nan to JSONSerialization compatible NSObject"
+    ))
+  }
+}
+
+private enum ObjCType {
+  static let signedChar = CChar(UnicodeScalar("c").value)
+  static let signedShort = CChar(UnicodeScalar("s").value)
+  static let signedInt = CChar(UnicodeScalar("i").value)
+  static let signedLong = CChar(UnicodeScalar("l").value)
+  static let signedLongLong = CChar(UnicodeScalar("q").value)
+  static let unsignedChar = CChar(UnicodeScalar("C").value)
+  static let unsignedShort = CChar(UnicodeScalar("S").value)
+  static let unsignedInt = CChar(UnicodeScalar("I").value)
+  static let unsignedLong = CChar(UnicodeScalar("L").value)
+  static let unsignedLongLong = CChar(UnicodeScalar("Q").value)
+  static let float = CChar(UnicodeScalar("f").value)
+  static let double = CChar(UnicodeScalar("d").value)
+  static let bool = CChar(UnicodeScalar("B").value)
 }

@@ -17,11 +17,6 @@ final class EquatableTests: XCTestCase {
     XCTAssertNotEqual(sample, decoded)
   }
 
-  func testEmpty() throws {
-    checkEq(.array([]), .dictionary([:]))
-    checkEq(.dictionary([:]), .array([]))
-  }
-
   func testZero() throws {
     checkEq(.int(0), .int8(0))
     checkEq(.int(0), .int16(0))
@@ -48,7 +43,7 @@ final class EquatableTests: XCTestCase {
     checkEq(.int(1), .uint64(1))
     checkEq(.int(1), .double(1))
     checkEq(.int(1), .float(1))
-    checkEq(.int(1), .float(1.00000001))
+    checkEq(.int(1), .float(1))
   }
 
   func testBig() throws {
@@ -64,10 +59,9 @@ final class EquatableTests: XCTestCase {
     XCTAssertEqual(Float(0.1 as Double), 0.1 as Float)
     XCTAssertNotEqual(Double(0.1 as Float), 0.1 as Double)
     checkEq(.float(0.1), .double(0.1))
-    checkEq(.float(.greatestFiniteMagnitude), .double(Double(Float.greatestFiniteMagnitude)))
     XCTAssertNotEqual(Double.nan, Double.nan)
-    XCTAssertNotEqual(Enigma.double(Double.nan), Enigma.double(Double.nan))
+    XCTAssertEqual(Enigma.double(Double.nan), Enigma.double(Double.nan))
     XCTAssertNotEqual(Float.nan, Float.nan)
-    XCTAssertNotEqual(Enigma.float(Float.nan), Enigma.float(Float.nan))
+    XCTAssertEqual(Enigma.float(Float.nan), Enigma.float(Float.nan))
   }
 }
