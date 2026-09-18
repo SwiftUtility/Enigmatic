@@ -1,3 +1,4 @@
+import CoreFoundation
 @testable import Enigmatic
 import Foundation
 import XCTest
@@ -107,3 +108,10 @@ final class PerformanceTests: XCTestCase {
     measureAvarage { value.anyObject }
   }
 }
+
+#if os(Linux)
+@inline(__always)
+func autoreleasepool<T>(_ body: () throws -> T) rethrows -> T {
+  return try body()
+}
+#endif
