@@ -2,9 +2,15 @@ import Foundation
 
 extension EnigmaDecoder {
   struct Single: Decoder, SingleValueDecodingContainer {
-    let state: State
+    let state: EnigmaDecoder
     let value: Enigma
     let pathId: Int
+
+    init(state: EnigmaDecoder, value: Enigma, pathId: Int) {
+      self.state = state
+      self.value = value
+      self.pathId = pathId
+    }
 
     var codingPath: [CodingKey] {
       state.path(pathId: pathId)
@@ -122,6 +128,18 @@ extension EnigmaDecoder {
       } else {
         try T(from: self)
       }
+    }
+
+    @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+    func decode(_ type: Int128.Type) throws -> Int128 {
+      guard let result = value.asInt128 else { throw typeMismatch(type) }
+      return result
+    }
+
+    @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+    func decode(_ type: UInt128.Type) throws -> UInt128 {
+      guard let result = value.asUInt128 else { throw typeMismatch(type) }
+      return result
     }
 
     private func typeMismatch<T>(_ type: T.Type) -> DecodingError {

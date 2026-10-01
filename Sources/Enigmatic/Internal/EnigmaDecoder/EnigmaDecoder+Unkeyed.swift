@@ -2,7 +2,7 @@ import Foundation
 
 extension EnigmaDecoder {
   struct Unkeyed: UnkeyedDecodingContainer {
-    let state: State
+    let state: EnigmaDecoder
     let values: [Enigma]
     let pathId: Int
 
@@ -121,6 +121,22 @@ extension EnigmaDecoder {
     mutating func decode(_ type: UInt64.Type) throws -> UInt64 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
       guard let value = values[currentIndex].asUInt64 else { throw typeMismatch(type) }
+      currentIndex += 1
+      return value
+    }
+
+    @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+    mutating func decode(_ type: Int128.Type) throws -> Int128 {
+      guard currentIndex < values.count else { throw valueNotFound(type) }
+      guard let value = values[currentIndex].asInt128 else { throw typeMismatch(type) }
+      currentIndex += 1
+      return value
+    }
+
+    @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+    mutating func decode(_ type: UInt128.Type) throws -> UInt128 {
+      guard currentIndex < values.count else { throw valueNotFound(type) }
+      guard let value = values[currentIndex].asUInt128 else { throw typeMismatch(type) }
       currentIndex += 1
       return value
     }

@@ -57,7 +57,7 @@ final class CodableTests: XCTestCase {
   }
 
   func testComplex() throws {
-    Checker(nonConformingFloats: true, hasData: true, hasDates: true).check(value: Complex())
+    Checker(nonConformingFloats: true, hasData: true, hasDates: true, hasDeepNulls: true).check(value: Complex())
   }
 
   func testInfinitFloats() throws {
@@ -65,11 +65,11 @@ final class CodableTests: XCTestCase {
   }
 
   func testDataValues() throws {
-    Checker(hasData: true).check(value: DataValues())
+    Checker(hasData: true, hasDeepNulls: true).check(value: DataValues())
   }
 
   func testDateValues() throws {
-    Checker(hasDates: true).check(value: DateValues())
+    Checker(hasDates: true, hasDeepNulls: true).check(value: DateValues())
   }
 
   func testParseNil() throws {
@@ -107,14 +107,15 @@ final class CodableTests: XCTestCase {
   func testAnyHashable() throws {
     let key1 = "café"
     let key2 = "cafe\u{301}"
-    #if os(anyAppleOS)
+    #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     XCTAssertNotEqual(key1 as NSString, key2 as NSString)
     #endif
     XCTAssertEqual(key1, key2)
     let enigma1 = try Enigma(cast: [key1: 1])
     let enigma2 = try Enigma(cast: [key2: 1])
     XCTAssertEqual(enigma1, enigma2)
-    XCTAssertEqual(enigma1.rawObject, enigma2.rawObject)
+    try XCTAssertNotEqual(enigma1.jsonObject, enigma2.jsonObject)
+    try XCTAssertNotEqual(enigma1.plistObject, enigma2.plistObject)
   }
 
   func testSupers() throws {
@@ -174,19 +175,20 @@ final class CodableTests: XCTestCase {
   @available(anyAppleOS 26, *)
   func testUnixTime() throws {
     struct CodecDates: Codable, Equatable {
-      @Codec<Enigma.UnixDate<0>>
+      @Codec.Box<Codec.UnixDate<0>>
       var codecDateSeconds = Date(timeIntervalSince1970: 1789485877)
-      @Codec<Enigma.UnixDate<3>>
+      @Codec.Box<Codec.UnixDate<3>>
       var codecDateMilliseconds = Date(timeIntervalSince1970: 1789485877)
     }
     let codecDates = CodecDates()
+    let secs = codecDates.codecDateSeconds.timeIntervalSince1970
+    let mils = codecDates.codecDateSeconds.timeIntervalSince1970 * pow(10.0, Double(3 as Int))
     XCTAssertEqual(
-      try Enigma.UnixDate<0>.encode(value: codecDates.codecDateSeconds),
-      codecDates.codecDateSeconds.timeIntervalSince1970
-    )
-    XCTAssertEqual(
-      try Enigma.UnixDate<3>.encode(value: codecDates.codecDateSeconds),
-      codecDates.codecDateSeconds.timeIntervalSince1970 * pow(10.0, Double(3 as Int))
+      try Enigma(encode: codecDates),
+      [
+        "codecDateSeconds": .double(secs),
+        "codecDateMilliseconds": .double(mils)
+      ]
     )
     Checker().check(value: codecDates)
   }

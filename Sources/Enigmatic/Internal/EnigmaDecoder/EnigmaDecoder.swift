@@ -1,19 +1,47 @@
-enum EnigmaDecoder {
-  enum Storage {
-    case unset
-    case value(Enigma)
-    case keyedId(Int)
-    case unkeyedId(Int)
+import Foundation
+
+final class EnigmaDecoder {
+  let userInfo: [CodingUserInfoKey: Any]
+  private var path: [Link?] = [nil]
+
+  private init(userInfo: [CodingUserInfoKey : Any]) {
+    self.userInfo = userInfo
   }
 
-  struct Node {
-    var storage: Storage = .unset
-    let link: Link?
+  func path(pathId: Int) -> [any CodingKey] {
+    var result: [any CodingKey] = []
+    var link = path[pathId]
+    while let current = link {
+      result.append(current.pin)
+      link = path[current.prev]
+    }
+    result.reverse()
+    return result
+  }
+
+  func path(pathId: Int, key: any CodingKey) -> [any CodingKey] {
+    var result: [any CodingKey] = [key]
+    var link = path[pathId]
+    while let current = link {
+      result.append(current.pin)
+      link = path[current.prev]
+    }
+    result.reverse()
+    return result
+  }
+
+  func nested(pathId: Int, key: any CodingKey) -> Int {
+    defer { path.append(Link(prev: pathId, pin: Enigma.Pin(key))) }
+    return path.count
+  }
+
+  static func decoder(enigma: Enigma, userInfo: [CodingUserInfoKey : Any]) -> Single {
+    Single(state: EnigmaDecoder(userInfo: userInfo), value: enigma, pathId: 0)
   }
 
   struct Link {
     let prev: Int
-    let key: any CodingKey
+    let pin: Enigma.Pin
   }
 
   struct Ref {

@@ -21,6 +21,8 @@ extension Enigma: CustomDebugStringConvertible {
     case .data(let value): String(reflecting: value)
     case .array(let value): String(reflecting: value)
     case .dictionary(let value): String(reflecting: value)
+    case .int128(let value): String(reflecting: value)
+    case .uint128(let value): String(reflecting: value)
     }
   }
 }

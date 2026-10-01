@@ -2,7 +2,7 @@ import Foundation
 
 extension EnigmaDecoder {
   struct Keyed<Key: CodingKey>: KeyedDecodingContainerProtocol {
-    let state: State
+    let state: EnigmaDecoder
     let values: [String: Enigma]
     let pathId: Int
 
@@ -110,6 +110,20 @@ extension EnigmaDecoder {
     func decode(_ type: UInt64.Type, forKey key: Key) throws -> UInt64 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
       guard let value = value.asUInt64 else { throw typeMismatch(key, type: type) }
+      return value
+    }
+
+    @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+    func decode(_ type: Int128.Type, forKey key: Key) throws -> Int128 {
+      guard let value = values[key.stringValue] else { throw keyNotFound(key) }
+      guard let value = value.asInt128 else { throw typeMismatch(key, type: type) }
+      return value
+    }
+
+    @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+    func decode(_ type: UInt128.Type, forKey key: Key) throws -> UInt128 {
+      guard let value = values[key.stringValue] else { throw keyNotFound(key) }
+      guard let value = value.asUInt128 else { throw typeMismatch(key, type: type) }
       return value
     }
 

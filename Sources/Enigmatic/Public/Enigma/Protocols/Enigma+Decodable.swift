@@ -2,88 +2,22 @@ import Foundation
 
 extension Enigma: Decodable {
   public init(from decoder: Decoder) throws {
-    if let container = try? decoder.container(keyedBy: Pin.self) {
-      self = .dictionary(try Self.decodeDictionary(from: container))
+    if var container = try? decoder.container(keyedBy: Pin.self) {
+      self = try Self.decode(keyed: &container)
     } else if var container = try? decoder.unkeyedContainer() {
-      self = .array(try Self.decodeArray(from: &container))
+      self = try Self.decode(unkeyed: &container)
+    } else if let container = try? decoder.singleValueContainer() {
+      self = try Self.decode(single: container)
     } else {
-      let container = try decoder.singleValueContainer()
-      if container.decodeNil() {
-        self = .null
-      } else if let value = try? container.decode(Bool.self) {
-        self = .bool(value)
-      } else if let value = try? container.decode(UInt.self) {
-        self = Self.downscale(value)
-      } else if let value = try? container.decode(Int.self) {
-        self = Self.downscale(value)
-      } else if let value = try? container.decode(Double.self) {
-        self = Self.downscale(value)
-      } else if let value = try? container.decode(String.self) {
-        self = .string(value)
-      } else if let value = try? container.decode(Data.self) {
-        self = .data(value)
-      } else if let value = try? container.decode(Date.self) {
-        self = .date(value)
-      } else if let value = try? container.decode(Float.self) {
-        self = .float(value)
-      } else if let value = try? container.decode(UInt8.self) {
-        self = .uint8(value)
-      } else if let value = try? container.decode(Int8.self) {
-        self = .int8(value)
-      } else if let value = try? container.decode(UInt16.self) {
-        self = .uint16(value)
-      } else if let value = try? container.decode(Int16.self) {
-        self = .int16(value)
-      } else if let value = try? container.decode(UInt32.self) {
-        self = .uint32(value)
-      } else if let value = try? container.decode(Int32.self) {
-        self = .int32(value)
-      } else if let value = try? container.decode(UInt64.self) {
-        self = .uint64(value)
-      } else if let value = try? container.decode(Int64.self) {
-        self = .int64(value)
-      } else {
-        throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
-          codingPath: container.codingPath,
-          debugDescription: "Neither value nor array nor dictionary"
-        ))
-      }
+      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+        codingPath: decoder.codingPath,
+        debugDescription: "Neither value nor array nor dictionary"
+      ))
     }
   }
 }
 
 private extension Enigma {
-  static func decodeDictionary(
-    from container: KeyedDecodingContainer<Pin>
-  ) throws -> [String: Self] {
-    let keys = container.allKeys
-
-    var result: [String: Self] = [:]
-    result.reserveCapacity(keys.count)
-
-    for key in keys {
-      result[key.stringValue] = try container.decode(Self.self, forKey: key)
-    }
-
-    return result
-  }
-
-  static func decodeArray(
-    from container: inout UnkeyedDecodingContainer
-  ) throws -> [Self] {
-    var result: [Self] = []
-
-    if let count = container.count {
-      result.reserveCapacity(count)
-    }
-
-    while !container.isAtEnd {
-      result.append(try container.decode(Self.self))
-    }
-
-    return result
-  }
-
   @inline(__always)
   static func downscale(_ value: UInt) -> Self {
     if let value = UInt8(exactly: value) {
@@ -117,5 +51,222 @@ private extension Enigma {
     } else {
       .double(value)
     }
+  }
+
+  @inline(__always)
+  static func decode(
+    single container: borrowing some SingleValueDecodingContainer
+  ) throws -> Self {
+    if container.decodeNil() {
+      return .null
+    } else if let value = try? container.decode(Bool.self) {
+      return .bool(value)
+    } else if let value = try? container.decode(UInt.self) {
+      return Self.downscale(value)
+    } else if let value = try? container.decode(Int.self) {
+      return Self.downscale(value)
+    } else if let value = try? container.decode(Double.self) {
+      return Self.downscale(value)
+    } else if let value = try? container.decode(String.self) {
+      return .string(value)
+    } else if let value = try? container.decode(Data.self) {
+      return .data(value)
+    } else if let value = try? container.decode(Date.self) {
+      return .date(value)
+    } else if let value = try? container.decode(Float.self) {
+      return .float(value)
+    } else if let value = try? container.decode(UInt8.self) {
+      return .uint8(value)
+    } else if let value = try? container.decode(Int8.self) {
+      return .int8(value)
+    } else if let value = try? container.decode(UInt16.self) {
+      return .uint16(value)
+    } else if let value = try? container.decode(Int16.self) {
+      return .int16(value)
+    } else if let value = try? container.decode(UInt32.self) {
+      return .uint32(value)
+    } else if let value = try? container.decode(Int32.self) {
+      return .int32(value)
+    } else if let value = try? container.decode(UInt64.self) {
+      return .uint64(value)
+    } else if let value = try? container.decode(Int64.self) {
+      return .int64(value)
+    } else if
+      #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
+      let value = try? container.decode(Int128.self)
+    {
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+      return .int128(Int128Value(value))
+#else
+      return .int128(value)
+#endif
+    } else if
+      #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
+      let value = try? container.decode(UInt128.self)
+    {
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+      return .uint128(UInt128Value(value))
+#else
+      return .uint128(value)
+#endif
+    } else {
+      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+        codingPath: container.codingPath,
+        debugDescription: "Neither value nor array nor dictionary"
+      ))
+    }
+  }
+
+  static func decode(
+    keyed container: inout KeyedDecodingContainer<Pin>
+  ) throws -> Self {
+    let keys = container.allKeys
+
+    var result: [String: Self] = [:]
+    result.reserveCapacity(keys.count)
+
+    for key in keys {
+      if var container = try? container.nestedContainer(keyedBy: Pin.self, forKey: key) {
+        result[key.stringValue] = try Self.decode(keyed: &container)
+      } else if var container = try? container.nestedUnkeyedContainer(forKey: key) {
+        result[key.stringValue] = try Self.decode(unkeyed: &container)
+      } else if case true = try? container.decodeNil(forKey: key) {
+        result[key.stringValue] = .null
+      } else if let value = try? container.decode(Bool.self, forKey: key) {
+        result[key.stringValue] = .bool(value)
+      } else if let value = try? container.decode(UInt.self, forKey: key) {
+        result[key.stringValue] = Self.downscale(value)
+      } else if let value = try? container.decode(Int.self, forKey: key) {
+        result[key.stringValue] = Self.downscale(value)
+      } else if let value = try? container.decode(Double.self, forKey: key) {
+        result[key.stringValue] = Self.downscale(value)
+      } else if let value = try? container.decode(String.self, forKey: key) {
+        result[key.stringValue] = .string(value)
+      } else if let value = try? container.decode(Data.self, forKey: key) {
+        result[key.stringValue] = .data(value)
+      } else if let value = try? container.decode(Date.self, forKey: key) {
+        result[key.stringValue] = .date(value)
+      } else if let value = try? container.decode(Float.self, forKey: key) {
+        result[key.stringValue] = .float(value)
+      } else if let value = try? container.decode(UInt8.self, forKey: key) {
+        result[key.stringValue] = .uint8(value)
+      } else if let value = try? container.decode(Int8.self, forKey: key) {
+        result[key.stringValue] = .int8(value)
+      } else if let value = try? container.decode(UInt16.self, forKey: key) {
+        result[key.stringValue] = .uint16(value)
+      } else if let value = try? container.decode(Int16.self, forKey: key) {
+        result[key.stringValue] = .int16(value)
+      } else if let value = try? container.decode(UInt32.self, forKey: key) {
+        result[key.stringValue] = .uint32(value)
+      } else if let value = try? container.decode(Int32.self, forKey: key) {
+        result[key.stringValue] = .int32(value)
+      } else if let value = try? container.decode(UInt64.self, forKey: key) {
+        result[key.stringValue] = .uint64(value)
+      } else if let value = try? container.decode(Int64.self, forKey: key) {
+        result[key.stringValue] = .int64(value)
+      } else if
+        #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
+        let value = try? container.decode(Int128.self, forKey: key)
+      {
+  #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+        result[key.stringValue] = .int128(Int128Value(value))
+  #else
+        result[key.stringValue] = .int128(value)
+  #endif
+      } else if
+        #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
+        let value = try? container.decode(UInt128.self, forKey: key)
+      {
+  #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+        result[key.stringValue] = .uint128(UInt128Value(value))
+  #else
+        result[key.stringValue] = .uint128(value)
+  #endif
+      } else {
+        throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+          codingPath: container.codingPath,
+          debugDescription: "Neither value nor array nor dictionary"
+        ))
+      }
+    }
+
+    return .dictionary(result)
+  }
+
+  static func decode(
+    unkeyed container: inout some UnkeyedDecodingContainer
+  ) throws -> Self {
+    var result: [Self] = []
+
+    if let count = container.count {
+      result.reserveCapacity(count)
+    }
+
+    while !container.isAtEnd {
+      if var container = try? container.nestedContainer(keyedBy: Pin.self) {
+        try result.append(Self.decode(keyed: &container))
+      } else if var container = try? container.nestedUnkeyedContainer() {
+        try result.append(Self.decode(unkeyed: &container))
+      } else if case true = try? container.decodeNil() {
+        result.append(.null)
+      } else if let value = try? container.decode(Bool.self) {
+        result.append(.bool(value))
+      } else if let value = try? container.decode(UInt.self) {
+        result.append(Self.downscale(value))
+      } else if let value = try? container.decode(Int.self) {
+        result.append(Self.downscale(value))
+      } else if let value = try? container.decode(Double.self) {
+        result.append(Self.downscale(value))
+      } else if let value = try? container.decode(String.self) {
+        result.append(.string(value))
+      } else if let value = try? container.decode(Data.self) {
+        result.append(.data(value))
+      } else if let value = try? container.decode(Date.self) {
+        result.append(.date(value))
+      } else if let value = try? container.decode(Float.self) {
+        result.append(.float(value))
+      } else if let value = try? container.decode(UInt8.self) {
+        result.append(.uint8(value))
+      } else if let value = try? container.decode(Int8.self) {
+        result.append(.int8(value))
+      } else if let value = try? container.decode(UInt16.self) {
+        result.append(.uint16(value))
+      } else if let value = try? container.decode(Int16.self) {
+        result.append(.int16(value))
+      } else if let value = try? container.decode(UInt32.self) {
+        result.append(.uint32(value))
+      } else if let value = try? container.decode(Int32.self) {
+        result.append(.int32(value))
+      } else if let value = try? container.decode(UInt64.self) {
+        result.append(.uint64(value))
+      } else if let value = try? container.decode(Int64.self) {
+        result.append(.int64(value))
+      } else if
+        #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
+        let value = try? container.decode(Int128.self)
+      {
+  #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+        result.append(.int128(Int128Value(value)))
+  #else
+        result.append(.int128(value))
+  #endif
+      } else if
+        #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
+        let value = try? container.decode(UInt128.self)
+      {
+  #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+        result.append(.uint128(UInt128Value(value)))
+  #else
+        result.append(.uint128(value))
+  #endif
+      } else {
+        throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
+          codingPath: container.codingPath,
+          debugDescription: "Neither value nor array nor dictionary"
+        ))
+      }
+    }
+
+    return .array(result)
   }
 }

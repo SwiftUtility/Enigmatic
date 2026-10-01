@@ -3,15 +3,6 @@
 
 import PackageDescription
 
-extension SwiftSetting {
-#if compiler(<6.4)
-  static let anyAppleOSAvailability: [Self] = [.enableExperimentalFeature("AnyAppleOSAvailability")]
-#else
-  static let anyAppleOSAvailability: [Self] = []
-#endif
-  static let allSettings: [Self] = anyAppleOSAvailability
-}
-
 let package = Package(
   name: "Enigmatic",
   products: [
@@ -29,3 +20,14 @@ let package = Package(
     ),
   ]
 )
+
+extension SwiftSetting {
+#if compiler(<6.4)
+  static let anyAppleOSAvailability: [Self] = [.enableExperimentalFeature("AnyAppleOSAvailability")]
+#else
+  static let anyAppleOSAvailability: [Self] = []
+#endif
+  static let allSettings: [Self] = [
+    anyAppleOSAvailability,
+  ].flatMap(\.self)
+}

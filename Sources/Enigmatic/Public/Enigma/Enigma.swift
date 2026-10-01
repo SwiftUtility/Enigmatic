@@ -21,7 +21,13 @@ public enum Enigma: Sendable {
   case dictionary([String: Self])
   case data(Data)
   case date(Date)
-
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+  case int128(Int128Value)
+  case uint128(UInt128Value)
+#else
+  case int128(Int128)
+  case uint128(UInt128)
+#endif
   /// Create Enigma tree from AnyObject
   ///
   /// - Note: It is usable with JSONSerialization or PropertyListSerialization and [Yams](https://github.com/jpsim/Yams) parser load function output
@@ -31,8 +37,7 @@ public enum Enigma: Sendable {
 
   /// Create Enigma tree by encoding Encodable instance
   public init(encode value: any Encodable, userInfo: [CodingUserInfoKey: Any] = [:]) throws {
-//    self = try value as? Enigma ?? OtherEnigmaEncoder.State.encode(value: value, userInfo: userInfo)
-    self = try value as? Enigma ?? EnigmaEncoder.State.encode(value: value, userInfo: userInfo)
+    self = try value as? Enigma ?? EnigmaEncoder.encode(value: value, userInfo: userInfo)
 }
 
   /// Get set, or remove value if it is present.
@@ -70,8 +75,6 @@ public enum Enigma: Sendable {
 
   /// Attempt to decode value
   public func decode<T: Decodable>(_: T.Type = T.self, userInfo: [CodingUserInfoKey: Any] = [:]) throws -> T {
-//      try T(from: ValueDecoder(value: self, path: nil))
-//    try T(from: EnigmaDecoder.State.decoder(enigma: self, userInfo: userInfo))
-    try T(from: EnigmaDecoderClass.Single.decoder(enigma: self, userInfo: userInfo))
+    try T(from: EnigmaDecoder.decoder(enigma: self, userInfo: userInfo))
   }
 }

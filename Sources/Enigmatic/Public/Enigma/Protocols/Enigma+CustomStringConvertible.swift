@@ -21,6 +21,8 @@ extension Enigma: CustomStringConvertible {
     case .data(let value): String(describing: value)
     case .array(let value): String(describing: value)
     case .dictionary(let value): String(describing: value)
+    case .int128(let value): String(describing: value)
+    case .uint128(let value): String(describing: value)
     }
   }
 }

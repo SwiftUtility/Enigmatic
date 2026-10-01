@@ -20,7 +20,7 @@ extension Enigma.Pin: Equatable {
     switch (lhs, rhs) {
     case (.int(let lhs), .int(let rhs)): lhs == rhs
     case (.str(let lhs), .str(let rhs)): lhs == rhs
-    default: false
+    case (.int, .str), (.str, .int): false
     }
   }
 }

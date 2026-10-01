@@ -20,7 +20,10 @@ extension Enigma {
         defer { current.removeLast() }
         element.collectPins(into: &pins, current: &current)
       }
-    default: break
+    case .null, .bool, .data, .date, .string, .double, .float,
+        .int, .int8, .int16, .int32, .int64, .int128,
+        .uint, .uint8, .uint16, .uint32, .uint64, .uint128:
+      break
     }
   }
 
@@ -140,6 +143,46 @@ extension Enigma {
           ))
         }
       }
+    } else if let value = reducer.value as? NSValue {
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        switch value.objCType.pointee {
+        case ObjCType.int128:
+          var result = Int128Value(0)
+          withUnsafeMutablePointer(to: &result) { pointer in
+            value.getValue(pointer, size: MemoryLayout<Int128Value>.size)
+          }
+          return .int128(result)
+        case ObjCType.uint128:
+          var result = UInt128Value(0)
+          withUnsafeMutablePointer(to: &result) { pointer in
+            value.getValue(pointer, size: MemoryLayout<UInt128Value>.size)
+          }
+          return .uint128(result)
+        default: break
+        }
+      }
+#else
+      switch value.objCType.pointee {
+      case ObjCType.int128:
+        var result = Int128(0)
+        withUnsafeMutablePointer(to: &result) { pointer in
+          value.getValue(pointer, size: MemoryLayout<Int128>.size)
+        }
+        return .int128(result)
+      case ObjCType.uint128:
+        var result = UInt128(0)
+        withUnsafeMutablePointer(to: &result) { pointer in
+          value.getValue(pointer, size: MemoryLayout<UInt128>.size)
+        }
+        return .uint128(result)
+      default: break
+      }
+#endif
+      throw DecodingError.dataCorrupted(DecodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "NSValue type not determined objCType=\(value.objCType.pointee)"
+      ))
     } else if let value = reducer.value as? [AnyHashable: Any?] {
       var dictionary: [String: Enigma] = [:]
       dictionary.reserveCapacity(value.count)
@@ -234,6 +277,16 @@ extension Enigma {
       return value as NSData
     case .date(let value):
       return value as NSDate
+    case .int128:
+      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "Can not convert Int128 to NSObject"
+      ))
+    case .uint128:
+      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "Can not convert UInt128 to NSObject"
+      ))
     }
   }
 
@@ -284,6 +337,16 @@ extension Enigma {
         codingPath: reducer.store,
         debugDescription: "Can not convert Date to JSONSerialization compatible NSObject"
       ))
+    case .int128:
+      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "Can not convert Int128 to NSObject"
+      ))
+    case .uint128:
+      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "Can not convert UInt128 to NSObject"
+      ))
     }
   }
 
@@ -300,7 +363,7 @@ extension Enigma {
   }
 }
 
-private enum ObjCType {
+enum ObjCType {
   static let signedChar = CChar(UnicodeScalar("c").value)
   static let signedShort = CChar(UnicodeScalar("s").value)
   static let signedInt = CChar(UnicodeScalar("i").value)
@@ -314,4 +377,6 @@ private enum ObjCType {
   static let float = CChar(UnicodeScalar("f").value)
   static let double = CChar(UnicodeScalar("d").value)
   static let bool = CChar(UnicodeScalar("B").value)
+  static let int128 = CChar(UnicodeScalar("j").value)
+  static let uint128 = CChar(UnicodeScalar("J").value)
 }

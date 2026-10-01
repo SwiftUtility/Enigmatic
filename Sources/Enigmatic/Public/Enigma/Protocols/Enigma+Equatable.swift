@@ -25,6 +25,8 @@ extension Enigma: Equatable {
     case .data(let lhs): lhs == rhs.asData
     case .array(let lhs): lhs == rhs.asArray
     case .dictionary(let lhs): lhs == rhs.asDictionary
+    case .int128(let lhs): lhs.isSame(enigma: rhs)
+    case .uint128(let lhs): lhs.isSame(enigma: rhs)
     }
   }
 }
