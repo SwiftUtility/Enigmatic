@@ -1,6 +1,9 @@
 import Foundation
 
 public extension Enigma {
+  /// Convert Enigma to Any usable with [Stencil](https://github.com/stencilproject/Stencil) render
+  ///
+  /// - Warning: It is not guaranteed to be compatible with JSONSerialization or PropertyListSerialization
   var rawAny: Any {
     switch self {
     case .null: NSNull() as Any

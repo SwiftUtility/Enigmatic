@@ -38,6 +38,29 @@ final class StrategyContractTests: XCTestCase {
     }
   }
 
+  func testOptionalBox() throws {
+    typealias OptionalStrategy = Codec.Id<Int>?
+    let box = Codec.OptionalBox<OptionalStrategy>(wrappedValue: 42)
+
+    let json = try JSONEncoder().encode(box)
+    XCTAssertEqual(String(decoding: json, as: UTF8.self), "42")
+    XCTAssertEqual(try JSONDecoder().decode(Codec.OptionalBox<OptionalStrategy>.self, from: json), box)
+
+    let tree = try Enigma(encode: box)
+    XCTAssertEqual(tree, 42)
+    XCTAssertEqual(try tree.decode(Codec.OptionalBox<OptionalStrategy>.self), box)
+
+    typealias NestedOptionalStrategy = Codec.Id<Int>??
+    let nestedNil = Codec.OptionalBox<NestedOptionalStrategy>(wrappedValue: nil)
+    let nestedNilJSON = try JSONEncoder().encode(nestedNil)
+    XCTAssertEqual(String(decoding: nestedNilJSON, as: UTF8.self), "null")
+    XCTAssertNil(try JSONDecoder().decode(Codec.OptionalBox<NestedOptionalStrategy>.self, from: nestedNilJSON).wrappedValue)
+
+    let nestedNilTree = try Enigma(encode: nestedNil)
+    XCTAssertEqual(nestedNilTree, .null)
+    XCTAssertNil(try nestedNilTree.decode(Codec.OptionalBox<NestedOptionalStrategy>.self).wrappedValue)
+  }
+
   func testResultDefersFailureAndPreservesCause() throws {
     typealias Wrapped = Codec.Box<Result<Codec.Id<Int>, any Error>>
     let success = try Enigma.int(7).decode(Wrapped.self)
