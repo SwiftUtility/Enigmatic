@@ -42,7 +42,9 @@ final class EnigmaEncoder {
       defer { unkeyed.append([]) }
       nodes[ref.nodeId].storage = .unkeyedId(unkeyed.count)
       return Unkeyed(state: self, ref: ref)
-    case .unkeyedId, .keyedId, .value:
+    case .unkeyedId:
+      return Unkeyed(state: self, ref: ref)
+    case .keyedId, .value:
       return Unkeyed(state: self, ref: Ref(nodeId: ref.nodeId, failId: 0))
     }
   }
@@ -142,7 +144,10 @@ final class EnigmaEncoder {
 
   static func encode(value: any Encodable, userInfo: [CodingUserInfoKey: Any]) throws -> Enigma {
     let state = EnigmaEncoder(userInfo: userInfo)
-    try value.encode(to: Single(state: state, ref: Ref(nodeId: 0, failId: -1)))
+    let ref = Ref(nodeId: 0, failId: -1)
+    if try !state.encodeSpecial(value, ref: ref) {
+      try value.encode(to: Single(state: state, ref: ref))
+    }
     if case .unset = state.nodes[0].storage {
       throw EncodingError.invalidValue((nil as Any?) as Any, EncodingError.Context(
         codingPath: [],

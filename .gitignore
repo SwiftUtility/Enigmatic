@@ -6,3 +6,7 @@
 
 .swiftpm/
 .build/
+
+# Python development scripts
+
+__pycache__/

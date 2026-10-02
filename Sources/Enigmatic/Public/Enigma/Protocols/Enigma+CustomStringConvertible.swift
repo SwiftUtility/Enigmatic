@@ -1,5 +1,5 @@
 extension Enigma: CustomStringConvertible {
-  /// CustomStringConvertible implementation converts to json string
+  /// A human-readable description. This is not a JSON serialization.
   public var description: String {
     switch self {
     case .null: "null"

@@ -1,0 +1,89 @@
+import Foundation
+import XCTest
+@testable import Enigmatic
+
+final class TreeContractTests: XCTestCase {
+  func testPathsAreDeterministicAndIncludeEmptyContainers() {
+    let tree: Enigma = ["z": [], "a": [1, ["b": nil, "a": [:]]]]
+    XCTAssertEqual(tree.paths, [["a"], ["a", 0], ["a", 1], ["a", 1, "a"], ["a", 1, "b"], ["z"]])
+    XCTAssertTrue(Enigma.null.paths.isEmpty)
+    XCTAssertTrue(Enigma.array([]).paths.isEmpty)
+    XCTAssertTrue(Enigma.dictionary([:]).paths.isEmpty)
+    for path in tree.paths { XCTAssertNotNil(tree[path]) }
+  }
+
+  func testRootMutationInvalidIndicesAndFallbackLaziness() {
+    var tree: Enigma = ["items": [1, 2], "null": nil]
+    var calls = 0
+    func fallback() -> Enigma { calls += 1; return 9 }
+    XCTAssertEqual(tree["items", 0, or: fallback()], 1)
+    XCTAssertEqual(tree["null", or: fallback()], .null)
+    XCTAssertEqual(calls, 0)
+    XCTAssertEqual(tree["missing", or: fallback()], 9)
+    XCTAssertEqual(calls, 1)
+    tree["missing", or: fallback()] = 3
+    XCTAssertEqual(calls, 1)
+    let snapshot = tree
+    tree["items", -1] = 4
+    tree["items", 4] = 4
+    tree["items", "wrong"] = 4
+    tree["items", 0, "wrong"] = 4
+    tree["missing", 0] = nil
+    tree["items", 99] = nil
+    XCTAssertEqual(tree, snapshot)
+    XCTAssertNil(tree["items", -1])
+    XCTAssertNil(tree["items", "wrong"])
+    XCTAssertNil(tree["absent"])
+    tree["items", 0] = nil
+    XCTAssertEqual(tree["items"], [2])
+    tree["null"] = nil
+    XCTAssertNil(tree["null"])
+    tree[[]] = nil
+    XCTAssertNotNil(tree[[]])
+    tree[[]] = ["new": []]
+    tree["new", 0, "value"] = true
+    XCTAssertEqual(tree, ["new": [["value": true]]])
+    tree["new", 0, "value"] = nil
+    XCTAssertEqual(tree, ["new": [[:]]])
+  }
+
+  func testMergeConflictPathsAndAtomicity() throws {
+    enum Failure: Error { case conflict }
+    var tree: Enigma = ["parent": ["value": 1], "array": [1]]
+    let initial = tree
+    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], or: { path, lhs, rhs throws(Failure) in
+      XCTAssertEqual(path, ["parent", "value"])
+      XCTAssertEqual(lhs, 1)
+      XCTAssertEqual(rhs, 2)
+      throw Failure.conflict
+    }))
+    XCTAssertEqual(tree, initial)
+    var paths: [[Enigma.Pin]] = []
+    let merged = tree.merging(["array": [2, 3], "new": true], or: { path, _, rhs in
+      paths.append(path)
+      return rhs
+    })
+    XCTAssertEqual(paths, [["array"]])
+    XCTAssertEqual(merged, ["parent": ["value": 1], "array": [2, 3], "new": true])
+    XCTAssertEqual(tree, initial)
+    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], or: Enigma.fail)) { error in
+      guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
+      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["parent", "value"])
+    }
+  }
+
+  func testPinCodingKeyAndHashing() {
+    let integer: Enigma.Pin = 2
+    let string: Enigma.Pin = "2"
+    XCTAssertTrue(integer.isInt)
+    XCTAssertFalse(string.isInt)
+    XCTAssertEqual(integer.intValue, 2)
+    XCTAssertNil(string.intValue)
+    XCTAssertEqual(integer.stringValue, "2")
+    XCTAssertEqual(string.stringValue, "2")
+    XCTAssertNotEqual(integer, string)
+    XCTAssertEqual(Set([integer, string, integer]).count, 2)
+    XCTAssertEqual(Enigma.Pin(intValue: 2), integer)
+    XCTAssertEqual(Enigma.Pin(stringValue: "2"), string)
+  }
+}

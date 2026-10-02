@@ -95,20 +95,12 @@ private extension Enigma {
       #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
       let value = try? container.decode(Int128.self)
     {
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
       return .int128(Int128Value(value))
-#else
-      return .int128(value)
-#endif
     } else if
       #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
       let value = try? container.decode(UInt128.self)
     {
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
       return .uint128(UInt128Value(value))
-#else
-      return .uint128(value)
-#endif
     } else {
       throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
         codingPath: container.codingPath,
@@ -168,20 +160,12 @@ private extension Enigma {
         #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
         let value = try? container.decode(Int128.self, forKey: key)
       {
-  #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
         result[key.stringValue] = .int128(Int128Value(value))
-  #else
-        result[key.stringValue] = .int128(value)
-  #endif
       } else if
         #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
         let value = try? container.decode(UInt128.self, forKey: key)
       {
-  #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
         result[key.stringValue] = .uint128(UInt128Value(value))
-  #else
-        result[key.stringValue] = .uint128(value)
-  #endif
       } else {
         throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
           codingPath: container.codingPath,
@@ -245,20 +229,12 @@ private extension Enigma {
         #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
         let value = try? container.decode(Int128.self)
       {
-  #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
         result.append(.int128(Int128Value(value)))
-  #else
-        result.append(.int128(value))
-  #endif
       } else if
         #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
         let value = try? container.decode(UInt128.self)
       {
-  #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
         result.append(.uint128(UInt128Value(value)))
-  #else
-        result.append(.uint128(value))
-  #endif
       } else {
         throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
           codingPath: container.codingPath,

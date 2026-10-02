@@ -43,9 +43,4 @@ final class EnigmaDecoder {
     let prev: Int
     let pin: Enigma.Pin
   }
-
-  struct Ref {
-    var nodeId: Int
-    var failId: Int?
-  }
 }

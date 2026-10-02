@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: ${{ matrix.os }} / ${{ matrix.configuration }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, ubuntu-24.04]
+        configuration: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.3.3'
+      - run: swift --version
+      - name: Functional tests
+        run: swift test -c ${{ matrix.configuration }} --skip PerformanceTests
+      - name: Coverage gate tests
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: python3 -m unittest discover -s Scripts/tests
+      - name: Coverage
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: |
+          swift test --enable-code-coverage --skip PerformanceTests
+          python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)"
+      - name: Upload coverage
+        if: always() && matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: .build/**/codecov/*.json
+      - name: Build documentation
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: |
+          swift package dump-symbol-graph --minimum-access-level public
+          xcrun docc convert Sources/Enigmatic/Enigmatic.docc \
+            --additional-symbol-graph-dir "$(dirname "$(swift build --show-bin-path)")/symbolgraph" \
+            --output-path .build/Enigmatic.doccarchive \
+            --warnings-as-errors
+      - name: Upload documentation
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: .build/Enigmatic.doccarchive
+
+  benchmarks:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.3.3'
+      - name: Release benchmarks without instrumentation
+        shell: bash
+        run: |
+          set -o pipefail
+          swift test -c release --filter PerformanceTests 2>&1 | tee benchmarks.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: benchmarks
+          path: benchmarks.log

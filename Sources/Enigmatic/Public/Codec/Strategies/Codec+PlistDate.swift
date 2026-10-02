@@ -1,7 +1,8 @@
 import Foundation
 
 extension Codec {
-  public enum PlistDate: DecodeStrategy, EncodeStrategy {
+  /// Encodes seconds since Foundation's reference date (2001-01-01). Non-finite values throw.
+  public enum PlistDate: Hashable, DecodeStrategy, EncodeStrategy {
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let timeInterval = try Double(from: decoder)

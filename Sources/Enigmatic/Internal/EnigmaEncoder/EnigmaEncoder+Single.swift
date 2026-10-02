@@ -87,20 +87,12 @@ extension EnigmaEncoder {
 
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     mutating func encode(_ value: Int128) throws {
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
       try state.store(.int128(Enigma.Int128Value(value)), ref: ref)
-#else
-      try state.store(.int128(value), ref: ref)
-#endif
     }
 
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     mutating func encode(_ value: UInt128) throws {
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
       try state.store(.uint128(Enigma.UInt128Value(value)), ref: ref)
-#else
-      try state.store(.uint128(value), ref: ref)
-#endif
     }
 
     mutating func encode<T: Encodable>(_ value: T) throws {

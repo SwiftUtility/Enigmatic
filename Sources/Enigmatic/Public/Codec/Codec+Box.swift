@@ -1,4 +1,7 @@
 extension Codec {
+  /// Applies a strategy to a property while exposing its unwrapped value.
+  ///
+  /// An optional strategy accepts null; synthesized decoding still requires the key.
   @propertyWrapper
   public struct Box<Strategy: Codec.Strategy> {
     public var wrappedValue: Strategy.BoxedValue

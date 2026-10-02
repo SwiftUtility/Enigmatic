@@ -1,6 +1,6 @@
 import Foundation
 
-/// Container type to allow partial or multi step encoding and decoding operations
+/// A typed value tree for partial encoding, editing, merging, and decoding.
 public enum Enigma: Sendable {
   case null
   case bool(Bool)
@@ -21,13 +21,8 @@ public enum Enigma: Sendable {
   case dictionary([String: Self])
   case data(Data)
   case date(Date)
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
   case int128(Int128Value)
   case uint128(UInt128Value)
-#else
-  case int128(Int128)
-  case uint128(UInt128)
-#endif
   /// Create Enigma tree from AnyObject
   ///
   /// - Note: It is usable with JSONSerialization or PropertyListSerialization and [Yams](https://github.com/jpsim/Yams) parser load function output
@@ -35,10 +30,10 @@ public enum Enigma: Sendable {
     self = try Reducer.reduce(seed: [], any, Self.make(anyObject:))
   }
 
-  /// Create Enigma tree by encoding Encodable instance
+  /// Encodes a model into a tree, preserving Date and Data at every position.
   public init(encode value: any Encodable, userInfo: [CodingUserInfoKey: Any] = [:]) throws {
     self = try value as? Enigma ?? EnigmaEncoder.encode(value: value, userInfo: userInfo)
-}
+  }
 
   /// Get set, or remove value if it is present.
   public subscript(_ pins: Pin...) -> Self? {
@@ -51,7 +46,11 @@ public enum Enigma: Sendable {
     set { self[pins, or: fallback()] = newValue }
   }
 
-  /// Get, set or remove value at pins path if it is present. Does not remove root object
+  /// Reads, replaces, or removes a value at a path.
+  ///
+  /// Missing dictionary children and array elements at count can be created.
+  /// Incompatible parents and invalid indices are no-ops. Nil deletes a child;
+  /// `.null` stores a null. An empty path can replace, but cannot delete, the root.
   public subscript(_ pins: [Pin]) -> Self? {
     get { getValue(pins: pins) }
     set {
@@ -73,8 +72,8 @@ public enum Enigma: Sendable {
     }
   }
 
-  /// Attempt to decode value
+  /// Decodes a model from this tree, passing userInfo to nested decoders.
   public func decode<T: Decodable>(_: T.Type = T.self, userInfo: [CodingUserInfoKey: Any] = [:]) throws -> T {
-    try T(from: EnigmaDecoder.decoder(enigma: self, userInfo: userInfo))
+    try EnigmaDecoder.decoder(enigma: self, userInfo: userInfo).decode(T.self)
   }
 }

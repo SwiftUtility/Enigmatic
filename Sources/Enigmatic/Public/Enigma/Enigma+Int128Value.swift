@@ -1,9 +1,8 @@
 import Foundation
 
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
 extension Enigma {
   @frozen
-  public struct Int128Value: Sendable {
+  public struct Int128Value: Sendable, CustomStringConvertible, CustomDebugStringConvertible {
     @usableFromInline
     let low: UInt64
     @usableFromInline
@@ -24,11 +23,19 @@ extension Enigma {
       return Int128(bitPattern: bits)
     }
 
-    var rawObject: NSObject {
-      withUnsafePointer(to: self) { bytes in
-        withUnsafePointer(to: ObjCType.int128) { objCType in
-          NSValue(bytes: bytes, objCType: objCType) as NSObject
-        }
+    public var description: String {
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        String(describing: value)
+      } else {
+        "<Int128 unavailable>"
+      }
+    }
+
+    public var debugDescription: String {
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        String(reflecting: value)
+      } else {
+        "<Int128 unavailable>"
       }
     }
 
@@ -41,18 +48,3 @@ extension Enigma {
     }
   }
 }
-#else
-extension Int128 {
-  var rawObject: NSObject {
-    withUnsafePointer(to: self) { bytes in
-      withUnsafePointer(to: ObjCType.int128) { objCType in
-        NSValue(bytes: bytes, objCType: objCType) as NSObject
-      }
-    }
-  }
-
-  func isSame(enigma: Enigma) -> Bool {
-    self == enigma.asInt128
-  }
-}
-#endif

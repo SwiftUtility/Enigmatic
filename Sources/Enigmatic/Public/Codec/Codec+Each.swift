@@ -1,5 +1,8 @@
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec {
+  /// Encodes components into the same encoder and decodes each from the same input.
+  ///
+  /// Use disjoint keyed models; overlapping writes can fail depending on the encoder.
   public struct Each<each Value> {
     public var values: (repeat each Value)
 

@@ -71,20 +71,12 @@ extension EnigmaEncoder {
 
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     mutating func encode(_ value: Int128, forKey key: Key) throws {
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
       try state.store(.int128(Enigma.Int128Value(value)), ref: state.nestedRef(ref: ref, key: key))
-#else
-      try state.store(.int128(value), ref: state.nestedRef(ref: ref, key: key))
-#endif
     }
 
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     mutating func encode(_ value: UInt128, forKey key: Key) throws {
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
       try state.store(.uint128(Enigma.UInt128Value(value)), ref: state.nestedRef(ref: ref, key: key))
-#else
-      try state.store(.int128(value), ref: state.nestedRef(ref: ref, key: key))
-#endif
     }
 
     mutating func encode<T: Encodable>(_ value: T, forKey key: Key) throws {

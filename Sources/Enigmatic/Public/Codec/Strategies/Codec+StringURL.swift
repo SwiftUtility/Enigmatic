@@ -1,7 +1,8 @@
 import Foundation
 
 extension Codec {
-  public enum StringURL: DecodeStrategy, EncodeStrategy {
+  /// Encodes a URL as its absolute string; decoding accepts Foundation URL syntax, including relative URLs.
+  public enum StringURL: Hashable, DecodeStrategy, EncodeStrategy {
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try String(from: decoder)

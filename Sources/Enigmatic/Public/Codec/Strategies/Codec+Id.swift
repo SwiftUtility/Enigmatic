@@ -1,5 +1,6 @@
 extension Codec {
-  public enum Id<BoxedValue>: Strategy {}
+  /// Delegates to the wrapped value's own Codable implementation.
+  public enum Id<BoxedValue>: Hashable, Strategy {}
 }
 
 extension Codec.Id: Codec.DecodeStrategy where BoxedValue: Decodable {

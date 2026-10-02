@@ -6,7 +6,7 @@ extension Enigma {
     into pins: inout [[Pin]],
     current: inout [Pin]
   ) {
-    if !pins.isEmpty { pins.append(current) }
+    if !current.isEmpty { pins.append(current) }
     switch self {
     case .array(let value):
       for (index, element) in value.enumerated() {
@@ -15,7 +15,8 @@ extension Enigma {
         element.collectPins(into: &pins, current: &current)
       }
     case .dictionary(let value):
-      for (key, element) in value {
+      for key in value.keys.sorted() {
+        guard let element = value[key] else { continue }
         current.append(.str(key))
         defer { current.removeLast() }
         element.collectPins(into: &pins, current: &current)
@@ -114,110 +115,35 @@ extension Enigma {
   }
 
   static func make(anyObject reducer: inout Reducer<[Pin], Any?>) throws(DecodingError) -> Self {
-    if reducer.value == nil || reducer.value is NSNull {
+    if reducer.value == nil {
+      return .null
+    } else if reducer.value is NSNull {
       return .null
     } else if let value = reducer.value as? String {
       return .string(value)
     } else if let value = reducer.value as? NSNumber {
-      if CFGetTypeID(value) == CFBooleanGetTypeID() {
-        return .bool(value.boolValue)
-      } else {
-        switch value.objCType.pointee {
-        case ObjCType.signedLong: return .int(value.intValue)
-        case ObjCType.unsignedLong: return .uint(value.uintValue)
-        case ObjCType.double: return .double(value.doubleValue)
-        case ObjCType.float: return .float(value.floatValue)
-        case ObjCType.bool: return .bool(value.boolValue)
-        case ObjCType.signedChar: return .int8(value.int8Value)
-        case ObjCType.unsignedChar: return .uint8(value.uint8Value)
-        case ObjCType.signedShort: return .int16(value.int16Value)
-        case ObjCType.unsignedShort: return .uint16(value.uint16Value)
-        case ObjCType.signedInt: return .int32(value.int32Value)
-        case ObjCType.unsignedInt: return .uint32(value.uint32Value)
-        case ObjCType.signedLongLong: return .int64(value.int64Value)
-        case ObjCType.unsignedLongLong: return .uint64(value.uint64Value)
-        default:
-          throw DecodingError.dataCorrupted(DecodingError.Context(
-            codingPath: reducer.store,
-            debugDescription: "NSNumber type not determined objCType=\(value.objCType.pointee)"
-          ))
-        }
-      }
-    } else if let value = reducer.value as? NSValue {
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
-      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
-        switch value.objCType.pointee {
-        case ObjCType.int128:
-          var result = Int128Value(0)
-          withUnsafeMutablePointer(to: &result) { pointer in
-            value.getValue(pointer, size: MemoryLayout<Int128Value>.size)
-          }
-          return .int128(result)
-        case ObjCType.uint128:
-          var result = UInt128Value(0)
-          withUnsafeMutablePointer(to: &result) { pointer in
-            value.getValue(pointer, size: MemoryLayout<UInt128Value>.size)
-          }
-          return .uint128(result)
-        default: break
-        }
-      }
-#else
-      switch value.objCType.pointee {
-      case ObjCType.int128:
-        var result = Int128(0)
-        withUnsafeMutablePointer(to: &result) { pointer in
-          value.getValue(pointer, size: MemoryLayout<Int128>.size)
-        }
-        return .int128(result)
-      case ObjCType.uint128:
-        var result = UInt128(0)
-        withUnsafeMutablePointer(to: &result) { pointer in
-          value.getValue(pointer, size: MemoryLayout<UInt128>.size)
-        }
-        return .uint128(result)
-      default: break
-      }
-#endif
-      throw DecodingError.dataCorrupted(DecodingError.Context(
-        codingPath: reducer.store,
-        debugDescription: "NSValue type not determined objCType=\(value.objCType.pointee)"
-      ))
+      return try Self(nsNumber: value, reducer: &reducer)
     } else if let value = reducer.value as? [AnyHashable: Any?] {
-      var dictionary: [String: Enigma] = [:]
-      dictionary.reserveCapacity(value.count)
-      for (key, value) in value {
-        let key = key.description
-        guard !dictionary.keys.contains(key) else {
-          throw DecodingError.dataCorrupted(DecodingError.Context(
-            codingPath: reducer.store,
-            debugDescription: "Collision during dictionary conversion for key \(key)"
-          ))
-        }
-        reducer.store.append(.str(key))
-        defer { reducer.store.removeLast() }
-        try dictionary[key] = reducer.reduce(next: value, make(anyObject:))
-      }
-      return .dictionary(dictionary)
+      return try Self(dictionary: value, reducer: &reducer)
     } else if let value = reducer.value as? [Any?] {
-      var array: [Self] = []
-      array.reserveCapacity(value.count)
-      for (index, value) in value.enumerated() {
-        reducer.store.append(.int(index))
-        defer { reducer.store.removeLast() }
-        try array.append(reducer.reduce(next: value, make(anyObject:)))
-      }
-      return .array(array)
+      return try Self(array: value, reducer: &reducer)
     } else if let value = reducer.value as? Data {
       return .data(value)
     } else if let value = reducer.value as? Date {
       return .date(value)
-    } else {
-      throw DecodingError.dataCorrupted(DecodingError.Context(
-        codingPath: reducer.store,
-        debugDescription: "Neither value nor array nor dictionary"
-      ))
+    } else if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+      if let value = reducer.value as? Int128 {
+        return .int128(Int128Value(value))
+      } else if let value = reducer.value as? UInt128 {
+        return .uint128(UInt128Value(value))
+      } else if let value = reducer.value as? NSValue {
+        return try Self(nsValue: value, reducer: &reducer)
+      }
     }
+    throw DecodingError.dataCorrupted(DecodingError.Context(
+      codingPath: reducer.store,
+      debugDescription: "Neither value nor array nor dictionary"
+    ))
   }
 
   static func makePlistObject(reducer: inout Reducer<[Pin], Self>) throws(EncodingError) -> NSObject {
@@ -377,6 +303,104 @@ enum ObjCType {
   static let float = CChar(UnicodeScalar("f").value)
   static let double = CChar(UnicodeScalar("d").value)
   static let bool = CChar(UnicodeScalar("B").value)
-  static let int128 = CChar(UnicodeScalar("j").value)
-  static let uint128 = CChar(UnicodeScalar("J").value)
+  static let signedInt128 = CChar(UnicodeScalar("j").value)
+  static let unsignedInt128 = CChar(UnicodeScalar("J").value)
+  static let signedBitInt128 = CChar(UnicodeScalar("t").value)
+  static let unsignedBitInt128 = CChar(UnicodeScalar("T").value)
+}
+
+extension NSValue {
+  @inline(__always)
+  func extract<T>(seed: consuming T) -> T {
+    withUnsafeMutablePointer(to: &seed) { pointer in
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+      getValue(pointer, size: MemoryLayout<T>.size)
+#else
+      getValue(pointer)
+#endif
+    }
+    return seed
+  }
+}
+
+@available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+extension Enigma {
+  @inline(__always)
+  init(nsValue: NSValue, reducer: inout Reducer<[Pin], Any?>) throws(DecodingError) {
+    self = switch nsValue.objCType.pointee {
+    case ObjCType.signedBitInt128:
+      .int128(Int128Value(nsValue.extract(seed: 0)))
+    case ObjCType.unsignedBitInt128:
+      .uint128(UInt128Value(nsValue.extract(seed: 0)))
+    default:
+      throw DecodingError.dataCorrupted(DecodingError.Context(
+        codingPath: reducer.store,
+        debugDescription: "NSValue type not determined objCType=\(String(cString: nsValue.objCType))"
+      ))
+    }
+  }
+}
+
+extension Enigma {
+  @inline(__always)
+  init(nsNumber: NSNumber, reducer: inout Reducer<[Pin], Any?>) throws(DecodingError) {
+    self = if CFGetTypeID(nsNumber) == CFBooleanGetTypeID() {
+      .bool(nsNumber.boolValue)
+    } else {
+      switch nsNumber.objCType.pointee {
+      case ObjCType.signedLong: .int(nsNumber.intValue)
+      case ObjCType.unsignedLong: .uint(nsNumber.uintValue)
+      case ObjCType.double: .double(nsNumber.doubleValue)
+      case ObjCType.float: .float(nsNumber.floatValue)
+      case ObjCType.bool: .bool(nsNumber.boolValue)
+      case ObjCType.signedChar: .int8(nsNumber.int8Value)
+      case ObjCType.unsignedChar: .uint8(nsNumber.uint8Value)
+      case ObjCType.signedShort: .int16(nsNumber.int16Value)
+      case ObjCType.unsignedShort: .uint16(nsNumber.uint16Value)
+      case ObjCType.signedInt: .int32(nsNumber.int32Value)
+      case ObjCType.unsignedInt: .uint32(nsNumber.uint32Value)
+      case ObjCType.signedLongLong: .int64(nsNumber.int64Value)
+      case ObjCType.unsignedLongLong: .uint64(nsNumber.uint64Value)
+      default:
+        throw DecodingError.dataCorrupted(DecodingError.Context(
+          codingPath: reducer.store,
+          debugDescription: "NSNumber type not determined objCType=\(String(cString: nsNumber.objCType))"
+        ))
+      }
+    }
+  }
+
+  @inline(__always)
+  init(dictionary: [AnyHashable: Any?], reducer: inout Reducer<[Pin], Any?>) throws(DecodingError) {
+    var result: [String: Enigma] = [:]
+    result.reserveCapacity(dictionary.count)
+    for (key, value) in dictionary {
+      let key = key.description
+      let next: Self
+      do {
+        reducer.store.append(.str(key))
+        defer { reducer.store.removeLast() }
+        next = try reducer.reduce(next: value, Self.make(anyObject:))
+      }
+      guard result.updateValue(next, forKey: key) == nil else {
+        throw DecodingError.dataCorrupted(DecodingError.Context(
+          codingPath: reducer.store,
+          debugDescription: "Collision during dictionary conversion for key \(key)"
+        ))
+      }
+    }
+    self = .dictionary(result)
+  }
+
+  @inline(__always)
+  init(array: [Any?], reducer: inout Reducer<[Pin], Any?>) throws(DecodingError) {
+    var result: [Self] = []
+    result.reserveCapacity(array.count)
+    for (index, value) in array.enumerated() {
+      reducer.store.append(.int(index))
+      defer { reducer.store.removeLast() }
+      try result.append(reducer.reduce(next: value, Self.make(anyObject:)))
+    }
+    self = .array(result)
+  }
 }

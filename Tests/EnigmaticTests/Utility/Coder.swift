@@ -34,7 +34,8 @@ class Coder: @unchecked Sendable {
   static func check<Value: Codable & Equatable>(
     _ value: Value,
     _ checker: Checker,
-    _ plistEncoder: KeyPath<Coder, PropertyListEncoder>
+    _ plistEncoder: KeyPath<Coder, PropertyListEncoder>,
+    scenario: String = #function, file: StaticString = #filePath, line: UInt = #line
   ) throws {
     let encoded = try Enigma(encode: value)
     switch encoded {
@@ -45,36 +46,37 @@ class Coder: @unchecked Sendable {
       let decoded = try shared.plistDecoder.decode(Enigma.self, from: enigmaData)
       let restored = try decoded.decode(Value.self)
       if value == value {
-        XCTAssertEqual(value, straight)
-        XCTAssertEqual(value, restored)
+        XCTAssertEqual(value, straight, "Scenario: \(scenario)", file: file, line: line)
+        XCTAssertEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
         if !checker.hasData, !checker.hasDates {
-          XCTAssertEqual(encoded, decoded)
+          XCTAssertEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
         } else {
-          XCTAssertNotEqual(encoded, decoded)
+          XCTAssertNotEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
         }
       } else {
-        XCTAssertNotEqual(value, straight)
-        XCTAssertNotEqual(value, restored)
-        XCTAssertNotEqual(encoded, decoded)
+        XCTAssertNotEqual(value, straight, "Scenario: \(scenario)", file: file, line: line)
+        XCTAssertNotEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
+        XCTAssertNotEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
       }
     default:
-      XCTAssertThrowsError(try shared[keyPath: plistEncoder].encode(encoded))
+      XCTAssertThrowsError(try shared[keyPath: plistEncoder].encode(encoded), "Scenario: \(scenario)", file: file, line: line)
     }
   }
 
   static func check<Value: Codable & Equatable>(
     _ value: Value,
     _ checker: Checker,
-    _ fmt: PropertyListSerialization.PropertyListFormat
+    _ fmt: PropertyListSerialization.PropertyListFormat,
+    scenario: String = #function, file: StaticString = #filePath, line: UInt = #line
   ) throws {
     let encodedEnigma = try Enigma(encode: value)
     if checker.nonPlistSeriablizable {
-      XCTAssertThrowsError(try encodedEnigma.plistObject)
+      XCTAssertThrowsError(try encodedEnigma.plistObject, "Scenario: \(scenario)", file: file, line: line)
       XCTAssertThrowsError(try PropertyListSerialization.data(
-        fromPropertyList: encodedEnigma.rawObject,
+        fromPropertyList: encodedEnigma.rawAny,
         format: fmt,
         options: 0
-      ))
+      ), "Scenario: \(scenario)", file: file, line: line)
     } else {
       let encodedObject = try encodedEnigma.plistObject
       let data = try PropertyListSerialization.data(
@@ -85,11 +87,11 @@ class Coder: @unchecked Sendable {
       let decodedObject = try PropertyListSerialization.propertyList(from: data, format: nil)
       let decodedEnigma = try Enigma(cast: decodedObject)
       let restored = try decodedEnigma.decode(Value.self)
-      XCTAssertEqual(encodedEnigma, decodedEnigma)
+      XCTAssertEqual(encodedEnigma, decodedEnigma, "Scenario: \(scenario)", file: file, line: line)
       if value == value {
-        XCTAssertEqual(value, restored)
+        XCTAssertEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
       } else {
-        XCTAssertNotEqual(value, restored)
+        XCTAssertNotEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
       }
     }
   }
@@ -97,11 +99,12 @@ class Coder: @unchecked Sendable {
   static func check<Value: Codable & Equatable>(
     _ value: Value,
     _ checker: Checker,
-    _ jsonCodecs: KeyPath<Coder, (JSONEncoder, JSONDecoder)>
+    _ jsonCodecs: KeyPath<Coder, (JSONEncoder, JSONDecoder)>,
+    scenario: String = #function, file: StaticString = #filePath, line: UInt = #line
   ) throws {
     let encoded = try Enigma(encode: value)
     if checker.failJsonEncode.contains(jsonCodecs) {
-      XCTAssertThrowsError(try shared[keyPath: jsonCodecs].0.encode(encoded))
+      XCTAssertThrowsError(try shared[keyPath: jsonCodecs].0.encode(encoded), "Scenario: \(scenario)", file: file, line: line)
     } else {
       let enigmaData = try shared[keyPath: jsonCodecs].0.encode(encoded)
       let valueData = try shared[keyPath: jsonCodecs].0.encode(value)
@@ -109,28 +112,29 @@ class Coder: @unchecked Sendable {
       let decoded = try shared[keyPath: jsonCodecs].1.decode(Enigma.self, from: enigmaData)
       let restored = try decoded.decode(Value.self)
       if value == value {
-        XCTAssertEqual(value, straight)
-        XCTAssertEqual(value, restored)
+        XCTAssertEqual(value, straight, "Scenario: \(scenario)", file: file, line: line)
+        XCTAssertEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
         if !checker.hasData, !checker.hasDates {
-          XCTAssertEqual(encoded, decoded)
+          XCTAssertEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
         } else {
-          XCTAssertNotEqual(encoded, decoded)
+          XCTAssertNotEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
         }
       } else {
-        XCTAssertNotEqual(value, straight)
-        XCTAssertNotEqual(value, restored)
-        XCTAssertNotEqual(encoded, decoded)
+        XCTAssertNotEqual(value, straight, "Scenario: \(scenario)", file: file, line: line)
+        XCTAssertNotEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
+        XCTAssertNotEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
       }
     }
   }
 
   static func check<Value: Codable & Equatable>(
     _ value: Value,
-    _ checker: Checker
+    _ checker: Checker,
+    scenario: String = #function, file: StaticString = #filePath, line: UInt = #line
   ) throws {
     let encodedEnigma = try Enigma(encode: value)
     if checker.nonJsonSeriablizable {
-      XCTAssertThrowsError(try encodedEnigma.jsonObject)
+      XCTAssertThrowsError(try encodedEnigma.jsonObject, "Scenario: \(scenario)", file: file, line: line)
     } else {
       let encodedObject = try encodedEnigma.jsonObject
       let data = try JSONSerialization.data(
@@ -140,11 +144,11 @@ class Coder: @unchecked Sendable {
       let decodedObject = try JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)
       let decodedEnigma = try Enigma(cast: decodedObject)
       let restored = try decodedEnigma.decode(Value.self)
-      XCTAssertEqual(encodedEnigma, decodedEnigma)
+      XCTAssertEqual(encodedEnigma, decodedEnigma, "Scenario: \(scenario)", file: file, line: line)
       if value == value {
-        XCTAssertEqual(value, restored)
+        XCTAssertEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
       } else {
-        XCTAssertNotEqual(value, restored)
+        XCTAssertNotEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
       }
     }
   }

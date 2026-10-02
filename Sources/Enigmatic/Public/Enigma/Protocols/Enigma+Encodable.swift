@@ -1,5 +1,5 @@
 extension Enigma: Encodable {
-  /// In fact it never throws for json coders, and for plist if root element is collection
+  /// Writes this tree using the supplied encoder. Format and value restrictions may throw.
   public func encode(to encoder: Encoder) throws {
     switch self {
     case .null:
@@ -61,7 +61,6 @@ extension Enigma: Encodable {
       try value.encode(to: encoder)
     case .date(let value):
       try value.encode(to: encoder)
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     case .int128(let value):
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         var container = encoder.singleValueContainer()
@@ -82,14 +81,6 @@ extension Enigma: Encodable {
           debugDescription: "UInt128 not available"
         ))
       }
-#else
-    case .int128(let value):
-      var container = encoder.singleValueContainer()
-      try container.encode(value)
-    case .uint128(let value):
-      var container = encoder.singleValueContainer()
-      try container.encode(value)
-#endif
     }
   }
 }
@@ -124,7 +115,6 @@ extension Enigma {
         try value.encode(pin: Pin.str(key), keyed: &container)
       }
     case .data, .date: try container.encode(self)
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     case .int128(let value):
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         try container.encode(value.value)
@@ -143,12 +133,6 @@ extension Enigma {
           debugDescription: "UInt128 not available"
         ))
       }
-#else
-    case .int128(let value):
-      try container.encode(value)
-    case .uint128(let value):
-      try container.encode(value)
-#endif
     }
   }
 
@@ -180,7 +164,6 @@ extension Enigma {
         try value.encode(pin: Pin.str(key), keyed: &container)
       }
     case .data, .date: try container.encode(self, forKey: pin)
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     case .int128(let value):
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         try container.encode(value.value, forKey: pin)
@@ -199,12 +182,6 @@ extension Enigma {
           debugDescription: "UInt128 not available"
         ))
       }
-#else
-    case .int128(let value):
-      try container.encode(value, forKey: pin)
-    case .uint128(let value):
-      try container.encode(value, forKey: pin)
-#endif
     }
   }
 }

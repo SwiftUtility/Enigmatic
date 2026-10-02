@@ -1,7 +1,8 @@
 import Foundation
 
 extension Codec {
-  public enum Base64Data: DecodeStrategy, EncodeStrategy {
+  /// Encodes Data as a Base64 string and rejects malformed Base64 on decoding.
+  public enum Base64Data: Hashable, DecodeStrategy, EncodeStrategy {
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try String(from: decoder)

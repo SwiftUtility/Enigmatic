@@ -109,13 +109,15 @@ final class CodableTests: XCTestCase {
     let key2 = "cafe\u{301}"
     #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     XCTAssertNotEqual(key1 as NSString, key2 as NSString)
+    #else
+    XCTAssertEqual(key1 as NSString, key2 as NSString)
     #endif
     XCTAssertEqual(key1, key2)
     let enigma1 = try Enigma(cast: [key1: 1])
     let enigma2 = try Enigma(cast: [key2: 1])
     XCTAssertEqual(enigma1, enigma2)
-    try XCTAssertNotEqual(enigma1.jsonObject, enigma2.jsonObject)
-    try XCTAssertNotEqual(enigma1.plistObject, enigma2.plistObject)
+    XCTAssertEqual(try Enigma(cast: enigma1.jsonObject), enigma2)
+    XCTAssertEqual(try Enigma(cast: enigma1.plistObject), enigma2)
   }
 
   func testSupers() throws {
@@ -182,7 +184,7 @@ final class CodableTests: XCTestCase {
     }
     let codecDates = CodecDates()
     let secs = codecDates.codecDateSeconds.timeIntervalSince1970
-    let mils = codecDates.codecDateSeconds.timeIntervalSince1970 * pow(10.0, Double(3 as Int))
+    let mils = codecDates.codecDateMilliseconds.timeIntervalSince1970 * pow(10.0, Double(3 as Int))
     XCTAssertEqual(
       try Enigma(encode: codecDates),
       [

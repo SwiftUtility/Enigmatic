@@ -1,5 +1,7 @@
 extension Codec {
-  /// Coproduct type that is either Right or Left
+  /// A value decoded as Right first, then Left if the first attempt fails.
+  ///
+  /// If both fail, the decoding error retains both causes in a CompositeError.
   public enum Either<Right, Left> {
     case right(Right)
     case left(Left)

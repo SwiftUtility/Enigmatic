@@ -31,9 +31,9 @@ struct Checker {
     topLevelNil
   }
 
-  func check<Value: Codable & Equatable>(value: Value) {
+  func check<Value: Codable & Equatable>(value: Value, file: StaticString = #filePath, line: UInt = #line) {
     for check in Check.allCases {
-      XCTAssertNoThrow(try check.perform(value: value, checker: self))
+      XCTAssertNoThrow(try check.perform(value: value, checker: self, file: file, line: line), "Scenario: \(check)", file: file, line: line)
     }
   }
 
@@ -50,40 +50,39 @@ struct Checker {
     case iso8601DateJsonEncodeDecode
     case serializedJsonEncodeDecode
 
-    func perform<Value: Codable & Equatable>(value: Value, checker: Checker) throws {
+    func perform<Value: Codable & Equatable>(value: Value, checker: Checker, file: StaticString, line: UInt) throws {
       switch self {
       case .enigmaAndBack:
         let encoded = try Enigma(encode: value)
         let decoded = try encoded.decode() as Value
-        let erased = encoded.rawObject
-        let restored = try Enigma(cast: erased)
+        let restored = try Enigma(cast: encoded.rawAny)
         if value == value {
-          XCTAssertEqual(value, decoded)
-          XCTAssertEqual(encoded, restored)
+          XCTAssertEqual(value, decoded, "Scenario: \(self)", file: file, line: line)
+          XCTAssertEqual(encoded, restored, "Scenario: \(self)", file: file, line: line)
         } else {
-          XCTAssertNotEqual(value, decoded)
-          XCTAssertNotEqual(encoded, restored)
+          XCTAssertNotEqual(value, decoded, "Scenario: \(self)", file: file, line: line)
+          XCTAssertNotEqual(encoded, restored, "Scenario: \(self)", file: file, line: line)
         }
       case .xmlPlistEncodeDecode:
-        try Coder.check(value, checker, \.xmlPlistEncoder)
+        try Coder.check(value, checker, \.xmlPlistEncoder, scenario: String(describing: self), file: file, line: line)
       case .binaryPlistEncodeDecode:
-        try Coder.check(value, checker, \.binaryPlistEncoder)
+        try Coder.check(value, checker, \.binaryPlistEncoder, scenario: String(describing: self), file: file, line: line)
       case .serializedXmlPlistEncodeDecode:
-        try Coder.check(value, checker, .xml)
+        try Coder.check(value, checker, .xml, scenario: String(describing: self), file: file, line: line)
       case .serializedBinaryPlistEncodeDecode:
-        try Coder.check(value, checker, .binary)
+        try Coder.check(value, checker, .binary, scenario: String(describing: self), file: file, line: line)
       case .simpleJsonEncodeDecode:
-        try Coder.check(value, checker, \.simpleJson)
+        try Coder.check(value, checker, \.simpleJson, scenario: String(describing: self), file: file, line: line)
       case .nonConformingFloatJsonEncodeDecode:
-        try Coder.check(value, checker, \.nonConformingFloatJson)
+        try Coder.check(value, checker, \.nonConformingFloatJson, scenario: String(describing: self), file: file, line: line)
       case .base64DataJsonEncodeDecode:
-        try Coder.check(value, checker, \.base64DataJson)
+        try Coder.check(value, checker, \.base64DataJson, scenario: String(describing: self), file: file, line: line)
       case .secondsDateJsonEncodeDecode:
-        try Coder.check(value, checker, \.secondsDateJson)
+        try Coder.check(value, checker, \.secondsDateJson, scenario: String(describing: self), file: file, line: line)
       case .iso8601DateJsonEncodeDecode:
-        try Coder.check(value, checker, \.iso8601DateJson)
+        try Coder.check(value, checker, \.iso8601DateJson, scenario: String(describing: self), file: file, line: line)
       case .serializedJsonEncodeDecode:
-        try Coder.check(value, checker)
+        try Coder.check(value, checker, scenario: String(describing: self), file: file, line: line)
       }
     }
   }

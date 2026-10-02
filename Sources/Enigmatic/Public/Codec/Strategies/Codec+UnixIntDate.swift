@@ -1,12 +1,22 @@
 import Foundation
 
 extension Codec {
+  /// Encodes seconds since 1970 multiplied by 10 to the given scale as Int, truncating toward zero.
+  ///
+  /// Rejects non-finite values, invalid scale factors and unrepresentable results.
   @available(anyAppleOS 26, *)
-  public enum UnixIntDate<let scale: Int>: DecodeStrategy, EncodeStrategy, Error {
+  public enum UnixIntDate<let scale: Int>: Hashable, DecodeStrategy, EncodeStrategy, Error {
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try Double(Int(from: decoder))
-      let scaled = value / pow(10.0, Double(Self.scale))
+      let factor = pow(10.0, Double(Self.scale))
+      guard factor.isFinite, factor > 0 else {
+        throw DecodingError.dataCorrupted(DecodingError.Context(
+          codingPath: decoder.codingPath,
+          debugDescription: "Invalid decimal date scale: \(Self.scale)"
+        ))
+      }
+      let scaled = value / factor
       guard scaled.isFinite else {
         throw DecodingError.dataCorrupted(DecodingError.Context(
           codingPath: decoder.codingPath,
@@ -25,14 +35,21 @@ extension Codec {
           debugDescription: "Not finite timeIntervalSince1970"
         ))
       }
-      let scaled = value * pow(10.0, Double(Self.scale))
+      let factor = pow(10.0, Double(Self.scale))
+      guard factor.isFinite, factor > 0 else {
+        throw EncodingError.invalidValue(value, EncodingError.Context(
+          codingPath: encoder.codingPath,
+          debugDescription: "Invalid decimal date scale: \(Self.scale)"
+        ))
+      }
+      let scaled = value * factor
       guard scaled.isFinite else {
         throw EncodingError.invalidValue(value, EncodingError.Context(
           codingPath: encoder.codingPath,
           debugDescription: "Not finite timeIntervalSince1970 after scaling: \(Self.scale)"
         ))
       }
-      guard scaled < Double(Int.max), scaled > Double(Int.min) else {
+      guard scaled < Double(Int.max), scaled >= Double(Int.min) else {
         throw EncodingError.invalidValue(value, EncodingError.Context(
           codingPath: encoder.codingPath,
           debugDescription: "timeIntervalSince1970 out of Int bounds"
@@ -45,7 +62,7 @@ extension Codec {
   }
 
   @available(anyAppleOS, deprecated: 26.0)
-  public enum UnixIntSecondsDate: DecodeStrategy, EncodeStrategy, Error {
+  public enum UnixIntSecondsDate: Hashable, DecodeStrategy, EncodeStrategy, Error {
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       try Date(timeIntervalSince1970: Double(Int(from: decoder)))
@@ -60,7 +77,7 @@ extension Codec {
           debugDescription: "Not finite timeIntervalSince1970"
         ))
       }
-      guard value < Double(Int.max), value > Double(Int.min) else {
+      guard value < Double(Int.max), value >= Double(Int.min) else {
         throw EncodingError.invalidValue(value, EncodingError.Context(
           codingPath: encoder.codingPath,
           debugDescription: "timeIntervalSince1970 out of Int bounds"
@@ -73,7 +90,7 @@ extension Codec {
   }
 
   @available(anyAppleOS, deprecated: 26.0)
-  public enum UnixIntMillisecondsDate: DecodeStrategy, EncodeStrategy {
+  public enum UnixIntMillisecondsDate: Hashable, DecodeStrategy, EncodeStrategy {
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       try Date(timeIntervalSince1970: Double(Int(from: decoder)) / 1000)
@@ -89,7 +106,7 @@ extension Codec {
         ))
       }
       let scaled = value * 1000
-      guard scaled < Double(Int.max), scaled > Double(Int.min) else {
+      guard scaled < Double(Int.max), scaled >= Double(Int.min) else {
         throw EncodingError.invalidValue(value, EncodingError.Context(
           codingPath: encoder.codingPath,
           debugDescription: "timeIntervalSince1970 out of Int bounds"
