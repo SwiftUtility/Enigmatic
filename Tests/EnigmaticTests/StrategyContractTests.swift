@@ -20,8 +20,10 @@ final class StrategyContractTests: XCTestCase {
     try roundTrip(Codec.Base64Data.self, Data(), expected: "")
     try roundTrip(Codec.Base64Data?.self, nil, expected: nil)
     try roundTrip(Codec.StringURL.self, URL(string: "https://example.com/a")!, expected: "https://example.com/a")
+    try roundTrip(Codec.PathURL.self, URL(fileURLWithPath: "/tmp/enigmatic/path with spaces"), expected: "/tmp/enigmatic/path with spaces")
     try roundTrip([Codec.Id<Int>].self, [], expected: [])
     try roundTrip([String: Codec.Id<Int>].self, ["x": 1], expected: ["x": 1])
+    try roundTrip([String: [Codec.Id<Int>?]].self, ["values": [1, nil, 3]], expected: ["values": [1, nil, 3]])
     let set = try Enigma.array([1, 1, 2]).decode(Codec.Box<Set<Codec.Id<Int>>>.self)
     XCTAssertEqual(set.wrappedValue, [1, 2])
     let encoded = try Enigma(encode: set)
@@ -35,6 +37,9 @@ final class StrategyContractTests: XCTestCase {
     }
     assertDecodingError("typeMismatch", path: [1]) {
       _ = try Enigma.array([1, "x"]).decode(Codec.Box<Set<Codec.Id<Int>>>.self)
+    }
+    assertDecodingError("dataCorrupted", path: ["values", 1]) {
+      _ = try Enigma.dictionary(["values": .array(["AQID", "!"])]).decode([String: [Codec.Box<Codec.Base64Data>]].self)
     }
   }
 
@@ -59,6 +64,148 @@ final class StrategyContractTests: XCTestCase {
     let nestedNilTree = try Enigma(encode: nestedNil)
     XCTAssertEqual(nestedNilTree, .null)
     XCTAssertNil(try nestedNilTree.decode(Codec.OptionalBox<NestedOptionalStrategy>.self).wrappedValue)
+  }
+
+  func testOptionalBoxKeyedContainerSemantics() throws {
+    struct OptionalField: Codable, Equatable {
+      @Codec.Box<Codec.Id<Int>?> var value: Int?
+
+      init(value: Int?) {
+        self._value = Codec.Box(wrappedValue: value)
+      }
+    }
+
+    let absent = OptionalField(value: nil)
+    let json = try JSONEncoder().encode(absent)
+    XCTAssertEqual(try JSONDecoder().decode(Enigma.self, from: json), [:])
+    XCTAssertEqual(try Enigma(encode: absent), [:])
+
+    let decodedMissingJSON = try JSONDecoder().decode(OptionalField.self, from: Data("{}".utf8))
+    XCTAssertNil(decodedMissingJSON.value)
+    XCTAssertNil(try Enigma.dictionary([:]).decode(OptionalField.self).value)
+
+    let decodedNullJSON = try JSONDecoder().decode(OptionalField.self, from: Data("{\"value\":null}".utf8))
+    XCTAssertNil(decodedNullJSON.value)
+    XCTAssertNil(try Enigma.dictionary(["value": .null]).decode(OptionalField.self).value)
+
+    let present = OptionalField(value: 42)
+    let presentJSON = try JSONEncoder().encode(present)
+    XCTAssertEqual(try JSONDecoder().decode(OptionalField.self, from: presentJSON), present)
+    XCTAssertEqual(try Enigma(encode: present), ["value": 42])
+    XCTAssertEqual(try Enigma.dictionary(["value": 42]).decode(OptionalField.self), present)
+
+    assertDecodingError("typeMismatch", path: ["value"]) {
+      _ = try Enigma.dictionary(["value": "not an integer"]).decode(OptionalField.self)
+    }
+  }
+
+  func testDelayedFailureEncodingReportsCodingPath() throws {
+    struct FailingEncode: Encodable {
+      @Codec.Box<Result<Codec.Id<Never>, Enigma.CompositeError>>
+      var fail = .failure(Enigma.CompositeError())
+    }
+
+    func assertFailure(_ error: Error, file: StaticString = #filePath, line: UInt = #line) {
+      guard case EncodingError.invalidValue(_, let context) = error else {
+        return XCTFail("Expected EncodingError.invalidValue, got \(error)", file: file, line: line)
+      }
+      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["fail"], file: file, line: line)
+      let composite = context.underlyingError as? Enigma.CompositeError
+      XCTAssertNotNil(composite, file: file, line: line)
+      XCTAssertEqual(composite?.errors.count, 0, file: file, line: line)
+    }
+
+    XCTAssertThrowsError(try JSONEncoder().encode(FailingEncode())) { assertFailure($0) }
+    XCTAssertThrowsError(try Enigma(encode: FailingEncode())) { assertFailure($0) }
+  }
+
+  func testDeepMixedCodingPaths() throws {
+    struct FailingLeaf: Encodable {
+      @Codec.Box<Result<Codec.Id<Never>, Enigma.CompositeError>>
+      var fail = .failure(Enigma.CompositeError())
+    }
+    struct EncodeThree: Encodable { let outer: [FailingLeaf] }
+    struct EncodeFour: Encodable {
+      struct Group: Encodable { let items: FailingLeaf }
+      let outer: [Group]
+    }
+    struct EncodeFive: Encodable {
+      struct Group: Encodable { let items: [FailingLeaf] }
+      let outer: [Group]
+    }
+
+    assertEncodingErrorPath(["outer", 0, "fail"]) {
+      _ = try JSONEncoder().encode(EncodeThree(outer: [FailingLeaf()]))
+    }
+    assertEncodingErrorPath(["outer", 0, "fail"]) {
+      _ = try Enigma(encode: EncodeThree(outer: [FailingLeaf()]))
+    }
+    assertEncodingErrorPath(["outer", 0, "items", "fail"]) {
+      _ = try JSONEncoder().encode(EncodeFour(outer: [.init(items: FailingLeaf())]))
+    }
+    assertEncodingErrorPath(["outer", 0, "items", "fail"]) {
+      _ = try Enigma(encode: EncodeFour(outer: [.init(items: FailingLeaf())]))
+    }
+    assertEncodingErrorPath(["outer", 0, "items", 0, "fail"]) {
+      _ = try JSONEncoder().encode(EncodeFive(outer: [.init(items: [FailingLeaf()])]))
+    }
+    assertEncodingErrorPath(["outer", 0, "items", 0, "fail"]) {
+      _ = try Enigma(encode: EncodeFive(outer: [.init(items: [FailingLeaf()])]))
+    }
+
+    struct DecodedLeaf: Decodable { let fail: Codec.Box<Codec.Base64Data> }
+    struct DecodeThree: Decodable {
+      struct Group: Decodable { let fail: Codec.Box<Codec.Base64Data> }
+      let outer: [Group]
+    }
+    struct DecodeFour: Decodable {
+      struct Group: Decodable { let items: DecodedLeaf }
+      let outer: [Group]
+    }
+    struct DecodeFive: Decodable {
+      struct Group: Decodable { let items: [DecodedLeaf] }
+      let outer: [Group]
+    }
+
+    let cases: [(any Decodable.Type, String, Enigma, [Enigma.Pin])] = [
+      (DecodeThree.self, #"{"outer":[{"fail":"!"}]}"#, ["outer": [["fail": "!"]]], ["outer", 0, "fail"]),
+      (DecodeFour.self, #"{"outer":[{"items":{"fail":"!"}}]}"#, ["outer": [["items": ["fail": "!"]]]], ["outer", 0, "items", "fail"]),
+      (DecodeFive.self, #"{"outer":[{"items":[{"fail":"!"}]}]}"#, ["outer": [["items": [["fail": "!"]]]]], ["outer", 0, "items", 0, "fail"]),
+    ]
+    for (type, json, tree, path) in cases {
+      let data = Data(json.utf8)
+      assertJSONDecodingError(path) {
+        _ = try JSONDecoder().decode(type, from: data)
+      }
+      assertDecodingError("dataCorrupted", path: path) {
+        _ = try tree.decode(type)
+      }
+    }
+  }
+
+  private func assertEncodingErrorPath(
+    _ path: [Enigma.Pin], file: StaticString = #filePath, line: UInt = #line,
+    _ body: () throws -> Void
+  ) {
+    XCTAssertThrowsError(try body(), file: file, line: line) { error in
+      guard case EncodingError.invalidValue(_, let context) = error else {
+        return XCTFail("Expected EncodingError.invalidValue, got \(error)", file: file, line: line)
+      }
+      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), path, file: file, line: line)
+      XCTAssertTrue(context.underlyingError is Enigma.CompositeError, file: file, line: line)
+    }
+  }
+
+  private func assertJSONDecodingError(
+    _ path: [Enigma.Pin], file: StaticString = #filePath, line: UInt = #line,
+    _ body: () throws -> Void
+  ) {
+    XCTAssertThrowsError(try body(), file: file, line: line) { error in
+      guard case DecodingError.dataCorrupted(let context) = error else {
+        return XCTFail("Expected DecodingError.dataCorrupted, got \(error)", file: file, line: line)
+      }
+      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), path, file: file, line: line)
+    }
   }
 
   func testResultDefersFailureAndPreservesCause() throws {
