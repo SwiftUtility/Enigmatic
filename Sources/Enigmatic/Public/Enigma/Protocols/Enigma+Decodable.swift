@@ -1,6 +1,8 @@
 import Foundation
 
 extension Enigma: Decodable {
+  /// Creates a tree from the first keyed, unkeyed, or single-value container available.
+  /// Dates and data are retained in their native cases when supported by the decoder.
   public init(from decoder: Decoder) throws {
     if var container = try? decoder.container(keyedBy: Pin.self) {
       self = try Self.decode(keyed: &container)

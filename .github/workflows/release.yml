@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: ${{ matrix.os }} / ${{ matrix.configuration }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, ubuntu-24.04]
+        configuration: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.3.3'
+      - name: Run tests
+        run: swift test -c ${{ matrix.configuration }} --skip PerformanceTests
+      - name: Enforce full coverage
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: |
+          python3 -m unittest discover -s Scripts/tests
+          swift test --enable-code-coverage --skip PerformanceTests
+          python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)" --minimum 100
+
+  publish:
+    name: Publish GitHub release
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release from tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --generate-notes

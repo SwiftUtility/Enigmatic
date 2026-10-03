@@ -1,7 +1,7 @@
 import Foundation
 
 public extension Enigma {
-  /// Convert Enigma to Any usable with [Stencil](https://github.com/stencilproject/Stencil) render
+  /// Converts the tree to native Swift/Foundation values for templating and inspection.
   ///
   /// - Warning: It is not guaranteed to be compatible with JSONSerialization or PropertyListSerialization
   var rawAny: Any {
@@ -40,14 +40,19 @@ public extension Enigma {
     }
   }
 
-  /// Convert Enigma to NSObject compatible with PropertyListSerialization
+  /// Converts the tree to a Foundation object accepted by `PropertyListSerialization`.
+  ///
+  /// - Throws: `EncodingError.invalidValue` when a value is unsupported by property lists.
   var plistObject: NSObject {
     get throws(EncodingError) {
       try Reducer.reduce(seed: [], self, Self.makePlistObject(reducer:))
     }
   }
 
-  /// Convert Enigma to NSObject compatible with JSONSerialization
+  /// Converts the tree to a Foundation object accepted by `JSONSerialization`.
+  ///
+  /// - Throws: `EncodingError.invalidValue` for null-incompatible values, data, dates,
+  ///   non-finite numbers, and 128-bit integers.
   var jsonObject: NSObject {
     get throws(EncodingError) {
       try Reducer.reduce(seed: [], self, Self.makeJsonObject(reducer:))
@@ -76,15 +81,17 @@ public extension Enigma {
     return result
   }
 
-  /// Test if root value is null
+  /// Whether the root value is an explicit null.
   var isNull: Bool {
     if case .null = self { true } else { false }
   }
 
+  /// Whether the root value is an array.
   var isArray: Bool {
     if case .array = self { true } else { false }
   }
 
+  /// Whether the root value is a dictionary.
   var isDictionary: Bool {
     if case .dictionary = self { true } else { false }
   }

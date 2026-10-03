@@ -1,6 +1,7 @@
 import Foundation
 
 extension Enigma {
+  /// Stores a signed 128-bit integer in an `Enigma` tree.
   @frozen
   public struct Int128Value: Sendable, CustomStringConvertible, CustomDebugStringConvertible {
     @usableFromInline
@@ -8,6 +9,7 @@ extension Enigma {
     @usableFromInline
     let high: UInt64
 
+    /// Wraps a native `Int128` for storage in an Enigma tree.
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     @inlinable
     public init(_ value: Int128) {
@@ -16,6 +18,7 @@ extension Enigma {
       self.low = UInt64(truncatingIfNeeded: bits)
     }
 
+    /// The wrapped native integer.
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     @inlinable
     public var value: Int128 {
@@ -23,6 +26,7 @@ extension Enigma {
       return Int128(bitPattern: bits)
     }
 
+    /// The decimal representation, or an availability marker on older systems.
     public var description: String {
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         String(describing: value)
@@ -31,6 +35,7 @@ extension Enigma {
       }
     }
 
+    /// A debug representation, or an availability marker on older systems.
     public var debugDescription: String {
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         String(reflecting: value)

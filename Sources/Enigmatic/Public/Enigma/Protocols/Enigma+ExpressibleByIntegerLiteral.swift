@@ -1,4 +1,5 @@
 extension Enigma: ExpressibleByIntegerLiteral {
+  /// Creates an integer tree value from an integer literal.
   public init(integerLiteral value: IntegerLiteralType) {
     self = if let value = UInt8(exactly: value) {
       .uint8(value)

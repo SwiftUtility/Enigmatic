@@ -6,6 +6,8 @@ extension Codec {
   /// Rejects non-finite values, invalid scale factors and unrepresentable results.
   @available(anyAppleOS 26, *)
   public enum UnixDate<let scale: Int>: Hashable, DecodeStrategy, EncodeStrategy {
+    /// Decodes scaled seconds since 1970 into a `Date`.
+    /// - Throws: `DecodingError.dataCorrupted` for non-finite input or an invalid scale.
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try Double(from: decoder)
@@ -32,6 +34,8 @@ extension Codec {
       return Date(timeIntervalSince1970: scaled)
     }
 
+    /// Encodes a date as seconds since 1970 multiplied by `10^scale`.
+    /// - Throws: `EncodingError.invalidValue` for a non-finite date, scale, or result.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
       let value = value.timeIntervalSince1970
@@ -58,11 +62,16 @@ extension Codec {
       try scaled.encode(to: encoder)
     }
 
+    /// The value produced by decoding and consumed by encoding.
     public typealias BoxedValue = Date
   }
 
+  /// Encodes seconds since 1970 as a floating-point value.
+  /// Prefer `UnixDate<0>` when the deployment target supports it.
   @available(anyAppleOS, deprecated: 26.0)
   public enum UnixSecondsDate: Hashable, DecodeStrategy, EncodeStrategy, Error {
+    /// Decodes finite seconds since 1970 into a date.
+    /// - Throws: `DecodingError.dataCorrupted` for non-finite input.
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try Double(from: decoder)
@@ -75,6 +84,8 @@ extension Codec {
       return Date(timeIntervalSince1970: value)
     }
 
+    /// Encodes a date as finite seconds since 1970.
+    /// - Throws: `EncodingError.invalidValue` for a non-finite date.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
       let value = value.timeIntervalSince1970
@@ -87,11 +98,16 @@ extension Codec {
       try value.encode(to: encoder)
     }
 
+    /// The value produced by decoding and consumed by encoding.
     public typealias BoxedValue = Date
   }
 
+  /// Encodes seconds since 1970 multiplied by 1,000 as a floating-point value.
+  /// Prefer `UnixDate<3>` when the deployment target supports it.
   @available(anyAppleOS, deprecated: 26.0)
   public enum UnixMillisecondsDate: Hashable, DecodeStrategy, EncodeStrategy, Error {
+    /// Decodes finite milliseconds since 1970 into a date.
+    /// - Throws: `DecodingError.dataCorrupted` for non-finite input.
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try Double(from: decoder)
@@ -104,6 +120,8 @@ extension Codec {
       return Date(timeIntervalSince1970: value / 1000)
     }
 
+    /// Encodes a date as finite milliseconds since 1970.
+    /// - Throws: `EncodingError.invalidValue` for a non-finite or unrepresentable result.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
       let value = value.timeIntervalSince1970
@@ -123,6 +141,7 @@ extension Codec {
       try scaled.encode(to: encoder)
     }
 
+    /// The value produced by decoding and consumed by encoding.
     public typealias BoxedValue = Date
   }
 }

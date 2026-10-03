@@ -4,8 +4,10 @@ extension Codec {
   ///
   /// Use disjoint keyed models; overlapping writes can fail depending on the encoder.
   public struct Each<each Value> {
+    /// The values encoded or decoded against the same input and output container.
     public var values: (repeat each Value)
 
+    /// Creates a product from its component values.
     public init(values: (repeat each Value)) {
       self.values = values
     }
@@ -17,6 +19,7 @@ extension Codec.Each: Sendable where repeat each Value: Sendable {}
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Decodable where repeat each Value: Decodable {
+  /// Decodes every component from the same decoder.
   @inlinable
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
@@ -26,6 +29,7 @@ extension Codec.Each: Decodable where repeat each Value: Decodable {
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Encodable where repeat each Value: Encodable {
+  /// Encodes each component into the same encoder.
   @inlinable
   public func encode(to encoder: Encoder) throws {
     for value in repeat each values {
@@ -36,6 +40,7 @@ extension Codec.Each: Encodable where repeat each Value: Encodable {
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Equatable where repeat each Value: Equatable {
+  /// Returns whether corresponding component values are equal.
   @inlinable
   public static func == (lhs: Self, rhs: Self) -> Bool {
     for (lhs, rhs) in repeat (each lhs.values, each rhs.values) {
@@ -47,6 +52,7 @@ extension Codec.Each: Equatable where repeat each Value: Equatable {
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Hashable where repeat each Value: Hashable {
+  /// Combines every component value into the hasher.
   @inlinable
   public func hash(into hasher: inout Hasher) {
     for value in repeat each values {
@@ -57,11 +63,13 @@ extension Codec.Each: Hashable where repeat each Value: Hashable {
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Codec.Strategy where repeat each Value: Codec.Strategy {
+  /// A tuple of each component strategy's boxed value.
   public typealias BoxedValue = (repeat (each Value).BoxedValue)
 }
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Codec.DecodeStrategy where repeat each Value: Codec.DecodeStrategy {
+  /// Decodes each component with its corresponding strategy from one decoder.
   @inlinable
   public static func decode(decoder: some Decoder) throws -> BoxedValue {
     try (repeat (each Value).decode(decoder: decoder))
@@ -70,6 +78,7 @@ extension Codec.Each: Codec.DecodeStrategy where repeat each Value: Codec.Decode
 
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Codec.EncodeStrategy where repeat each Value: Codec.EncodeStrategy {
+  /// Encodes each component with its corresponding strategy into one encoder.
   @inlinable
   public static func encode(value: BoxedValue, encoder: some Encoder) throws {
     for (value, type) in repeat (each value, (each Value).self) {

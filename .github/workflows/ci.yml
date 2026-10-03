@@ -36,7 +36,7 @@ jobs:
         if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
         run: |
           swift test --enable-code-coverage --skip PerformanceTests
-          python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)"
+          python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)" --minimum 100
       - name: Upload coverage
         if: always() && matrix.os == 'macos-26' && matrix.configuration == 'debug'
         uses: actions/upload-artifact@v4

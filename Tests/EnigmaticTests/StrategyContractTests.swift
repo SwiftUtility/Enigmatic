@@ -54,6 +54,9 @@ final class StrategyContractTests: XCTestCase {
     let tree = try Enigma(encode: box)
     XCTAssertEqual(tree, 42)
     XCTAssertEqual(try tree.decode(Codec.OptionalBox<OptionalStrategy>.self), box)
+    XCTAssertEqual(box.description, "42")
+    XCTAssertEqual(box.debugDescription, "42")
+    XCTAssertEqual(Set([box, box]).count, 1)
 
     typealias NestedOptionalStrategy = Codec.Id<Int>??
     let nestedNil = Codec.OptionalBox<NestedOptionalStrategy>(wrappedValue: nil)
@@ -269,6 +272,8 @@ final class StrategyContractTests: XCTestCase {
   func testEachCompositionAndConflicts() throws {
     struct A: Codable, Hashable { let a: Int }
     struct B: Codable, Hashable { let b: String }
+    struct C: Codable, Hashable { let c: Bool }
+    struct D: Codable, Hashable { let d: Double }
     let value = Codec.Each(values: (A(a: 1), B(b: "s")))
     let tree = try Enigma(encode: value)
     XCTAssertEqual(tree, ["a": 1, "b": "s"])
@@ -280,6 +285,46 @@ final class StrategyContractTests: XCTestCase {
     let restored = try tree.decode(type(of: boxed))
     XCTAssertEqual(restored.wrappedValue.0, A(a: 1))
     XCTAssertEqual(restored.wrappedValue.1, B(b: "s"))
+
+    let pair = Codec.Each2(values: (A(a: 1), B(b: "s")))
+    XCTAssertEqual(try Enigma(encode: pair), tree)
+    XCTAssertEqual(try tree.decode(type(of: pair)), pair)
+    XCTAssertEqual(Set([pair, pair]).count, 1)
+    typealias PairStrategy = Codec.Each2<Codec.Id<A>, Codec.Id<B>>
+    let pairBox = Codec.Box<PairStrategy>(wrappedValue: (A(a: 1), B(b: "s")))
+    XCTAssertEqual(try Enigma(encode: pairBox), tree)
+    let decodedPair = try tree.decode(Codec.Box<PairStrategy>.self).wrappedValue
+    XCTAssertEqual(decodedPair.0, A(a: 1))
+    XCTAssertEqual(decodedPair.1, B(b: "s"))
+
+    let triple = Codec.Each3(values: (A(a: 1), B(b: "s"), C(c: true)))
+    let tripleTree = try Enigma(encode: triple)
+    XCTAssertEqual(tripleTree, ["a": 1, "b": "s", "c": true])
+    XCTAssertEqual(try tripleTree.decode(type(of: triple)), triple)
+    XCTAssertEqual(Set([triple, triple]).count, 1)
+
+    let quadruple = Codec.Each4(values: (A(a: 1), B(b: "s"), C(c: true), D(d: 2.5)))
+    let quadrupleTree = try Enigma(encode: quadruple)
+    XCTAssertEqual(quadrupleTree, ["a": 1, "b": "s", "c": true, "d": 2.5])
+    XCTAssertEqual(try quadrupleTree.decode(type(of: quadruple)), quadruple)
+    XCTAssertEqual(Set([quadruple, quadruple]).count, 1)
+
+    typealias TripleStrategy = Codec.Each3<Codec.Id<A>, Codec.Id<B>, Codec.Id<C>>
+    let tripleBox = Codec.Box<TripleStrategy>(wrappedValue: (A(a: 1), B(b: "s"), C(c: true)))
+    XCTAssertEqual(try Enigma(encode: tripleBox), tripleTree)
+    let decodedTriple = try tripleTree.decode(Codec.Box<TripleStrategy>.self).wrappedValue
+    XCTAssertEqual(decodedTriple.0, A(a: 1))
+    XCTAssertEqual(decodedTriple.1, B(b: "s"))
+    XCTAssertEqual(decodedTriple.2, C(c: true))
+
+    typealias QuadrupleStrategy = Codec.Each4<Codec.Id<A>, Codec.Id<B>, Codec.Id<C>, Codec.Id<D>>
+    let quadrupleBox = Codec.Box<QuadrupleStrategy>(wrappedValue: (A(a: 1), B(b: "s"), C(c: true), D(d: 2.5)))
+    XCTAssertEqual(try Enigma(encode: quadrupleBox), quadrupleTree)
+    let decodedQuadruple = try quadrupleTree.decode(Codec.Box<QuadrupleStrategy>.self).wrappedValue
+    XCTAssertEqual(decodedQuadruple.0, A(a: 1))
+    XCTAssertEqual(decodedQuadruple.1, B(b: "s"))
+    XCTAssertEqual(decodedQuadruple.2, C(c: true))
+    XCTAssertEqual(decodedQuadruple.3, D(d: 2.5))
     XCTAssertThrowsError(try Enigma(encode: Codec.Each(values: (A(a: 1), A(a: 2)))))
     XCTAssertThrowsError(try Enigma(encode: Codec.Each(values: (1, 2))))
     assertDecodingError("keyNotFound", path: []) { _ = try Enigma.dictionary(["a": 1]).decode(type(of: value)) }

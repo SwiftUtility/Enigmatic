@@ -11,6 +11,10 @@ struct Payload: Codable {
 }
 ```
 
+When `link` is nil, its key is omitted from keyed output. Decoding treats a
+missing or null key as nil. Use `Codec.OptionalBox` when working directly with
+the present payload of an optional strategy.
+
 `Base64Data` encodes a Base64 string and rejects malformed input. `StringURL`
 uses Foundation's URL initializer, which permits relative URLs; it does not enforce
 an HTTP scheme. `Id<T>` delegates to T's own Codable implementation.
@@ -18,9 +22,15 @@ an HTTP scheme. `Id<T>` delegates to T's own Codable implementation.
 Strategy arrays, dictionaries, optionals and sets transform their elements:
 `[Codec.Base64Data]`, `[String: Codec.Base64Data?]`, `Set<Codec.Id<Int>>`.
 A set removes duplicates and its output order is unspecified. Built-in strategy
-types conform to Hashable so they can be used as Set's element type.
-An optional strategy accepts explicit null; a missing wrapped-property key still
-follows synthesized Codable behavior and throws `keyNotFound`.
+types conform to Hashable so they can be used as Set's element type. Optional
+values accept explicit null; optional `Codec.Box` properties also support missing
+keys and omit nil keys while encoding.
+
+`Codec.Box<Strategy>` exposes `Strategy.BoxedValue` as a wrapped property. The
+strategy protocol family separates the boxed value type, whole optional value,
+present optional payload, decoding operation and encoding operation. Implement
+`DecodeOptionalStrategy` and `EncodeOptionalStrategy` when a custom strategy
+needs distinct behavior for nil and present payloads.
 
 ## Alternatives and products
 
@@ -38,6 +48,10 @@ The older Each2/Each3/Each4 types remain available for older Apple runtimes.
 Encoding a failed Result throws `EncodingError.invalidValue` and retains the
 original error in `underlyingError`.
 
+`Base64Data` maps `Data` to Base64 text. `StringURL` uses Foundation's general
+URL parser and permits relative URLs. `PathURL` maps file URLs to path strings.
+`Id<Value>` delegates to the wrapped value's Codable implementation.
+
 ## Dates
 
 `PlistDate` uses seconds since Foundation's reference date (2001-01-01).
@@ -51,3 +65,4 @@ a floating-point time interval. Use scales appropriate to the required precision
 
 The generic Unix strategies require Apple OS 26; the named seconds and
 milliseconds strategies remain available for older deployment targets.
+`PlistDate` instead uses seconds relative to Foundation's 2001 reference date.

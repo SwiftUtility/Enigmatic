@@ -80,15 +80,16 @@ struct Payload: Codable {
 
 let payload = Payload(bytes: Data([1, 2, 3]), link: nil)
 let tree = try Enigma(encode: payload)
-// ["bytes": "AQID", "link": null]
+// ["bytes": "AQID"]
 let restored = try tree.decode(Payload.self)
 ```
 
 Strategies compose with arrays, dictionaries, optionals and sets:
 `[Codec.Base64Data]`, `[String: Codec.Base64Data?]`, or `Set<Codec.Id<Int>>`.
-Optional strategy values accept an explicit null; synthesized decoding of a
-wrapped property still requires its key. A `Set` removes duplicates and does not
-promise encoded ordering.
+Optional strategy values accept an explicit null. For an optional `Codec.Box`
+property, a nil value is omitted from keyed output, and decoding a missing or
+null key produces nil. A `Set` removes duplicates and does not promise encoded
+ordering.
 
 `Codec.Either<Right, Left>` tries Right first, then Left. If both fail, a
 `DecodingError.dataCorrupted` contains an `Enigma.CompositeError` with both causes.
@@ -123,8 +124,8 @@ Date strategies reject non-finite dates and invalid decimal scale factors.
 Foundation `Date` uses floating-point storage, so extreme dates and scales may
 lose precision even if finite.
 
-See the [migration guide](Sources/Enigmatic/Enigmatic.docc/Migration.md) and
-[DocC catalog](Sources/Enigmatic/Enigmatic.docc/Enigmatic.md).
+See the [DocC catalog](Sources/Enigmatic/Enigmatic.docc/Enigmatic.md) for API
+guides and symbol documentation.
 
 ## Development
 
@@ -136,8 +137,8 @@ python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)"
 swift test -c release --filter PerformanceTests
 ```
 
-Coverage checks only executable lines under `Sources/Enigmatic`, with an 85%
-minimum on macOS. Benchmarks are separate, run without coverage, and report
+Coverage checks only executable lines under `Sources/Enigmatic`, with a 100%
+minimum on pull requests. Benchmarks are separate, run without coverage, and report
 relative timings without noisy CI timing thresholds. The manual CI workflow also
 uploads benchmark results. README examples are exercised in
 `DocumentationExamplesTests`.

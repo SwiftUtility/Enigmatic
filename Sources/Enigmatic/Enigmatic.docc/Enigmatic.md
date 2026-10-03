@@ -28,12 +28,29 @@ specify Apple runtime requirements; Linux uses the toolchain runtime.
 - ``Codec/DecodeStrategy``
 - ``Codec/EncodeStrategy``
 - ``Codec/Box``
+- ``Codec/OptionalBox``
+- ``Codec/OptionalStrategy``
+- ``Codec/DecodeOptionalStrategy``
+- ``Codec/EncodeOptionalStrategy``
 - ``Codec/Either``
 - ``Codec/Each``
+- ``Codec/Each2``
+- ``Codec/Each3``
+- ``Codec/Each4``
+- ``Codec/Id``
+- ``Codec/Base64Data``
+- ``Codec/StringURL``
+- ``Codec/PathURL``
+- ``Codec/PlistDate``
+- ``Codec/UnixDate``
+- ``Codec/UnixIntDate``
+- ``Codec/UnixSecondsDate``
+- ``Codec/UnixMillisecondsDate``
+- ``Codec/UnixIntSecondsDate``
+- ``Codec/UnixIntMillisecondsDate``
 - ``Enigma/CompositeError``
 - <CodingStrategies>
 
-### Compatibility
+### Serialization and compatibility
 
 - <Serialization>
-- <Migration>

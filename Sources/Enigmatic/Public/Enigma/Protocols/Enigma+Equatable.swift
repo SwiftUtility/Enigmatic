@@ -1,7 +1,8 @@
 import Foundation
 
 extension Enigma: Equatable {
-  /// Equality check
+  /// Compares two trees by value, allowing exactly representable numeric cases to compare equal.
+  /// NaN compares equal to NaN; this comparison does not guarantee identical numeric storage.
   public static func == (lhs: Self, rhs: Self) -> Bool {
     switch lhs {
     case .null: rhs.isNull

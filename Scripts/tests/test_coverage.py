@@ -10,7 +10,7 @@ SCRIPT = Path(__file__).resolve().parents[1] / "check-coverage.py"
 
 
 class CoverageGateTests(unittest.TestCase):
-    def run_gate(self, files, minimum=85):
+    def run_gate(self, files, minimum=100):
         with tempfile.TemporaryDirectory() as folder:
             report = Path(folder) / "coverage.json"
             report.write_text(json.dumps({"data": [{"files": files}]}))
@@ -23,17 +23,17 @@ class CoverageGateTests(unittest.TestCase):
     def file(path, count, covered):
         return {"filename": path, "summary": {"lines": {"count": count, "covered": covered}}}
 
-    def test_threshold_is_inclusive_and_tests_are_excluded(self):
+    def test_full_coverage_threshold_is_inclusive_and_tests_are_excluded(self):
         result = self.run_gate([
-            self.file("/repo/Sources/Enigmatic/A.swift", 100, 85),
+            self.file("/repo/Sources/Enigmatic/A.swift", 100, 100),
             self.file("/repo/Tests/EnigmaticTests/A.swift", 1000, 0),
         ])
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("85/100", result.stdout)
+        self.assertIn("100/100", result.stdout)
 
-    def test_below_threshold_fails_even_with_fully_covered_tests(self):
+    def test_any_uncovered_library_line_fails_even_with_fully_covered_tests(self):
         result = self.run_gate([
-            self.file("/repo/Sources/Enigmatic/A.swift", 1000, 849),
+            self.file("/repo/Sources/Enigmatic/A.swift", 1000, 999),
             self.file("/repo/Tests/EnigmaticTests/A.swift", 1000, 1000),
         ])
         self.assertEqual(result.returncode, 1)

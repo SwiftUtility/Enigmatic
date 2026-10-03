@@ -1,8 +1,10 @@
 extension Result: Codec.Strategy where Success: Codec.Strategy {
+  /// The result type formed from the success strategy's boxed value and failure type.
   public typealias BoxedValue = Result<Success.BoxedValue, Failure>
 }
 
 extension Result: Codec.DecodeStrategy where Success: Codec.DecodeStrategy, Failure == any Error {
+  /// Captures a success value or stores a thrown decoding error as `.failure`.
   @inlinable
   public static func decode(decoder: some Decoder) throws -> BoxedValue {
     do {
@@ -14,6 +16,7 @@ extension Result: Codec.DecodeStrategy where Success: Codec.DecodeStrategy, Fail
 }
 
 extension Result: Codec.EncodeStrategy where Success: Codec.EncodeStrategy {
+  /// Encodes a success value or throws an encoding error containing the stored failure.
   @inlinable
   public static func encode(value: BoxedValue, encoder: some Encoder) throws {
     switch value {

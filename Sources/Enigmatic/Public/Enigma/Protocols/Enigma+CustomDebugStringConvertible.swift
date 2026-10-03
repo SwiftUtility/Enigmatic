@@ -1,5 +1,5 @@
 extension Enigma: CustomDebugStringConvertible {
-  /// CustomDebugStringConvertible implementation
+  /// A diagnostic representation of the tree; it is not a serialization format.
   public var debugDescription: String {
     switch self {
     case .null: "null"

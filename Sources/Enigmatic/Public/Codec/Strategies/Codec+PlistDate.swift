@@ -3,6 +3,7 @@ import Foundation
 extension Codec {
   /// Encodes seconds since Foundation's reference date (2001-01-01). Non-finite values throw.
   public enum PlistDate: Hashable, DecodeStrategy, EncodeStrategy {
+    /// Decodes a finite number of seconds since Foundation's reference date.
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let timeInterval = try Double(from: decoder)
@@ -15,6 +16,7 @@ extension Codec {
       return Date(timeIntervalSinceReferenceDate: timeInterval)
     }
 
+    /// Encodes seconds since Foundation's reference date, rejecting non-finite values.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
       let timeInterval = value.timeIntervalSinceReferenceDate
@@ -27,6 +29,7 @@ extension Codec {
       try timeInterval.encode(to: encoder)
     }
 
+    /// The decoded and encoded value type.
     public typealias BoxedValue = Date
   }
 }
