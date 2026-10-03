@@ -204,12 +204,12 @@ extension Enigma {
     case .date(let value):
       return value as NSDate
     case .int128:
-      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+      throw EncodingError.invalidValue(Int128Value.self, EncodingError.Context(
         codingPath: reducer.store,
         debugDescription: "Can not convert Int128 to NSObject"
       ))
     case .uint128:
-      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+      throw EncodingError.invalidValue(UInt128Value.self, EncodingError.Context(
         codingPath: reducer.store,
         debugDescription: "Can not convert UInt128 to NSObject"
       ))
@@ -264,12 +264,12 @@ extension Enigma {
         debugDescription: "Can not convert Date to JSONSerialization compatible NSObject"
       ))
     case .int128:
-      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+      throw EncodingError.invalidValue(Int128Value.self, EncodingError.Context(
         codingPath: reducer.store,
         debugDescription: "Can not convert Int128 to NSObject"
       ))
     case .uint128:
-      throw EncodingError.invalidValue(NSNull(), EncodingError.Context(
+      throw EncodingError.invalidValue(UInt128Value.self, EncodingError.Context(
         codingPath: reducer.store,
         debugDescription: "Can not convert UInt128 to NSObject"
       ))
@@ -289,48 +289,14 @@ extension Enigma {
   }
 }
 
-enum ObjCType {
-  static let signedChar = CChar(UnicodeScalar("c").value)
-  static let signedShort = CChar(UnicodeScalar("s").value)
-  static let signedInt = CChar(UnicodeScalar("i").value)
-  static let signedLong = CChar(UnicodeScalar("l").value)
-  static let signedLongLong = CChar(UnicodeScalar("q").value)
-  static let unsignedChar = CChar(UnicodeScalar("C").value)
-  static let unsignedShort = CChar(UnicodeScalar("S").value)
-  static let unsignedInt = CChar(UnicodeScalar("I").value)
-  static let unsignedLong = CChar(UnicodeScalar("L").value)
-  static let unsignedLongLong = CChar(UnicodeScalar("Q").value)
-  static let float = CChar(UnicodeScalar("f").value)
-  static let double = CChar(UnicodeScalar("d").value)
-  static let bool = CChar(UnicodeScalar("B").value)
-  static let signedInt128 = CChar(UnicodeScalar("j").value)
-  static let unsignedInt128 = CChar(UnicodeScalar("J").value)
-  static let signedBitInt128 = CChar(UnicodeScalar("t").value)
-  static let unsignedBitInt128 = CChar(UnicodeScalar("T").value)
-}
-
-extension NSValue {
-  @inline(__always)
-  func extract<T>(seed: consuming T) -> T {
-    withUnsafeMutablePointer(to: &seed) { pointer in
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
-      getValue(pointer, size: MemoryLayout<T>.size)
-#else
-      getValue(pointer)
-#endif
-    }
-    return seed
-  }
-}
-
 @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
 extension Enigma {
   @inline(__always)
   init(nsValue: NSValue, reducer: inout Reducer<[Pin], Any?>) throws(DecodingError) {
     self = switch nsValue.objCType.pointee {
-    case ObjCType.signedBitInt128:
+    case ObjCType.signedBitInt128, ObjCType.signedInt128:
       .int128(Int128Value(nsValue.extract(seed: 0)))
-    case ObjCType.unsignedBitInt128:
+    case ObjCType.unsignedBitInt128, ObjCType.unsignedInt128:
       .uint128(UInt128Value(nsValue.extract(seed: 0)))
     default:
       throw DecodingError.dataCorrupted(DecodingError.Context(

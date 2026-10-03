@@ -149,7 +149,7 @@ final class EnigmaEncoder {
       try value.encode(to: Single(state: state, ref: ref))
     }
     if case .unset = state.nodes[0].storage {
-      throw EncodingError.invalidValue((nil as Any?) as Any, EncodingError.Context(
+      throw EncodingError.invalidValue(nil as Enigma?, EncodingError.Context(
         codingPath: [],
         debugDescription: "top level encoded to nothing"
       ))

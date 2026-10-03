@@ -6,7 +6,7 @@ public extension Enigma {
   /// - Warning: It is not guaranteed to be compatible with JSONSerialization or PropertyListSerialization
   var rawAny: Any {
     switch self {
-    case .null: NSNull() as Any
+    case .null: NSNull()
     case .bool(let value): value
     case .int(let value): value
     case .int64(let value): value
