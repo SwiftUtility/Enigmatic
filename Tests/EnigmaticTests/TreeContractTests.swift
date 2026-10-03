@@ -5,11 +5,11 @@ import XCTest
 final class TreeContractTests: XCTestCase {
   func testPathsAreDeterministicAndIncludeEmptyContainers() {
     let tree: Enigma = ["z": [], "a": [1, ["b": nil, "a": [:]]]]
-    XCTAssertEqual(tree.paths, [["a"], ["a", 0], ["a", 1], ["a", 1, "a"], ["a", 1, "b"], ["z"]])
-    XCTAssertTrue(Enigma.null.paths.isEmpty)
-    XCTAssertTrue(Enigma.array([]).paths.isEmpty)
-    XCTAssertTrue(Enigma.dictionary([:]).paths.isEmpty)
-    for path in tree.paths { XCTAssertNotNil(tree[path]) }
+    XCTAssertEqual(tree.allPaths, [["a"], ["a", 0], ["a", 1], ["a", 1, "a"], ["a", 1, "b"], ["z"]])
+    XCTAssertTrue(Enigma.null.allPaths.isEmpty)
+    XCTAssertTrue(Enigma.array([]).allPaths.isEmpty)
+    XCTAssertTrue(Enigma.dictionary([:]).allPaths.isEmpty)
+    for path in tree.allPaths { XCTAssertNotNil(tree[path]) }
   }
 
   func testRootMutationInvalidIndicesAndFallbackLaziness() {

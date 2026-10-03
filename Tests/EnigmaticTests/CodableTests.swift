@@ -116,8 +116,8 @@ final class CodableTests: XCTestCase {
     let enigma1 = try Enigma(cast: [key1: 1])
     let enigma2 = try Enigma(cast: [key2: 1])
     XCTAssertEqual(enigma1, enigma2)
-    XCTAssertEqual(try Enigma(cast: enigma1.jsonObject), enigma2)
-    XCTAssertEqual(try Enigma(cast: enigma1.plistObject), enigma2)
+    XCTAssertEqual(try Enigma(cast: enigma1.asJsonObject), enigma2)
+    XCTAssertEqual(try Enigma(cast: enigma1.asPlistObject), enigma2)
   }
 
   func testSupers() throws {

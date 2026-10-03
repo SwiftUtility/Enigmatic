@@ -12,7 +12,7 @@ final class DocumentationExamplesTests: XCTestCase {
     tree["scores", 1] = 20
     tree["name"] = "Grace"
     XCTAssertEqual(try tree.decode(User.self), User(name: "Grace", scores: [10, 20]))
-    XCTAssertEqual(tree.paths, [["name"], ["scores"], ["scores", 0], ["scores", 1]])
+    XCTAssertEqual(tree.allPaths, [["name"], ["scores"], ["scores", 0], ["scores", 1]])
   }
 
   func testReadmeMergeExample() {

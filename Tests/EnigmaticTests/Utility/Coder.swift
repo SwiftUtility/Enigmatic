@@ -71,14 +71,14 @@ class Coder: @unchecked Sendable {
   ) throws {
     let encodedEnigma = try Enigma(encode: value)
     if checker.nonPlistSeriablizable {
-      XCTAssertThrowsError(try encodedEnigma.plistObject, "Scenario: \(scenario)", file: file, line: line)
+      XCTAssertThrowsError(try encodedEnigma.asPlistObject, "Scenario: \(scenario)", file: file, line: line)
       XCTAssertThrowsError(try PropertyListSerialization.data(
-        fromPropertyList: encodedEnigma.rawAny,
+        fromPropertyList: encodedEnigma.asSwiftAny,
         format: fmt,
         options: 0
       ), "Scenario: \(scenario)", file: file, line: line)
     } else {
-      let encodedObject = try encodedEnigma.plistObject
+      let encodedObject = try encodedEnigma.asPlistObject
       let data = try PropertyListSerialization.data(
         fromPropertyList: encodedObject,
         format: fmt,
@@ -134,9 +134,9 @@ class Coder: @unchecked Sendable {
   ) throws {
     let encodedEnigma = try Enigma(encode: value)
     if checker.nonJsonSeriablizable {
-      XCTAssertThrowsError(try encodedEnigma.jsonObject, "Scenario: \(scenario)", file: file, line: line)
+      XCTAssertThrowsError(try encodedEnigma.asJsonObject, "Scenario: \(scenario)", file: file, line: line)
     } else {
-      let encodedObject = try encodedEnigma.jsonObject
+      let encodedObject = try encodedEnigma.asJsonObject
       let data = try JSONSerialization.data(
         withJSONObject: encodedObject,
         options: .fragmentsAllowed

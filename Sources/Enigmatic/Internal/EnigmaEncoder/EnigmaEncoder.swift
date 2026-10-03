@@ -83,17 +83,17 @@ final class EnigmaEncoder {
     if ref.failId >= 0 {
       let failPath = codingPath(failId: ref.failId, key: nil)
       let nodePath = codingPath(nodeId: ref.nodeId, key: nil)
-      let encoded = materialize(nodeId: ref.nodeId).rawAny
-      throw EncodingError.invalidValue(value.rawAny, EncodingError.Context(
+      let encoded = materialize(nodeId: ref.nodeId).asSwiftAny
+      throw EncodingError.invalidValue(value.asSwiftAny, EncodingError.Context(
         codingPath: nodePath + failPath,
         debugDescription: "attempt to overwrite \(encoded) at \(nodePath)"
       ))
     } else if case .unset = nodes[ref.nodeId].storage {
       nodes[ref.nodeId].storage = .value(value)
     } else {
-      throw EncodingError.invalidValue(value.rawAny, EncodingError.Context(
+      throw EncodingError.invalidValue(value.asSwiftAny, EncodingError.Context(
         codingPath: codingPath(nodeId: ref.nodeId, key: nil),
-        debugDescription: "attempt to overwrite \(materialize(nodeId: ref.nodeId).rawAny)"
+        debugDescription: "attempt to overwrite \(materialize(nodeId: ref.nodeId).asSwiftAny)"
       ))
     }
   }

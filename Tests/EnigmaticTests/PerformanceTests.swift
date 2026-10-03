@@ -104,8 +104,8 @@ final class PerformanceTests: XCTestCase {
   func testEncoding() throws {
     let value = Regular()
     let enigma = try Enigma(encode: value)
-    let jsonObject = try enigma.jsonObject
-    let plistObject = try enigma.plistObject
+    let jsonObject = try enigma.asJsonObject
+    let plistObject = try enigma.asPlistObject
 
     let encodeValueJsonTime = try avarage {
       try Coder.encode(value, \.nonConformingFloatJson)
@@ -129,10 +129,10 @@ final class PerformanceTests: XCTestCase {
       try Coder.encode(enigma, \.binaryPlistEncoder)
     }
     let castJsonObjectTime = try avarage {
-      try enigma.jsonObject
+      try enigma.asJsonObject
     }
     let castPlistObjectTime = try avarage {
-      try enigma.plistObject
+      try enigma.asPlistObject
     }
     let serializeJsonTime = try avarage {
       try Coder.serialize(jsonObject)

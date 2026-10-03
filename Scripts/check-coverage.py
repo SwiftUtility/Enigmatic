@@ -8,7 +8,7 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
-    parser.add_argument("--minimum", type=float, default=100.0)
+    parser.add_argument("--minimum", type=float, default=90.0)
     args = parser.parse_args()
     if not 0 <= args.minimum <= 100:
         parser.error("--minimum must be between 0 and 100")

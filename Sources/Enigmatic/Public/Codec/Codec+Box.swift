@@ -65,31 +65,3 @@ extension Codec.Box: CustomDebugStringConvertible {
     String(reflecting: wrappedValue)
   }
 }
-
-protocol DecodeOptionalCodecBox: Decodable {
-  init(wrappedValue: Strategy.WrappedBoxedValue?)
-  associatedtype Strategy: Codec.DecodeOptionalStrategy
-}
-
-extension Codec.Box: DecodeOptionalCodecBox where Strategy: Codec.DecodeOptionalStrategy {}
-
-protocol EncodeOptionalCodecBox: Encodable {
-  var wrappedValue: Strategy.WrappedBoxedValue? { get }
-  associatedtype Strategy: Codec.EncodeOptionalStrategy
-}
-
-extension Codec.Box: EncodeOptionalCodecBox where Strategy: Codec.EncodeOptionalStrategy {}
-
-extension KeyedDecodingContainer {
-  func decode<T: DecodeOptionalCodecBox>(_ type: T.Type, forKey key: Key) throws -> T {
-    guard contains(key) else { return T(wrappedValue: nil) }
-    return try T(wrappedValue: decodeIfPresent(Codec.OptionalBox<T.Strategy>.self, forKey: key)?.wrappedValue)
-  }
-}
-
-extension KeyedEncodingContainer {
-  mutating func encode<T: EncodeOptionalCodecBox>(_ value: T, forKey key: Key) throws {
-    guard let value = value.wrappedValue else { return }
-    try encode(Codec.OptionalBox<T.Strategy>(wrappedValue: value), forKey: key)
-  }
-}

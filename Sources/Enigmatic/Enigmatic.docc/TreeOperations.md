@@ -5,7 +5,7 @@ Navigate a value using string keys and integer array indices.
 ## Paths and mutations
 
 ```swift
-var tree: Enigma = ["items": [["name": "first"]]]
+var tree: Enigma = ["items": [[:], ["name": "first"]]]
 tree["items", 1, "name"] = "second"
 tree["items", 0] = nil
 // ["items": [["name": "second"]]]

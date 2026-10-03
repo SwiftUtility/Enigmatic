@@ -16,11 +16,9 @@ checks. Enigma does not conform to Hashable.
 
 ## Foundation and external encoders
 
-`rawAny` exports Swift values. `rawObject` exports NSObject-compatible values;
-128-bit integers use NSValue on Apple platforms and an internal NSObject wrapper
-on Linux. Both can be read back by `Enigma(cast:)`. This is an in-memory bridge,
-not a portable archive format. Dictionary keys supplied to `cast` are converted
-to their string descriptions; colliding descriptions are rejected.
+`rawAny` exports Swift values. It can be read back by `Enigma(cast:)`.
+This is an in-memory bridge, not a portable archive format. Dictionary keys supplied
+to `cast` are converted to their string descriptions; colliding descriptions are rejected.
 
 `jsonObject` rejects Date, Data, NaN, infinity and 128-bit integers. Use
 JSONSerialization's `fragmentsAllowed` option for a scalar root. `plistObject`

@@ -36,29 +36,29 @@ final class SerializationContractTests: XCTestCase {
   func testJSONAndPlistErrorPaths() throws {
     for value in [Enigma.data(Data()), .date(Date()), .double(.infinity), .float(.nan)] {
       let tree: Enigma = ["values": .array([value])]
-      XCTAssertEqual(try Enigma(cast: tree.rawAny), tree)
-      XCTAssertThrowsError(try tree.jsonObject) { error in
+      XCTAssertEqual(try Enigma(cast: tree.asSwiftAny), tree)
+      XCTAssertThrowsError(try tree.asJsonObject) { error in
         guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
         XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["values", 0])
       }
     }
     let tree: Enigma = ["values": [nil]]
-    XCTAssertThrowsError(try tree.plistObject) { error in
+    XCTAssertThrowsError(try tree.asPlistObject) { error in
       guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
       XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["values", 0])
     }
-    XCTAssertEqual(try Enigma(cast: tree.jsonObject), tree)
+    XCTAssertEqual(try Enigma(cast: tree.asJsonObject), tree)
   }
 
   func testSerializationAndFoundationBridging() throws {
     let tree: Enigma = ["list": [.bool(true), .int8(-1), .uint64(.max), .double(1.25), "text"], "empty": [:]]
-    XCTAssertEqual(try Enigma(cast: tree.rawAny), tree)
-    XCTAssertEqual(try Enigma(cast: tree.jsonObject), tree)
-    let bytes = try JSONSerialization.data(withJSONObject: tree.jsonObject)
+    XCTAssertEqual(try Enigma(cast: tree.asSwiftAny), tree)
+    XCTAssertEqual(try Enigma(cast: tree.asJsonObject), tree)
+    let bytes = try JSONSerialization.data(withJSONObject: tree.asJsonObject)
     XCTAssertEqual(try Enigma(cast: JSONSerialization.jsonObject(with: bytes)), tree)
     let plist: Enigma = ["date": .date(Date(timeIntervalSince1970: 0)), "data": .data(Data([0, 255]))]
     for format in [PropertyListSerialization.PropertyListFormat.xml, .binary] {
-      let data = try PropertyListSerialization.data(fromPropertyList: plist.plistObject, format: format, options: 0)
+      let data = try PropertyListSerialization.data(fromPropertyList: plist.asPlistObject, format: format, options: 0)
       XCTAssertEqual(try Enigma(cast: PropertyListSerialization.propertyList(from: data, format: nil)), plist)
     }
     XCTAssertEqual(try Enigma(cast: NSNumber(value: true)).asBool, true)
@@ -79,10 +79,10 @@ final class SerializationContractTests: XCTestCase {
     }
 
     for value in values {
-      _ = value.rawAny
+      _ = value.asSwiftAny
       _ = value.array
       _ = value.dictionary
-      _ = value.paths
+      _ = value.allPaths
       _ = value.isNull
       _ = value.isArray
       _ = value.isDictionary
@@ -137,30 +137,30 @@ final class SerializationContractTests: XCTestCase {
 
       switch value {
       case .data, .date, .int128, .uint128:
-        XCTAssertThrowsError(try value.jsonObject)
+        XCTAssertThrowsError(try value.asJsonObject)
       case .double(let number) where !number.isFinite:
-        XCTAssertThrowsError(try value.jsonObject)
+        XCTAssertThrowsError(try value.asJsonObject)
       case .float(let number) where !number.isFinite:
-        XCTAssertThrowsError(try value.jsonObject)
+        XCTAssertThrowsError(try value.asJsonObject)
       default:
-        XCTAssertNoThrow(try value.jsonObject)
+        XCTAssertNoThrow(try value.asJsonObject)
       }
 
       switch value {
       case .null, .int128, .uint128:
-        XCTAssertThrowsError(try value.plistObject)
+        XCTAssertThrowsError(try value.asPlistObject)
       default:
-        XCTAssertNoThrow(try value.plistObject)
+        XCTAssertNoThrow(try value.asPlistObject)
       }
     }
     let nestedValues: Enigma = ["values": .array(values)]
     XCTAssertNoThrow(try JSONEncoder().encode(nestedValues))
-    let bridged = Enigma.array(values).rawAny as? [Any]
+    let bridged = Enigma.array(values).asSwiftAny as? [Any]
     XCTAssertEqual(bridged?.count, values.count)
 
     let plistTree: Enigma = ["values": [.data(Data([1, 2])), .date(Date(timeIntervalSince1970: 2))]]
     let plistData = try PropertyListEncoder().encode(plistTree)
-    XCTAssertGreaterThan(try PropertyListDecoder().decode(Enigma.self, from: plistData).paths.count, 3)
+    XCTAssertGreaterThan(try PropertyListDecoder().decode(Enigma.self, from: plistData).allPaths.count, 3)
   }
 
   func testUnsupportedObjectsAndCollidingKeysReportErrors() {
@@ -176,23 +176,23 @@ final class SerializationContractTests: XCTestCase {
   func testInt128NativeValuesAndSerializationRestrictions() throws {
     for value in [Int128.min, -1, 0, 1, Int128.max] {
       let tree = try Enigma(encode: value)
-      XCTAssertEqual(tree.rawAny as? Int128, value)
+      XCTAssertEqual(tree.asSwiftAny as? Int128, value)
       XCTAssertEqual(try tree.decode(Int128.self), value)
-      XCTAssertEqual(try Enigma(cast: tree.rawAny), tree)
+      XCTAssertEqual(try Enigma(cast: tree.asSwiftAny), tree)
       XCTAssertEqual(tree.description, String(describing: value))
       XCTAssertEqual(tree.debugDescription, String(reflecting: value))
-      XCTAssertThrowsError(try tree.jsonObject)
-      XCTAssertThrowsError(try tree.plistObject)
+      XCTAssertThrowsError(try tree.asJsonObject)
+      XCTAssertThrowsError(try tree.asPlistObject)
     }
     for value in [UInt128.min, 1, UInt128.max] {
       let tree = try Enigma(encode: value)
-      XCTAssertEqual(tree.rawAny as? UInt128, value)
+      XCTAssertEqual(tree.asSwiftAny as? UInt128, value)
       XCTAssertEqual(try tree.decode(UInt128.self), value)
-      XCTAssertEqual(try Enigma(cast: tree.rawAny), tree)
+      XCTAssertEqual(try Enigma(cast: tree.asSwiftAny), tree)
       XCTAssertEqual(tree.description, String(describing: value))
       XCTAssertEqual(tree.debugDescription, String(reflecting: value))
-      XCTAssertThrowsError(try tree.jsonObject)
-      XCTAssertThrowsError(try tree.plistObject)
+      XCTAssertThrowsError(try tree.asJsonObject)
+      XCTAssertThrowsError(try tree.asPlistObject)
     }
 
 

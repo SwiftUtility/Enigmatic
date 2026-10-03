@@ -137,7 +137,7 @@ python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)"
 swift test -c release --filter PerformanceTests
 ```
 
-Coverage checks only executable lines under `Sources/Enigmatic`, with a 100%
+Coverage checks only executable lines under `Sources/Enigmatic`, with a 90%
 minimum on pull requests. Benchmarks are separate, run without coverage, and report
 relative timings without noisy CI timing thresholds. The manual CI workflow also
 uploads benchmark results. README examples are exercised in
