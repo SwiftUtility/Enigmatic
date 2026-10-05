@@ -392,7 +392,10 @@ extension Enigma {
     }
   }
 
-  /// Get value if it is representable as Float
+  /// Converts a numeric value to Float; integer sources require exact representability.
+  /// Double sources round to nearest, ties to even, allowing subnormal values and
+  /// underflow to signed zero. Returns nil if a finite Double rounds to infinity.
+  /// Non-finite floating-point inputs remain non-finite; nonnumeric values return nil.
   public var asFloat: Float? {
     switch self {
     case .int(let value): Float(exactly: value)
@@ -423,7 +426,9 @@ extension Enigma {
     }
   }
 
-  /// Get value if it is representable as Double
+  /// Converts a numeric value to Double; integer sources require exact representability.
+  /// Float sources widen exactly. Floating-point signed zeros and non-finite values
+  /// are retained; nonnumeric values return nil.
   public var asDouble: Double? {
     switch self {
     case .int(let value): Double(exactly: value)

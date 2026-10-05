@@ -106,9 +106,13 @@ a decoding error as a value; encoding that failure throws and preserves its caus
 - Integer conversions use exact representability: fractions and overflow return
   `nil` from accessors and fail typed decoding. Integers must be exactly
   representable when converted to Float/Double. Double-to-Float conversion allows
-  rounding but rejects finite overflow. NaN compares equal to NaN in `Enigma`.
-  Mixed Float/Double equality rounds to Float and is not transitive; use exact
-  numeric conversions when checking precision. `skipEqual` uses this same equality.
+  rounding and underflow but rejects finite values that round to infinity.
+  Equality compares normalized shortest decimal representations across numeric
+  cases: `.float(0.1) == .double(0.1)`, but both differ from
+  `.double(Double(Float(0.1)))`. This supports JSON-style untyped comparison and
+  does not imply equal binary values or successful exact typed conversions.
+  NaNs compare equal, including Date timestamps; positive and negative zero compare
+  equal. `skipEqual` uses this same equality.
 - Direct `Date`/`Data` values encoded with `Enigma(encode:)` retain `.date`/`.data`
   at root and nested positions; explicit Codec strategies can select other
   representations.
@@ -125,8 +129,17 @@ a decoding error as a value; encoding that failure throws and preserves its caus
   explicit `Codec.Box` strategies to model values before building the tree when
   a different wire representation is required.
 - External Codable decoding probes available containers and value types and
-  downscales numbers. It does not promise to preserve the original enum cases or
-  infer Date/Data from their JSON representations.
+  tries integer types before floating-point types to preserve large integers,
+  including 128-bit values on supported systems. It downscales numbers and
+  preserves decimal equality when downscaling floats. It does not promise to
+  preserve enum cases or the sign of zero, or infer Date/Data from
+  their JSON representations.
+- JSON does not retain Float/Double width. A Float encoded as decimal `0.1` reads
+  into an untyped tree as Double `0.1`; these trees compare equal. Decode through
+  the original model's Float type to restore its width. Equality uses Swift's
+  shortest decimal number descriptions, not arbitrary encoder output; binary
+  plists and Foundation NSNumber bridging can widen Float and change its decimal
+  representation. Non-finite numbers extend the equality policy beyond JSON.
 - `description` and `debugDescription` are diagnostic text, not JSON.
 
 Date strategies reject non-finite dates and invalid decimal scale factors.

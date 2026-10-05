@@ -31,6 +31,17 @@ class Coder: @unchecked Sendable {
 
   private static let shared = Coder()
 
+  // Plist decoding and textual NSNumber serialization widen Float's binary value.
+  // Check that representation explicitly; JSONEncoder preserves the short decimal.
+  private static func wideningFloats(_ tree: Enigma) -> Enigma {
+    switch tree {
+    case .float(let value): .double(Double(value))
+    case .array(let values): .array(values.map(wideningFloats))
+    case .dictionary(let values): .dictionary(values.mapValues(wideningFloats))
+    default: tree
+    }
+  }
+
   static func check<Value: Codable & Equatable>(
     _ value: Value,
     _ checker: Checker,
@@ -49,7 +60,7 @@ class Coder: @unchecked Sendable {
         XCTAssertEqual(value, straight, "Scenario: \(scenario)", file: file, line: line)
         XCTAssertEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
         if !checker.hasData, !checker.hasDates {
-          XCTAssertEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
+          XCTAssertEqual(wideningFloats(encoded), decoded, "Scenario: \(scenario)", file: file, line: line)
         } else {
           XCTAssertNotEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
         }
@@ -87,7 +98,8 @@ class Coder: @unchecked Sendable {
       let decodedObject = try PropertyListSerialization.propertyList(from: data, format: nil)
       let decodedEnigma = try Enigma(cast: decodedObject)
       let restored = try decodedEnigma.decode(Value.self)
-      XCTAssertEqual(encodedEnigma, decodedEnigma, "Scenario: \(scenario)", file: file, line: line)
+      let expected = fmt == .binary ? encodedEnigma : wideningFloats(encodedEnigma)
+      XCTAssertEqual(expected, decodedEnigma, "Scenario: \(scenario)", file: file, line: line)
       if value == value {
         XCTAssertEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
       } else {
@@ -114,10 +126,10 @@ class Coder: @unchecked Sendable {
       if value == value {
         XCTAssertEqual(value, straight, "Scenario: \(scenario)", file: file, line: line)
         XCTAssertEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
-        if !checker.hasData, !checker.hasDates {
-          XCTAssertEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
-        } else {
+        if checker.hasData || checker.hasDates {
           XCTAssertNotEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
+        } else {
+          XCTAssertEqual(encoded, decoded, "Scenario: \(scenario)", file: file, line: line)
         }
       } else {
         XCTAssertNotEqual(value, straight, "Scenario: \(scenario)", file: file, line: line)
@@ -144,7 +156,7 @@ class Coder: @unchecked Sendable {
       let decodedObject = try JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed)
       let decodedEnigma = try Enigma(cast: decodedObject)
       let restored = try decodedEnigma.decode(Value.self)
-      XCTAssertEqual(encodedEnigma, decodedEnigma, "Scenario: \(scenario)", file: file, line: line)
+      XCTAssertEqual(wideningFloats(encodedEnigma), decodedEnigma, "Scenario: \(scenario)", file: file, line: line)
       if value == value {
         XCTAssertEqual(value, restored, "Scenario: \(scenario)", file: file, line: line)
       } else {

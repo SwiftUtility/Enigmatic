@@ -1,5 +1,7 @@
 extension Enigma: ExpressibleByFloatLiteral {
-  /// Creates a floating-point tree value from a floating-point literal.
+  /// Creates a numeric tree value, preferring an exact integer or Float representation
+  /// when it also preserves the Double literal's decimal equality.
+  /// Whole values prefer integer cases; negative zero becomes integer zero.
   public init(floatLiteral value: FloatLiteralType) {
     self = if let value = UInt8(exactly: value) {
       .uint8(value)
@@ -26,5 +28,6 @@ extension Enigma: ExpressibleByFloatLiteral {
     } else {
       .double(value)
     }
+    if self != .double(value) { self = .double(value) }
   }
 }

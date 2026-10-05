@@ -21,7 +21,7 @@ paths are no-ops for writes and return nil for reads. The `or:` subscript evalua
 its fallback only when a read finds no value, not when the stored value is null
 or during a simple assignment.
 
-``Enigma/paths`` returns paths of all descendants, including empty containers,
+``Enigma/allPaths`` returns paths of all descendants, including empty containers,
 excluding the root. Traversal is depth first with sorted dictionary keys and
 ascending array indices. Scalars and empty roots have no descendant paths.
 

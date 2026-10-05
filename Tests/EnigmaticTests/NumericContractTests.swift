@@ -274,4 +274,68 @@ final class NumericContractTests: XCTestCase {
     XCTAssertTrue(tree.isDictionary)
     XCTAssertFalse(tree.isArray)
   }
+
+  func testDoubleToFloatRoundingUnderflowAndSignedZero() throws {
+    let subnormal = Double(Float.leastNonzeroMagnitude)
+    let cases: [(Double, Float)] = [
+      (0.1, Float(0.1)),
+      (16_777_217, 16_777_216),
+      (0, 0), (-0.0, -0.0),
+      (.leastNonzeroMagnitude, 0), (-Double.leastNonzeroMagnitude, -0.0),
+      (subnormal / 2, 0), ((subnormal / 2).nextUp, .leastNonzeroMagnitude),
+      (subnormal * 1.5, Float.leastNonzeroMagnitude * 2),
+      (Double(Float.greatestFiniteMagnitude).nextUp, .greatestFiniteMagnitude),
+    ]
+    for (input, expected) in cases {
+      let tree = Enigma.double(input)
+      XCTAssertEqual(tree.asFloat?.bitPattern, expected.bitPattern, "\(input)")
+      XCTAssertEqual(try tree.decode(Float.self).bitPattern, expected.bitPattern)
+      XCTAssertEqual(try Enigma.array([tree]).decode([Float].self).first?.bitPattern, expected.bitPattern)
+      XCTAssertEqual(try Enigma.dictionary(["value": tree]).decode([String: Float].self)["value"]?.bitPattern, expected.bitPattern)
+    }
+    XCTAssertNil(Enigma.double(.greatestFiniteMagnitude).asFloat)
+    XCTAssertThrowsError(try Enigma.double(.greatestFiniteMagnitude).decode(Float.self))
+    XCTAssertEqual(Enigma.double(.infinity).asFloat, .infinity)
+    XCTAssertEqual(Enigma.double(-.infinity).asFloat, -.infinity)
+    XCTAssertTrue(Enigma.double(.nan).asFloat?.isNaN == true)
+  }
+
+  func testIntegerFloatingPrecisionBoundaries() {
+    XCTAssertEqual(Enigma.int64(16_777_216).asFloat, 16_777_216)
+    XCTAssertNil(Enigma.int64(16_777_217).asFloat)
+    XCTAssertEqual(Enigma.int64(16_777_218).asFloat, 16_777_218)
+    XCTAssertEqual(Enigma.int64(9_007_199_254_740_992).asDouble, 9_007_199_254_740_992)
+    XCTAssertNil(Enigma.int64(9_007_199_254_740_993).asDouble)
+    XCTAssertEqual(Enigma.int64(9_007_199_254_740_994).asDouble, 9_007_199_254_740_994)
+    XCTAssertNil(Enigma.double(9_223_372_036_854_775_808).asInt64)
+    XCTAssertEqual(Enigma.double(-9_223_372_036_854_775_808).asInt64, .min)
+    XCTAssertNil(Enigma.double(18_446_744_073_709_551_616).asUInt64)
+    XCTAssertEqual(Enigma.float(-0.0).asDouble?.bitPattern, Double(-0.0).bitPattern)
+  }
+
+  @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+  func test128BitWordBoundariesAndSignedness() throws {
+    let word = Int128(1) << 64
+    for value in [-word - 1, -word, -word + 1, word - 1, word, word + 1] {
+      let tree = try Enigma(encode: value)
+      XCTAssertEqual(tree, .int128(.init(value)))
+      XCTAssertNotEqual(tree, .int128(.init(value + 1)))
+      XCTAssertNotEqual(tree, .int128(.init(value + word)))
+      XCTAssertEqual(tree.asInt128, value)
+      XCTAssertEqual(tree.asUInt128, UInt128(exactly: value))
+      XCTAssertEqual(try tree.decode(Int128.self), value)
+    }
+    for value in [UInt128(word) - 1, UInt128(word), UInt128(word) + 1, UInt128(Int128.max) + 1] {
+      let tree = try Enigma(encode: value)
+      XCTAssertEqual(tree, .uint128(.init(value)))
+      XCTAssertNotEqual(tree, .uint128(.init(value + 1)))
+      XCTAssertNotEqual(tree, .uint128(.init(value + UInt128(word))))
+      XCTAssertEqual(tree.asUInt128, value)
+      XCTAssertEqual(tree.asInt128, Int128(exactly: value))
+      XCTAssertEqual(try tree.decode(UInt128.self), value)
+    }
+    XCTAssertEqual(Enigma.int128(.init(.min)).asFloat, -Float(sign: .plus, exponent: 127, significand: 1))
+    XCTAssertNil(Enigma.int128(.init(.max)).asDouble)
+    XCTAssertNil(Enigma.uint128(.init(.max)).asFloat)
+  }
 }

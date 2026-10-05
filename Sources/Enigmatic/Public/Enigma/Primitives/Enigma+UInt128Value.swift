@@ -41,13 +41,5 @@ extension Enigma {
         return "<UInt128 unavailable>"
       }
     }
-
-    func isSame(enigma: Enigma) -> Bool {
-      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
-        value == enigma.asUInt128
-      } else {
-        false
-      }
-    }
   }
 }

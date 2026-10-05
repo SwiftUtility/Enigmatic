@@ -3,6 +3,8 @@ import Foundation
 extension Enigma: Decodable {
   /// Creates a tree from the first keyed, unkeyed, or single-value container available.
   /// Dates and data are retained in their native cases when supported by the decoder.
+  /// Integer types are tried before floating-point types to preserve large integers.
+  /// Numeric storage cases may change, and negative zero may become integer zero.
   public init(from decoder: Decoder) throws {
     if var container = try? decoder.container(keyedBy: Pin.self) {
       self = try Self.decode(keyed: &container)
@@ -48,8 +50,8 @@ private extension Enigma {
 
   @inline(__always)
   static func downscale(_ value: Double) -> Self {
-    if let value = Float(exactly: value) {
-      .float(value)
+    if let float = Float(exactly: value), Self.float(float) == .double(value) {
+      .float(float)
     } else {
       .double(value)
     }
@@ -67,16 +69,6 @@ private extension Enigma {
       return Self.downscale(value)
     } else if let value = try? container.decode(Int.self) {
       return Self.downscale(value)
-    } else if let value = try? container.decode(Double.self) {
-      return Self.downscale(value)
-    } else if let value = try? container.decode(String.self) {
-      return .string(value)
-    } else if let value = try? container.decode(Data.self) {
-      return .data(value)
-    } else if let value = try? container.decode(Date.self) {
-      return .date(value)
-    } else if let value = try? container.decode(Float.self) {
-      return .float(value)
     } else if let value = try? container.decode(UInt8.self) {
       return .uint8(value)
     } else if let value = try? container.decode(Int8.self) {
@@ -103,6 +95,16 @@ private extension Enigma {
       let value = try? container.decode(UInt128.self)
     {
       return .uint128(UInt128Value(value))
+    } else if let value = try? container.decode(Double.self) {
+      return Self.downscale(value)
+    } else if let value = try? container.decode(String.self) {
+      return .string(value)
+    } else if let value = try? container.decode(Data.self) {
+      return .data(value)
+    } else if let value = try? container.decode(Date.self) {
+      return .date(value)
+    } else if let value = try? container.decode(Float.self) {
+      return .float(value)
     } else {
       throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
         codingPath: container.codingPath,
@@ -132,16 +134,6 @@ private extension Enigma {
         result[key.stringValue] = Self.downscale(value)
       } else if let value = try? container.decode(Int.self, forKey: key) {
         result[key.stringValue] = Self.downscale(value)
-      } else if let value = try? container.decode(Double.self, forKey: key) {
-        result[key.stringValue] = Self.downscale(value)
-      } else if let value = try? container.decode(String.self, forKey: key) {
-        result[key.stringValue] = .string(value)
-      } else if let value = try? container.decode(Data.self, forKey: key) {
-        result[key.stringValue] = .data(value)
-      } else if let value = try? container.decode(Date.self, forKey: key) {
-        result[key.stringValue] = .date(value)
-      } else if let value = try? container.decode(Float.self, forKey: key) {
-        result[key.stringValue] = .float(value)
       } else if let value = try? container.decode(UInt8.self, forKey: key) {
         result[key.stringValue] = .uint8(value)
       } else if let value = try? container.decode(Int8.self, forKey: key) {
@@ -168,6 +160,16 @@ private extension Enigma {
         let value = try? container.decode(UInt128.self, forKey: key)
       {
         result[key.stringValue] = .uint128(UInt128Value(value))
+      } else if let value = try? container.decode(Double.self, forKey: key) {
+        result[key.stringValue] = Self.downscale(value)
+      } else if let value = try? container.decode(String.self, forKey: key) {
+        result[key.stringValue] = .string(value)
+      } else if let value = try? container.decode(Data.self, forKey: key) {
+        result[key.stringValue] = .data(value)
+      } else if let value = try? container.decode(Date.self, forKey: key) {
+        result[key.stringValue] = .date(value)
+      } else if let value = try? container.decode(Float.self, forKey: key) {
+        result[key.stringValue] = .float(value)
       } else {
         throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
           codingPath: container.codingPath,
@@ -201,16 +203,6 @@ private extension Enigma {
         result.append(Self.downscale(value))
       } else if let value = try? container.decode(Int.self) {
         result.append(Self.downscale(value))
-      } else if let value = try? container.decode(Double.self) {
-        result.append(Self.downscale(value))
-      } else if let value = try? container.decode(String.self) {
-        result.append(.string(value))
-      } else if let value = try? container.decode(Data.self) {
-        result.append(.data(value))
-      } else if let value = try? container.decode(Date.self) {
-        result.append(.date(value))
-      } else if let value = try? container.decode(Float.self) {
-        result.append(.float(value))
       } else if let value = try? container.decode(UInt8.self) {
         result.append(.uint8(value))
       } else if let value = try? container.decode(Int8.self) {
@@ -237,6 +229,16 @@ private extension Enigma {
         let value = try? container.decode(UInt128.self)
       {
         result.append(.uint128(UInt128Value(value)))
+      } else if let value = try? container.decode(Double.self) {
+        result.append(Self.downscale(value))
+      } else if let value = try? container.decode(String.self) {
+        result.append(.string(value))
+      } else if let value = try? container.decode(Data.self) {
+        result.append(.data(value))
+      } else if let value = try? container.decode(Date.self) {
+        result.append(.date(value))
+      } else if let value = try? container.decode(Float.self) {
+        result.append(.float(value))
       } else {
         throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
           codingPath: container.codingPath,

@@ -197,6 +197,104 @@ final class SerializationContractTests: XCTestCase {
 
 
   }
+
+  func testJSON64BitIntegerPrecision() throws {
+    try checkJSONIntegerPrecision([Int64.min, .min + 1, -9_007_199_254_740_993, 9_007_199_254_740_993, .max - 1, .max])
+    try checkJSONIntegerPrecision([UInt64(9_007_199_254_740_993), .max - 1, .max])
+  }
+
+  @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+  func testJSON128BitIntegerPrecision() throws {
+    try checkJSONIntegerPrecision([Int128.min, .min + 1, Int128(Int64.min) - 1, Int128(UInt64.max) + 2, .max - 1, .max])
+    try checkJSONIntegerPrecision([UInt128(UInt64.max) + 2, UInt128(Int128.max) + 1, .max - 1, .max])
+  }
+
+  private func checkJSONIntegerPrecision<T: FixedWidthInteger & Codable>(
+    _ values: [T], file: StaticString = #filePath, line: UInt = #line
+  ) throws {
+    for value in values {
+      XCTAssertEqual(try JSONDecoder().decode(T.self, from: Data(String(value).utf8)), value, file: file, line: line)
+      let leaf = try Enigma(encode: value)
+      let documents: [(String, Enigma, [Enigma.Pin])] = [
+        ("\(value)", leaf, []),
+        ("[\(value)]", .array([leaf]), [0]),
+        ("{\"value\":\(value)}", .dictionary(["value": leaf]), ["value"]),
+      ]
+      for (json, original, path) in documents {
+        for data in [Data(json.utf8), try JSONEncoder().encode(original)] {
+          let decoded = try JSONDecoder().decode(Enigma.self, from: data)
+          let recovered = try XCTUnwrap(decoded[path], file: file, line: line)
+          // Compare native integers: Enigma equality can hide a rounded value.
+          XCTAssertEqual(try recovered.decode(T.self), value, "\(T.self) \(value) at \(path)", file: file, line: line)
+        }
+      }
+    }
+  }
+
+  func testJSONFloatingDownscalingPreservesValues() throws {
+    let values: [Double] = [
+      0.5, 0.1, Double(Float(0.1)), .leastNonzeroMagnitude, -Double.leastNonzeroMagnitude,
+      Double(Float.leastNonzeroMagnitude) / 2, Double(Float.greatestFiniteMagnitude), .greatestFiniteMagnitude,
+    ]
+    for value in values {
+      let leaf = Enigma.double(value)
+      let documents: [(Enigma, [Enigma.Pin])] = [
+        (leaf, []), (.array([leaf]), [0]), (.dictionary(["value": leaf]), ["value"]),
+      ]
+      for (original, path) in documents {
+        let decoded = try JSONDecoder().decode(Enigma.self, from: JSONEncoder().encode(original))
+        XCTAssertEqual(decoded[path]?.asDouble?.bitPattern, value.bitPattern, "\(value) at \(path)")
+      }
+    }
+  }
+
+  func testJSONFloatRoundTripPreservesDecimalEquality() throws {
+    let value = Float(0.1)
+    let original = Enigma.float(value)
+    let data = try JSONEncoder().encode(original)
+    let decoded = try JSONDecoder().decode(Enigma.self, from: data)
+    XCTAssertEqual(decoded.asDouble?.bitPattern, Double(0.1).bitPattern)
+    XCTAssertEqual(decoded, original)
+    XCTAssertEqual(try decoded.decode(Float.self).bitPattern, value.bitPattern)
+    XCTAssertEqual(try JSONDecoder().decode(Float.self, from: data).bitPattern, value.bitPattern)
+  }
+
+  func testJSONNumericEqualityAndDownscaling() throws {
+    let a = Enigma.double(0.1)
+    let b = Enigma.float(0.1)
+    let c = Enigma.double(Double(Float(0.1)))
+    XCTAssertEqual(try JSONEncoder().encode(a), try JSONEncoder().encode(b))
+    XCTAssertNotEqual(try JSONEncoder().encode(b), try JSONEncoder().encode(c))
+
+    var values: [Enigma] = [a, b, c, .float(1e12), .double(1e12), .double(1e23),
+                           .double(Double(1e17).nextUp), .double(-0.0),
+                           .float(.leastNonzeroMagnitude), .float(.greatestFiniteMagnitude)]
+    // Deterministic bit-pattern sampling complements hand-picked boundary cases.
+    var bits: UInt32 = 1
+    for _ in 0..<256 {
+      bits = bits &* 1_664_525 &+ 1_013_904_223
+      let value = Float(bitPattern: bits)
+      if value.isFinite { values.append(.float(value)) }
+    }
+    var doubleBits: UInt64 = 1
+    for _ in 0..<256 {
+      doubleBits = doubleBits &* 6_364_136_223_846_793_005 &+ 1
+      let value = Double(bitPattern: doubleBits)
+      if value.isFinite { values.append(.double(value)) }
+    }
+    for value in values {
+      for original in [value, .array([value]), .dictionary(["value": .array([value])])] {
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(Enigma.self, from: data)
+        XCTAssertEqual(original, decoded, String(decoding: data, as: UTF8.self))
+      }
+    }
+    for value in [Double(Float(0.1)), Double(1e17).nextUp, Double(Float.greatestFiniteMagnitude)] {
+      let literal = Enigma(floatLiteral: value)
+      XCTAssertEqual(literal, .double(value))
+      XCTAssertEqual(literal.asDouble?.bitPattern, value.bitPattern)
+    }
+  }
 }
 
 private struct ExactSingleValueDecoder: Decoder {

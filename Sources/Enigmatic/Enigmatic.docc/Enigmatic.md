@@ -18,7 +18,7 @@ specify Apple runtime requirements; Linux uses the toolchain runtime.
 
 - ``Enigma``
 - ``Enigma/Pin``
-- ``Enigma/paths``
+- ``Enigma/allPaths``
 - <TreeOperations>
 
 ### Strategies and errors

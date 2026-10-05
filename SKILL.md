@@ -86,7 +86,7 @@ and test names refer to `Tests/EnigmaticTests/<name>.swift`.
 | Paths, read/write/delete, container access | `E/Enigma+Properties.swift`, `E/Capabilities/Enigma+Modification.swift`; helpers in `I/Enigma+Utility.swift` | `TreeContractTests`, `OperationsTests` |
 | Merge and resolvers | `E/Enigma+Merge.swift`; `merge` helper in `I/Enigma+Utility.swift` | `TreeContractTests`, `OperationsTests` |
 | Typed accessors, model entry points, Any/JSON/plist conversion | `E/Capabilities/Enigma+Casting.swift`, `I/Enigma+Utility.swift`, `I/Primitives/Reducer.swift` | `NumericContractTests`, `SerializationContractTests`, `CodableTests` |
-| Numeric equality and floating conversion | `E/Conformances/Enigma+Equatable.swift`, casting accessors, `I/Extensions/{Float,Double}.swift` | `EquatableTests`, `NumericContractTests` |
+| Numeric equality and floating conversion | `E/Conformances/Enigma+Equatable.swift`, casting accessors, `I/Extensions/Double.swift` | `EquatableTests`, `NumericContractTests` |
 | 128-bit storage and Foundation bridging | `E/Primitives/Enigma+{Int128Value,UInt128Value}.swift`, `I/Primitives/ObjCType.swift`, `I/Extensions/NSValue.swift`, utility helpers | `NumericContractTests`, `SerializationContractTests` |
 | Literals and diagnostic text | `E/Conformances/Enigma+ExpressibleBy*.swift`, `Enigma+Custom{DebugString,String}Convertible.swift` in the same directory | `NumericContractTests`, `EquatableTests` |
 | Model -> tree encoding; conflicts/nested/super containers | `I/EnigmaEncoder/EnigmaEncoder.swift` plus `EnigmaEncoder+{Single,Keyed,Unkeyed}.swift` | `ContainerContractTests`, `NumericContractTests`, `CodableTests`, `StrategyContractTests` |
@@ -127,14 +127,31 @@ DocC has four pages: `Enigmatic.md` is the symbol/topic index; `TreeOperations.m
   `replace` takes incoming, `skipEqual` accepts equality, `fail` throws. Mutating
   merge assigns only after success, preserving the original on failure. Dictionary
   conflict order is unspecified.
-- **Numbers:** integer conversions and integer-to-Float/Double require exact
-  representability. Double-to-Float permits rounding/underflow but rejects finite
-  overflow. Numeric equality crosses storage cases and treats NaN as equal to NaN.
-  Mixed Float/Double equality follows Float rounding and is not transitive:
-  `.double(0.1) == .float(0.1)` and
-  `.float(0.1) == .double(Double(Float(0.1)))`, but the two Double nodes differ.
-  This behavior also affects `skipEqual`; treat it as a current limitation, not
-  an equality invariant to extend. Precision checks need exact conversions.
+- **Numbers (product contract):** Enigma serves intermediate encoding and untyped
+  access, especially JSON. Numeric equality compares normalized shortest decimal
+  representations across every numeric case, ignoring widths and equivalent
+  coefficient/exponent spellings. `.float(0.1) == .double(0.1)`, but both differ
+  from `.double(Double(Float(0.1)))`. Similarly `.float(1e12)` equals integer
+  `1_000_000_000_000`, not its exact binary integer value `999_999_995_904`.
+  Preserve reflexivity, symmetry, and transitivity in leaves and nested trees;
+  `skipEqual` uses this equality and retains the existing representation.
+  Do not replace this policy with exact binary equality, approximate tolerance,
+  or pair-dependent rounding without an explicit product requirement.
+  Equality is independent of typed conversions: integer conversions and
+  integer-to-Float/Double require exact representability. Double-to-Float permits
+  rounding/underflow but rejects finite overflow. NaNs compare equal, including
+  Date timestamps; signed zeros compare equal. Non-finite numbers are an explicit
+  extension beyond JSON. Equality does not promise equal bits or successful exact
+  typed conversion, and arbitrary encoders may use different number formatting.
+  External tree decoding tries all supported integer types before floating-point
+  types to preserve large integers. Floating downscaling and literals must retain
+  both exact binary values and decimal equality; signed zero may become integer
+  zero. Same-case 128-bit equality compares stored halves without requiring native
+  Int128/UInt128 availability; cross-case access needs native availability.
+  Test conversion/precision with native integers and bit patterns, and semantic
+  equality with independent trees, equality-law matrices, `skipEqual`, and actual
+  JSONEncoder/JSONDecoder round trips. Use deterministic generated samples as well
+  as boundary examples; passing legacy tests does not establish the contract.
   Adding a case affects accessors, all three adapter containers, tree Codable
   switches, conversions, equality, literals/descriptions, and tests.
 - **Serialization:** `asSwiftAny` exports Swift/Foundation values. JSON export
@@ -145,7 +162,9 @@ DocC has four pages: `Enigmatic.md` is the symbol/topic index; `TreeOperations.m
   are not machine formats.
 - **Date/Data:** direct model-to-tree encoding retains native cases at root and
   nested positions. Encoding an existing tree through an external encoder is a
-  separate path in `Enigma+Encodable.swift`. Native Date/Data nodes call
+  separate path in `Enigma+Encodable.swift`. Keeping native Date allows plist
+  storage with Foundation's 2001 reference epoch; this is an intentional contract.
+  Native Date/Data nodes call
   Foundation `encode(to:)` at root, array, and keyed positions. With JSONEncoder,
   this yields seconds since 2001 and byte arrays, bypassing its date/data encoding
   strategies. Apply explicit Codec strategies to model values before building
@@ -212,9 +231,8 @@ For API/DocC changes, use the macOS documentation commands from
 ## Remaining documentation cautions
 
 The README uses the current API and consumer behavior. The DocC catalog still
-references old names such as `paths`, `rawAny`, `jsonObject`, and `plistObject`,
-and describes public optional wrappers and external Date/Data encoding using
-outdated behavior. Current accessors are `allPaths`, `asSwiftAny`, `asJsonObject`,
+describes public optional wrappers using outdated behavior. Current accessors are
+`allPaths`, `asSwiftAny`, `asJsonObject`,
 and `asPlistObject`; there is no public `rawObject` accessor.
 
 Source comments on `Codec.Box` also describe internal optional-key behavior as
