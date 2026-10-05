@@ -83,9 +83,7 @@ extension Enigma: Encodable {
       }
     }
   }
-}
 
-extension Enigma {
   private func encode(unkeyed container: inout some UnkeyedEncodingContainer) throws {
     switch self {
     case .null:

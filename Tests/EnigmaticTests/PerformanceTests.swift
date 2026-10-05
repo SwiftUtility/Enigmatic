@@ -53,7 +53,7 @@ final class PerformanceTests: XCTestCase {
     let decodeEnigmaFromBinTime = try avarage {
       try Coder.decode(Enigma.self, binData)
     }
-    let decodeValueFromEnigmaTime = try avarage(run: 10000) {
+    let decodeValueFromEnigmaTime = try avarage {
       try enigma.decode(Regular.self)
     }
     let deserializeJsonTime = try avarage {

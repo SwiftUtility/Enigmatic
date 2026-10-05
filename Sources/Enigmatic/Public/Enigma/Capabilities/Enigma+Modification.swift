@@ -54,4 +54,69 @@ extension Enigma {
       setValue(newValue, pins: &pins)
     }
   }
+
+  public mutating func merge<E: Error>(
+    _ other: Self,
+    strategy: inout some MergeStrategy<E> & ~Copyable
+  ) throws(E) {
+    var ctx = MergeContext()
+    self = try strategy.merge(ctx: &ctx, old: self, new: other).get()
+  }
+
+  public consuming func merging<E: Error>(
+    _ other: Self,
+    strategy: consuming some MergeStrategy<E> & ~Copyable
+  ) throws(E) -> Self {
+    var ctx = MergeContext()
+    var strategy = consume strategy
+    return try strategy.merge(ctx: &ctx, old: consume self, new: other).get()
+  }
+
+  public mutating func merge(_ other: Self, replace: Bool) {
+    self = merging(other, strategy: SelectOneMergeStrategy(selectNew: replace))
+  }
+
+  public consuming func merging(_ other: Self, replace: Bool) -> Self {
+    merging(other, strategy: SelectOneMergeStrategy(selectNew: replace))
+  }
+
+  public mutating func merge(_ other: Self, skipEqual: Bool) throws(EncodingError) {
+    self = try merging(other, strategy: InteruptMergeStrategy(skipEqual: skipEqual))
+  }
+
+  public consuming func merging(_ other: Self, skipEqual: Bool) throws(EncodingError) -> Self {
+    try merging(other, strategy: InteruptMergeStrategy(skipEqual: skipEqual))
+  }
+
+  /// Recursively merges dictionaries and resolves all other pairs as whole values.
+  ///
+  /// The original value is unchanged if the resolver throws. Dictionary conflict
+  /// visitation order is unspecified.
+  public mutating func merge<E: Error>(
+    _ other: Self,
+    throws _: E.Type = E.self,
+    resolve: ([Pin], Self, Self) throws(E) -> Self
+  ) throws(E) {
+    self = try withoutActuallyEscaping(resolve) { block in
+      var ctx = MergeContext()
+      var strategy = SimpleCustomMergeStrategy(block: block)
+      return strategy.merge(ctx: &ctx, old: self, new: other)
+    }.get()
+  }
+
+  /// Recursively merges dictionaries and resolves all other pairs as whole values.
+  ///
+  /// The original value is unchanged if the resolver throws. Dictionary conflict
+  /// visitation order is unspecified.
+  public consuming func merging<E: Error>(
+    _ other: Self,
+    throws type: E.Type = E.self,
+    resolve: ([Pin], Self, Self) throws(E) -> Self
+  ) throws(E) -> Self {
+    try withoutActuallyEscaping(resolve) { block in
+      var ctx = MergeContext()
+      var strategy = SimpleCustomMergeStrategy(block: block)
+      return strategy.merge(ctx: &ctx, old: self, new: other)
+    }.get()
+  }
 }

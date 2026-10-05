@@ -83,17 +83,17 @@ final class EnigmaEncoder {
     if ref.failId >= 0 {
       let failPath = codingPath(failId: ref.failId, key: nil)
       let nodePath = codingPath(nodeId: ref.nodeId, key: nil)
-      let encoded = materialize(nodeId: ref.nodeId).asSwiftAny
-      throw EncodingError.invalidValue(value.asSwiftAny, EncodingError.Context(
+      let encoded = materialize(nodeId: ref.nodeId).asAny
+      throw EncodingError.invalidValue(value.asAny, EncodingError.Context(
         codingPath: nodePath + failPath,
         debugDescription: "attempt to overwrite \(encoded) at \(nodePath)"
       ))
     } else if case .unset = nodes[ref.nodeId].storage {
       nodes[ref.nodeId].storage = .value(value)
     } else {
-      throw EncodingError.invalidValue(value.asSwiftAny, EncodingError.Context(
+      throw EncodingError.invalidValue(value.asAny, EncodingError.Context(
         codingPath: codingPath(nodeId: ref.nodeId, key: nil),
-        debugDescription: "attempt to overwrite \(materialize(nodeId: ref.nodeId).asSwiftAny)"
+        debugDescription: "attempt to overwrite \(materialize(nodeId: ref.nodeId).asAny)"
       ))
     }
   }
@@ -142,14 +142,14 @@ final class EnigmaEncoder {
     }
   }
 
-  static func encode(value: any Encodable, userInfo: [CodingUserInfoKey: Any]) throws -> Enigma {
+  static func encode(value: some Encodable, userInfo: [CodingUserInfoKey: Any]) throws -> Enigma {
     let state = EnigmaEncoder(userInfo: userInfo)
     let ref = Ref(nodeId: 0, failId: -1)
     if try !state.encodeSpecial(value, ref: ref) {
       try value.encode(to: Single(state: state, ref: ref))
     }
     if case .unset = state.nodes[0].storage {
-      throw EncodingError.invalidValue(nil as Enigma?, EncodingError.Context(
+      throw EncodingError.invalidValue(value, EncodingError.Context(
         codingPath: [],
         debugDescription: "top level encoded to nothing"
       ))

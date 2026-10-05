@@ -4,10 +4,11 @@ extension Enigma {
   /// Creates a tree from Foundation-compatible objects or supported Swift values.
   ///
   /// Use values from `JSONSerialization`, `PropertyListSerialization`, or a YAML parser.
-  /// - Parameter any: The optional root value to convert.
+  /// - Parameter cast: The optional root value to convert.
   /// - Throws: An encoding error when a value cannot be represented by Enigma.
-  public init(cast any: Any?) throws {
-    self = try Reducer.reduce(seed: [], any, Self.make(anyObject:))
+  public init(cast value: Any) throws(DecodingError) {
+    var pins: [Pin] = []
+    self = try Self.make(pins: &pins, value: value)
   }
 
   /// Encodes a model into a tree, preserving Date and Data at every position.
@@ -15,14 +16,14 @@ extension Enigma {
   ///   - value: The value to encode.
   ///   - userInfo: Context passed to the encoder and nested encoders.
   /// - Throws: An encoding error when the value cannot be represented.
-  public init(encode value: any Encodable, userInfo: [CodingUserInfoKey: Any] = [:]) throws {
+  public init(encode value: some Encodable, userInfo: [CodingUserInfoKey: Any] = [:]) throws {
     self = try value as? Enigma ?? EnigmaEncoder.encode(value: value, userInfo: userInfo)
   }
 
   /// Converts the tree to native Swift/Foundation values for templating and inspection.
   ///
   /// - Warning: It is not guaranteed to be compatible with JSONSerialization or PropertyListSerialization
-  public var asSwiftAny: Any {
+  public var asAny: Any {
     switch self {
     case .null: NSNull()
     case .bool(let value): value
@@ -39,8 +40,8 @@ extension Enigma {
     case .double(let value): value
     case .float(let value): value
     case .string(let value): value
-    case .array(let value): value.map(\.asSwiftAny)
-    case .dictionary(let value): value.mapValues(\.asSwiftAny)
+    case .array(let value): value.map(\.asAny)
+    case .dictionary(let value): value.mapValues(\.asAny)
     case .data(let value): value
     case .date(let value): value
     case .int128(let value):
@@ -63,7 +64,8 @@ extension Enigma {
   /// - Throws: `EncodingError.invalidValue` when a value is unsupported by property lists.
   public var asPlistObject: NSObject {
     get throws(EncodingError) {
-      try Reducer.reduce(seed: [], self, Self.makePlistObject(reducer:))
+      var pins = [] as [Pin]
+      return try makePlistObject(pins: &pins)
     }
   }
 
@@ -73,7 +75,8 @@ extension Enigma {
   ///   non-finite numbers, and 128-bit integers.
   public var asJsonObject: NSObject {
     get throws(EncodingError) {
-      try Reducer.reduce(seed: [], self, Self.makeJsonObject(reducer:))
+      var pins = [] as [Pin]
+      return try makeJsonObject(pins: &pins)
     }
   }
 

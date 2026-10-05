@@ -55,7 +55,7 @@ struct Checker {
       case .enigmaAndBack:
         let encoded = try Enigma(encode: value)
         let decoded = try encoded.decode() as Value
-        let restored = try Enigma(cast: encoded.asSwiftAny)
+        let restored = try Enigma(cast: encoded.asAny)
         if value == value {
           XCTAssertEqual(value, decoded, "Scenario: \(self)", file: file, line: line)
           XCTAssertEqual(encoded, restored, "Scenario: \(self)", file: file, line: line)

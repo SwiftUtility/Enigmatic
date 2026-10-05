@@ -51,7 +51,7 @@ final class TreeContractTests: XCTestCase {
     enum Failure: Error { case conflict }
     var tree: Enigma = ["parent": ["value": 1], "array": [1]]
     let initial = tree
-    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], or: { path, lhs, rhs throws(Failure) in
+    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], resolve: { path, lhs, rhs throws(Failure) in
       XCTAssertEqual(path, ["parent", "value"])
       XCTAssertEqual(lhs, 1)
       XCTAssertEqual(rhs, 2)
@@ -59,14 +59,14 @@ final class TreeContractTests: XCTestCase {
     }))
     XCTAssertEqual(tree, initial)
     var paths: [[Enigma.Pin]] = []
-    let merged = tree.merging(["array": [2, 3], "new": true], or: { path, _, rhs in
+    let merged = tree.merging(["array": [2, 3], "new": true], resolve: { path, _, rhs in
       paths.append(path)
       return rhs
     })
     XCTAssertEqual(paths, [["array"]])
     XCTAssertEqual(merged, ["parent": ["value": 1], "array": [2, 3], "new": true])
     XCTAssertEqual(tree, initial)
-    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], or: Enigma.fail)) { error in
+    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], skipEqual: false)) { error in
       guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
       XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["parent", "value"])
     }

@@ -12,8 +12,6 @@ enum ObjCType {
   static let float = CChar(UnicodeScalar("f").value)
   static let double = CChar(UnicodeScalar("d").value)
   static let bool = CChar(UnicodeScalar("B").value)
-  static let signedInt128 = CChar(UnicodeScalar("j").value)
-  static let unsignedInt128 = CChar(UnicodeScalar("J").value)
   static let signedBitInt128 = CChar(UnicodeScalar("t").value)
   static let unsignedBitInt128 = CChar(UnicodeScalar("T").value)
 }

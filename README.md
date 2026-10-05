@@ -16,11 +16,11 @@ SwiftPM's default deployment targets; individual APIs have availability limits:
   Use the named seconds/milliseconds strategies on older Apple systems.
 - Linux uses the Swift toolchain runtime and does not have Apple OS availability limits.
 
-Add the package in Xcode, or use this SwiftPM dependency (pin a commit for a
+Add the package in Xcode, or use this SwiftPM dependency (pin a version for a
 reproducible build):
 
 ```swift
-.package(url: "https://github.com/SwiftUtility/Enigmatic.git", branch: "main")
+.package(url: "https://github.com/SwiftUtility/Enigmatic.git", .upToNextMajor(from: "3.0.0"))
 ```
 
 Add `.product(name: "Enigmatic", package: "Enigmatic")` to your target dependencies.
@@ -39,7 +39,7 @@ var tree = try Enigma(encode: User(name: "Ada", scores: [10]))
 tree["scores", 1] = 20                 // Append at the current array count.
 tree["name"] = "Grace"
 let user = try tree.decode(User.self) // User(name: "Grace", scores: [10, 20])
-let paths = tree.paths               // [name], [scores], [scores, 0], [scores, 1]
+let paths = tree.paths               // [name], [name, scores], [name, scores, 0], [name, scores, 1]
 ```
 
 A missing path returns `nil`; a stored null is `Enigma.null`. Assigning `nil`

@@ -6,7 +6,7 @@ extension Enigma {
     /// A dictionary key.
     case str(String)
 
-    init(_ key: borrowing CodingKey) {
+    public init(_ key: borrowing CodingKey) {
       self = if let intValue = key.intValue { .int(intValue) } else { .str(key.stringValue) }
     }
 
@@ -74,8 +74,22 @@ extension Enigma.Pin: CodingKey {
   /// The string key or decimal representation of the integer index.
   public var stringValue: String {
     switch self {
-    case .int(let value): "\(value)"
+    case .int(let value): String(value)
     case .str(let value): value
+    }
+  }
+
+  public var description: String {
+    switch self {
+    case .int(let value): String(describing: value)
+    case .str(let value): String(describing: value)
+    }
+  }
+
+  public var debugDescription: String {
+    switch self {
+    case .int(let value): "Pin.int(\(String(reflecting: value)))"
+    case .str(let value): "Pin.str(\(String(reflecting: value)))"
     }
   }
 }

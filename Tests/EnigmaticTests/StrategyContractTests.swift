@@ -274,19 +274,19 @@ final class StrategyContractTests: XCTestCase {
     struct B: Codable, Hashable { let b: String }
     struct C: Codable, Hashable { let c: Bool }
     struct D: Codable, Hashable { let d: Double }
-    let value = Codec.Each(values: (A(a: 1), B(b: "s")))
+    let value = Codec.Each(A(a: 1), B(b: "s"))
     let tree = try Enigma(encode: value)
     XCTAssertEqual(tree, ["a": 1, "b": "s"])
     XCTAssertEqual(try tree.decode(type(of: value)), value)
     XCTAssertEqual(Set([value, value]).count, 1)
-    XCTAssertNotEqual(value, Codec.Each(values: (A(a: 2), B(b: "s"))))
+    XCTAssertNotEqual(value, Codec.Each(A(a: 2), B(b: "s")))
     let boxed = Codec.Box<Codec.Each<Codec.Id<A>, Codec.Id<B>>>(wrappedValue: (A(a: 1), B(b: "s")))
     XCTAssertEqual(try Enigma(encode: boxed), tree)
     let restored = try tree.decode(type(of: boxed))
     XCTAssertEqual(restored.wrappedValue.0, A(a: 1))
     XCTAssertEqual(restored.wrappedValue.1, B(b: "s"))
 
-    let pair = Codec.Each2(values: (A(a: 1), B(b: "s")))
+    let pair = Codec.Each2(A(a: 1), B(b: "s"))
     XCTAssertEqual(try Enigma(encode: pair), tree)
     XCTAssertEqual(try tree.decode(type(of: pair)), pair)
     XCTAssertEqual(Set([pair, pair]).count, 1)
@@ -297,13 +297,13 @@ final class StrategyContractTests: XCTestCase {
     XCTAssertEqual(decodedPair.0, A(a: 1))
     XCTAssertEqual(decodedPair.1, B(b: "s"))
 
-    let triple = Codec.Each3(values: (A(a: 1), B(b: "s"), C(c: true)))
+    let triple = Codec.Each3(A(a: 1), B(b: "s"), C(c: true))
     let tripleTree = try Enigma(encode: triple)
     XCTAssertEqual(tripleTree, ["a": 1, "b": "s", "c": true])
     XCTAssertEqual(try tripleTree.decode(type(of: triple)), triple)
     XCTAssertEqual(Set([triple, triple]).count, 1)
 
-    let quadruple = Codec.Each4(values: (A(a: 1), B(b: "s"), C(c: true), D(d: 2.5)))
+    let quadruple = Codec.Each4(A(a: 1), B(b: "s"), C(c: true), D(d: 2.5))
     let quadrupleTree = try Enigma(encode: quadruple)
     XCTAssertEqual(quadrupleTree, ["a": 1, "b": "s", "c": true, "d": 2.5])
     XCTAssertEqual(try quadrupleTree.decode(type(of: quadruple)), quadruple)
@@ -325,8 +325,8 @@ final class StrategyContractTests: XCTestCase {
     XCTAssertEqual(decodedQuadruple.1, B(b: "s"))
     XCTAssertEqual(decodedQuadruple.2, C(c: true))
     XCTAssertEqual(decodedQuadruple.3, D(d: 2.5))
-    XCTAssertThrowsError(try Enigma(encode: Codec.Each(values: (A(a: 1), A(a: 2)))))
-    XCTAssertThrowsError(try Enigma(encode: Codec.Each(values: (1, 2))))
+    XCTAssertThrowsError(try Enigma(encode: Codec.Each(A(a: 1), A(a: 2))))
+    XCTAssertThrowsError(try Enigma(encode: Codec.Each(1, 2)))
     assertDecodingError("keyNotFound", path: []) { _ = try Enigma.dictionary(["a": 1]).decode(type(of: value)) }
   }
 
