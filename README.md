@@ -39,7 +39,7 @@ var tree = try Enigma(encode: User(name: "Ada", scores: [10]))
 tree["scores", 1] = 20                 // Append at the current array count.
 tree["name"] = "Grace"
 let user = try tree.decode(User.self) // User(name: "Grace", scores: [10, 20])
-let paths = tree.paths               // [name], [scores], [scores, 0], [scores, 1]
+let paths = tree.allPaths            // [name], [scores], [scores, 0], [scores, 1]
 ```
 
 A missing path returns `nil`; a stored null is `Enigma.null`. Assigning `nil`
@@ -49,7 +49,7 @@ no-op. Missing dictionary children and an array element at `count` can be create
 negative indices, skipped indices, and incompatible existing parents are no-ops.
 The `or:` fallback is evaluated only for a missing value.
 
-`paths` includes every descendant, including empty containers, and excludes the
+`allPaths` includes every descendant, including empty containers, and excludes the
 root. Its depth-first order uses sorted dictionary keys and ascending indices.
 
 ## Merge partial models
@@ -71,6 +71,7 @@ specified.
 ## Coding strategies
 
 ```swift
+import Enigmatic
 import Foundation
 
 struct Payload: Codable {
@@ -80,16 +81,18 @@ struct Payload: Codable {
 
 let payload = Payload(bytes: Data([1, 2, 3]), link: nil)
 let tree = try Enigma(encode: payload)
-// ["bytes": "AQID"]
+// ["bytes": "AQID", "link": .null]
 let restored = try tree.decode(Payload.self)
 ```
 
 Strategies compose with arrays, dictionaries, optionals and sets:
 `[Codec.Base64Data]`, `[String: Codec.Base64Data?]`, or `Set<Codec.Id<Int>>`.
-Optional strategy values accept an explicit null. For an optional `Codec.Box`
-property, a nil value is omitted from keyed output, and decoding a missing or
-null key produces nil. A `Set` removes duplicates and does not promise encoded
-ordering.
+Optional strategy values accept an explicit null. In consumer models using
+`import Enigmatic`, synthesized coding of an optional `Codec.Box` property writes
+null for a nil value. Decoding an explicit null produces nil; a missing key throws
+`DecodingError.keyNotFound`. The library's internal keyed overloads for omitting
+nil and accepting missing keys are not public. A `Set` removes duplicates and
+does not promise encoded ordering.
 
 `Codec.Either<Right, Left>` tries Right first, then Left. If both fail, a
 `DecodingError.dataCorrupted` contains an `Enigma.CompositeError` with both causes.
@@ -103,19 +106,27 @@ a decoding error as a value; encoding that failure throws and preserves its caus
 - Integer conversions use exact representability: fractions and overflow return
   `nil` from accessors and fail typed decoding. Integers must be exactly
   representable when converted to Float/Double. Double-to-Float conversion allows
-  rounding but rejects finite overflow. NaN compares equal to NaN in `Enigma`;
-  Float/Double equality follows the library's Float rounding behavior.
-- Root and nested `Date`/`Data` values retain `.date`/`.data` in an Enigma tree.
-- `rawAny` preserves Swift values; `rawObject` bridges to Foundation. Neither
-  promises a JSON/plist-compatible object.
-- `jsonObject` rejects dates, data, non-finite numbers and 128-bit integers.
+  rounding but rejects finite overflow. NaN compares equal to NaN in `Enigma`.
+  Mixed Float/Double equality rounds to Float and is not transitive; use exact
+  numeric conversions when checking precision. `skipEqual` uses this same equality.
+- Direct `Date`/`Data` values encoded with `Enigma(encode:)` retain `.date`/`.data`
+  at root and nested positions; explicit Codec strategies can select other
+  representations.
+- `asSwiftAny` exports native Swift/Foundation values, using `NSNull` for null.
+  It does not promise a JSON/plist-compatible object.
+- `asJsonObject` rejects dates, data, non-finite numbers and 128-bit integers.
   Scalars require `.fragmentsAllowed` when passed to `JSONSerialization`.
-- `plistObject` rejects null and 128-bit integers. Use arrays/dictionaries as
+- `asPlistObject` rejects null and 128-bit integers. Use arrays/dictionaries as
   document roots for portable property-list encoding.
-- When encoding Enigma through an external `Encoder`, keyed Date/Data fields use
-  that encoder's strategies. Root and array Date/Data nodes invoke Foundation's
-  own `encode(to:)` representation. Use explicit `Codec.Box` strategies when a
-  stable date/data wire representation is required across positions.
+- When encoding an existing Enigma tree through an external `Encoder`, native
+  Date/Data nodes invoke Foundation's own `encode(to:)` at root, array, and keyed
+  positions. With `JSONEncoder`, dates become seconds since 2001 and data becomes
+  an array of bytes, regardless of its date/data encoding strategies. Apply
+  explicit `Codec.Box` strategies to model values before building the tree when
+  a different wire representation is required.
+- External Codable decoding probes available containers and value types and
+  downscales numbers. It does not promise to preserve the original enum cases or
+  infer Date/Data from their JSON representations.
 - `description` and `debugDescription` are diagnostic text, not JSON.
 
 Date strategies reject non-finite dates and invalid decimal scale factors.
@@ -132,16 +143,18 @@ guides and symbol documentation.
 ```sh
 swift test --skip PerformanceTests
 swift test -c release --skip PerformanceTests
+python3 -m unittest discover -s Scripts/tests
 swift test --enable-code-coverage --skip PerformanceTests
-python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)"
+python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)" --minimum 100
 swift test -c release --filter PerformanceTests
 ```
 
-Coverage checks only executable lines under `Sources/Enigmatic`, with a 90%
-minimum on pull requests. Benchmarks are separate, run without coverage, and report
-relative timings without noisy CI timing thresholds. The manual CI workflow also
-uploads benchmark results. README examples are exercised in
-`DocumentationExamplesTests`.
+CI and tag releases require 100% executable line coverage under `Sources/Enigmatic`.
+The coverage script defaults to 90%, so pass `--minimum 100` to match CI.
+Benchmarks are separate, run without coverage, and report relative timings
+without noisy CI timing thresholds. The manual CI workflow also
+uploads benchmark results. `DocumentationExamplesTests` exercises the editing,
+merge, and property-wrapper examples using the public API.
 
 Build DocC with Xcode's documentation compiler:
 
