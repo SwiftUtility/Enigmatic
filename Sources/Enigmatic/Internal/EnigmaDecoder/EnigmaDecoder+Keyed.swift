@@ -25,105 +25,105 @@ extension EnigmaDecoder {
     }
 
     func decodeNil(forKey key: Key) throws -> Bool {
-      guard let value = values[key.stringValue] else { return false }
+      guard let value = values[key.stringValue] else { throw keyNotFound(key) }
       return value.isNull
     }
 
     func decode(_ type: Bool.Type, forKey key: Key) throws -> Bool {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asBool else { throw typeMismatch(key, type: type) }
+      guard let value = value.asBool else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: String.Type, forKey key: Key) throws -> String {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asString else { throw typeMismatch(key, type: type) }
+      guard let value = value.asString else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: Double.Type, forKey key: Key) throws -> Double {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asDouble else { throw typeMismatch(key, type: type) }
+      guard let value = value.asDouble else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: Float.Type, forKey key: Key) throws -> Float {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asFloat else { throw typeMismatch(key, type: type) }
+      guard let value = value.asFloat else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: Int.Type, forKey key: Key) throws -> Int {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asInt else { throw typeMismatch(key, type: type) }
+      guard let value = value.asInt else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: Int8.Type, forKey key: Key) throws -> Int8 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asInt8 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asInt8 else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: Int16.Type, forKey key: Key) throws -> Int16 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asInt16 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asInt16 else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: Int32.Type, forKey key: Key) throws -> Int32 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asInt32 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asInt32 else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: Int64.Type, forKey key: Key) throws -> Int64 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asInt64 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asInt64 else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: UInt.Type, forKey key: Key) throws -> UInt {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asUInt else { throw typeMismatch(key, type: type) }
+      guard let value = value.asUInt else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: UInt8.Type, forKey key: Key) throws -> UInt8 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asUInt8 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asUInt8 else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: UInt16.Type, forKey key: Key) throws -> UInt16 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asUInt16 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asUInt16 else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: UInt32.Type, forKey key: Key) throws -> UInt32 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asUInt32 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asUInt32 else { throw valueError(key, type: type) }
       return value
     }
 
     func decode(_ type: UInt64.Type, forKey key: Key) throws -> UInt64 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asUInt64 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asUInt64 else { throw valueError(key, type: type) }
       return value
     }
 
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     func decode(_ type: Int128.Type, forKey key: Key) throws -> Int128 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asInt128 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asInt128 else { throw valueError(key, type: type) }
       return value
     }
 
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     func decode(_ type: UInt128.Type, forKey key: Key) throws -> UInt128 {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asUInt128 else { throw typeMismatch(key, type: type) }
+      guard let value = value.asUInt128 else { throw valueError(key, type: type) }
       return value
     }
 
@@ -146,7 +146,7 @@ extension EnigmaDecoder {
       forKey key: Key
     ) throws -> KeyedDecodingContainer<NestedKey> {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asDictionary else { throw typeMismatch(key, type: [String: Enigma].self) }
+      guard let value = value.asDictionary else { throw valueError(key, type: [String: Enigma].self) }
       return KeyedDecodingContainer(Keyed<NestedKey>(
         state: state, values: value, pathId: state.nested(pathId: pathId, key: key)
       ))
@@ -156,7 +156,7 @@ extension EnigmaDecoder {
       forKey key: Key
     ) throws -> UnkeyedDecodingContainer {
       guard let value = values[key.stringValue] else { throw keyNotFound(key) }
-      guard let value = value.asArray else { throw typeMismatch(key, type: [Enigma].self) }
+      guard let value = value.asArray else { throw valueError(key, type: [Enigma].self) }
       return Unkeyed(state: state, values: value, pathId: state.nested(pathId: pathId, key: key))
     }
 
@@ -180,11 +180,13 @@ extension EnigmaDecoder {
       ))
     }
 
-    private func typeMismatch(_ key: Key, type: Any.Type) -> DecodingError {
-      DecodingError.typeMismatch(type, .init(
+    private func valueError(_ key: Key, type: Any.Type) -> DecodingError {
+      let context = DecodingError.Context(
         codingPath: state.path(pathId: pathId, key: key),
         debugDescription: "Expected \(type)"
-      ))
+      )
+      return values[key.stringValue]?.isNull == true
+        ? .valueNotFound(type, context) : .typeMismatch(type, context)
     }
   }
 }

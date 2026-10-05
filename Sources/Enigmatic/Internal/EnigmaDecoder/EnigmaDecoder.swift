@@ -12,7 +12,7 @@ final class EnigmaDecoder {
     var result: [any CodingKey] = []
     var link = path[pathId]
     while let current = link {
-      result.append(current.pin)
+      result.append(current.key)
       link = path[current.prev]
     }
     result.reverse()
@@ -23,7 +23,7 @@ final class EnigmaDecoder {
     var result: [any CodingKey] = [key]
     var link = path[pathId]
     while let current = link {
-      result.append(current.pin)
+      result.append(current.key)
       link = path[current.prev]
     }
     result.reverse()
@@ -31,7 +31,7 @@ final class EnigmaDecoder {
   }
 
   func nested(pathId: Int, key: any CodingKey) -> Int {
-    defer { path.append(Link(prev: pathId, pin: Enigma.Pin(key))) }
+    defer { path.append(Link(prev: pathId, key: key)) }
     return path.count
   }
 
@@ -41,6 +41,6 @@ final class EnigmaDecoder {
 
   struct Link {
     let prev: Int
-    let pin: Enigma.Pin
+    let key: any CodingKey
   }
 }

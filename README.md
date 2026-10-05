@@ -97,9 +97,11 @@ does not promise encoded ordering.
 `Codec.Either<Right, Left>` tries Right first, then Left. If both fail, a
 `DecodingError.dataCorrupted` contains an `Enigma.CompositeError` with both causes.
 `Codec.Each` encodes components into the same container and decodes each from the
-same input; it is useful for disjoint keyed models. Overlapping keys or competing
-scalar writes throw with Enigma's encoder. `Result<Strategy, any Error>` captures
-a decoding error as a value; encoding that failure throws and preserves its cause.
+same input; it is useful for disjoint keyed models. Disjoint children can share a
+container key, and arrays written under the same key append. Competing leaf writes
+or incompatible container writes throw with Enigma's encoder.
+`Result<Strategy, any Error>` captures a decoding error as a value; encoding that
+failure throws and preserves its cause.
 
 ## Serialization contracts
 
@@ -128,6 +130,9 @@ a decoding error as a value; encoding that failure throws and preserves its caus
   an array of bytes, regardless of its date/data encoding strategies. Apply
   explicit `Codec.Box` strategies to model values before building the tree when
   a different wire representation is required.
+  A root Enigma passed to `Enigma(encode:)` is returned directly. Enigma values
+  embedded in a model invoke that same Codable representation, so their native
+  Date/Data cases become reference-date seconds/byte arrays inside the new tree.
 - External Codable decoding probes available containers and value types and
   tries integer types before floating-point types to preserve large integers,
   including 128-bit values on supported systems. It downscales numbers and
@@ -141,6 +146,19 @@ a decoding error as a value; encoding that failure throws and preserves its caus
   plists and Foundation NSNumber bridging can widen Float and change its decimal
   representation. Non-finite numbers extend the equality policy beyond JSON.
 - `description` and `debugDescription` are diagnostic text, not JSON.
+
+Container adapters preserve userInfo and both representations of each coding key.
+Missing keyed `decodeNil` throws `keyNotFound`; null primitive values throw
+`valueNotFound`, and incompatible non-null values throw `typeMismatch`. Failed
+unkeyed decodes leave the index unchanged. Super decoders accept null to support
+nullable scalar superclass values; successfully obtaining one consumes its array
+element. This nullable-super behavior differs from Swift's documented null error.
+
+Encoding is not transactional. If a model catches a child encoding error, a
+reserved array element or partially written child can remain in the output.
+Unwritten children become empty dictionaries; a root that encodes nothing throws.
+Arena materialization is iterative, while consumer Codable implementations and
+other tree operations may still recurse.
 
 Date strategies reject non-finite dates and invalid decimal scale factors.
 `UnixDate<3>` represents milliseconds; `UnixDate<6>` represents microseconds.

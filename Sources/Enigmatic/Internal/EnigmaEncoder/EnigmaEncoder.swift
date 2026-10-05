@@ -51,51 +51,42 @@ final class EnigmaEncoder {
 
   func nestedRef(ref: Ref, key: (any CodingKey)?) -> Ref {
     if ref.failId >= 0 {
-      let pin: Enigma.Pin = if let key { .str(key.stringValue) } else { .int(0) }
-      defer { fails.append(Link(prev: ref.failId, pin: pin)) }
+      let key: any CodingKey = key ?? Enigma.Pin.int(0)
+      defer { fails.append(Link(prev: ref.failId, key: key)) }
       return Ref(nodeId: ref.nodeId, failId: fails.count)
     } else if let key {
-      let key = key.stringValue
+      let string = key.stringValue
       guard case .keyedId(let keyedId) = nodes[ref.nodeId].storage else {
-        defer { fails.append(Link(prev: 0, pin: .str(key))) }
+        defer { fails.append(Link(prev: 0, key: key)) }
         return Ref(nodeId: ref.nodeId, failId: fails.count)
       }
-      if let nodeId = keyed[keyedId][key] {
+      if let nodeId = keyed[keyedId][string] {
         return Ref(nodeId: nodeId, failId: -1)
       } else {
-        defer { nodes.append(Node(link: Link(prev: ref.nodeId, pin: .str(key)))) }
-        keyed[keyedId][key] = nodes.count
+        defer { nodes.append(Node(link: Link(prev: ref.nodeId, key: key))) }
+        keyed[keyedId][string] = nodes.count
         return Ref(nodeId: nodes.count, failId: -1)
       }
     } else {
       guard case .unkeyedId(let unkeyedId) = nodes[ref.nodeId].storage else {
-        defer { fails.append(Link(prev: 0, pin: .int(0))) }
+        defer { fails.append(Link(prev: 0, key: Enigma.Pin.int(0))) }
         return Ref(nodeId: ref.nodeId, failId: fails.count)
       }
       let nodeId = nodes.count
-      nodes.append(Node(link: Link(prev: ref.nodeId, pin: .int(unkeyed[unkeyedId].count))))
+      nodes.append(Node(link: Link(prev: ref.nodeId, key: Enigma.Pin.int(unkeyed[unkeyedId].count))))
       unkeyed[unkeyedId].append(nodeId)
       return Ref(nodeId: nodeId, failId:  -1)
     }
   }
 
   func store(_ value: Enigma, ref: Ref) throws {
-    if ref.failId >= 0 {
-      let failPath = codingPath(failId: ref.failId, key: nil)
-      let nodePath = codingPath(nodeId: ref.nodeId, key: nil)
-      let encoded = materialize(nodeId: ref.nodeId).asSwiftAny
+    guard ref.failId < 0, case .unset = nodes[ref.nodeId].storage else {
       throw EncodingError.invalidValue(value.asSwiftAny, EncodingError.Context(
-        codingPath: nodePath + failPath,
-        debugDescription: "attempt to overwrite \(encoded) at \(nodePath)"
-      ))
-    } else if case .unset = nodes[ref.nodeId].storage {
-      nodes[ref.nodeId].storage = .value(value)
-    } else {
-      throw EncodingError.invalidValue(value.asSwiftAny, EncodingError.Context(
-        codingPath: codingPath(nodeId: ref.nodeId, key: nil),
-        debugDescription: "attempt to overwrite \(materialize(nodeId: ref.nodeId).asSwiftAny)"
+        codingPath: codingPath(ref: ref),
+        debugDescription: "attempt to overwrite an existing encoded value or container"
       ))
     }
+    nodes[ref.nodeId].storage = .value(value)
   }
 
   func encodeSpecial<T: Encodable>(_ value: T, ref: Ref) throws -> Bool {
@@ -114,7 +105,7 @@ final class EnigmaEncoder {
     if let key { path.append(key) }
     var link = nodes[nodeId].link
     while let current = link {
-      path.append(current.pin)
+      path.append(current.key)
       link = nodes[current.prev].link
     }
     path.reverse()
@@ -126,20 +117,30 @@ final class EnigmaEncoder {
     if let key { path.append(key) }
     var link = fails[failId]
     while let current = link {
-      path.append(current.pin)
+      path.append(current.key)
       link = fails[current.prev]
     }
     path.reverse()
     return path
   }
 
-  private func materialize(nodeId: Int) -> Enigma {
-    switch nodes[nodeId].storage {
-    case .unset: .dictionary([:])
-    case .value(let value): value
-    case .keyedId(let keyedId): .dictionary(keyed[keyedId].mapValues(materialize(nodeId:)))
-    case .unkeyedId(let unkeyedId): .array(unkeyed[unkeyedId].map(materialize(nodeId:)))
+  private func materialize() -> Enigma {
+    var values = [Enigma?](repeating: nil, count: nodes.count)
+    func take(_ nodeId: Int) -> Enigma {
+      let value = values[nodeId]!
+      values[nodeId] = nil
+      return value
     }
+    // Children are allocated after their parents, so reverse order builds them first.
+    for nodeId in nodes.indices.reversed() {
+      values[nodeId] = switch nodes[nodeId].storage {
+      case .unset: .dictionary([:])
+      case .value(let value): value
+      case .keyedId(let keyedId): .dictionary(keyed[keyedId].mapValues(take))
+      case .unkeyedId(let unkeyedId): .array(unkeyed[unkeyedId].map(take))
+      }
+    }
+    return take(0)
   }
 
   static func encode(value: any Encodable, userInfo: [CodingUserInfoKey: Any]) throws -> Enigma {
@@ -154,7 +155,7 @@ final class EnigmaEncoder {
         debugDescription: "top level encoded to nothing"
       ))
     } else {
-      return state.materialize(nodeId: 0)
+      return state.materialize()
     }
   }
 
@@ -172,7 +173,7 @@ final class EnigmaEncoder {
 
   struct Link {
     let prev: Int
-    let pin: Enigma.Pin
+    let key: any CodingKey
   }
 
   struct Ref {

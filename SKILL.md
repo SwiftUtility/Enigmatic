@@ -54,14 +54,17 @@ tree <-> Enigma's Codable conformances <-> external encoders/decoders
 **Encoder internals:** `EnigmaEncoder` owns an arena of nodes, separate keyed and
 unkeyed child tables, and parent/failure links. Container structs share this state
 through `Ref(nodeId, failId)`. Writes build nodes; `materialize` constructs the final
-tree once encoding succeeds. Incompatible container requests return a failure
-reference because the protocol request cannot throw; a subsequent write throws
+tree iteratively in reverse allocation order once encoding succeeds. Path links
+retain the original CodingKey, including both stringValue and intValue.
+Incompatible container requests return a failure reference because the protocol
+request cannot throw; a subsequent write throws
 with the accumulated path. `Single` implements both `Encoder` and its single-value
 container. `encodeSpecial` captures direct Data/Date values as native tree cases.
 `Enigma.init(encode:)` returns an existing Enigma value directly instead of passing
 it through the adapter.
 
-**Decoder internals:** `EnigmaDecoder` owns userInfo and parent-linked coding paths.
+**Decoder internals:** `EnigmaDecoder` owns userInfo and parent-linked coding paths
+that retain the original CodingKey.
 `Single` implements both `Decoder` and its single-value container; keyed/unkeyed
 containers hold tree values and a path ID. Primitive decoding uses `Enigma.as*`
 accessors; generic decoding special-cases native Data/Date, otherwise invokes
@@ -171,15 +174,30 @@ DocC has four pages: `Enigmatic.md` is the symbol/topic index; `TreeOperations.m
   the tree to select another wire representation.
   External tree decoding probes containers/types and downscales numbers; it does
   not promise to retain the original enum case.
+  A root Enigma passed to `Enigma(encode:)` is returned directly. Enigma values
+  embedded in models use their Codable conformance, so native Date/Data nodes
+  become reference-date seconds/byte arrays even with the internal adapter.
 - **Containers/errors:** userInfo propagates through nested/super adapters.
-  Reopened keyed containers share storage; duplicate or incompatible writes throw.
+  Reopened containers share storage. Generic keyed writes can compose disjoint
+  dictionary children or append arrays under an existing key; competing leaf
+  writes and incompatible writes throw. No-output roots throw; unwritten child
+  slots become empty dictionaries. Encoding is not transactional: a caught failure
+  can leave a reserved array element or partially written child in the output.
+  Missing keyed `decodeNil` throws `keyNotFound`. Decoding a null primitive throws
+  `valueNotFound`; incompatible non-null values throw `typeMismatch`. These correct
+  the former missing-key false return and null typeMismatch behavior.
+  Super decoders intentionally accept null for nullable scalar superclass values;
+  a successful unkeyed superDecoder advances even when its value is null.
   Failed unkeyed decodes leave the index unchanged; `decodeNil` advances only for
   null. End errors identify the container, type mismatches the element. Preserve
   error kinds, coding paths, and underlying causes; message text is diagnostic.
+  Materialization and conflict diagnostics do not recursively traverse the arena;
+  consumer Codable implementations and other tree operations can still recurse.
 - **Strategies:** `Either<Right, Left>` tries Right first, retaining both failures
   in `CompositeError`. `Each`/Each2/3/4 share one input/output, rather than encode a
-  tuple array; overlapping writes conflict. Sets deduplicate with unspecified
-  encoded order. `Result<S, any Error>` captures decode errors; encoding a failure
+  tuple array; competing leaf writes conflict, but disjoint children can share a
+  container key. Sets deduplicate with unspecified encoded order.
+  `Result<S, any Error>` captures decode errors; encoding a failure
   throws with its cause. Optional strategies distinguish a whole optional value
   from its present payload via `OptionalBox`; missing/null/omitted keyed behavior
   differs by access context. The keyed overloads in `I/Codec` and their helper

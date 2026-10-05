@@ -40,8 +40,10 @@ both decoders fail, the resulting `dataCorrupted` context contains
 applies when Either composes two strategies.
 
 ``Codec/Each`` reads each component from the same input and writes every component
-to the same encoder. Disjoint keyed models combine naturally; overlapping keys
-or scalar writes conflict with Enigma's encoder. Each is not a tuple-array format.
+to the same encoder. Disjoint keyed models combine naturally, including disjoint
+children under a shared container key. Arrays written under the same key append;
+competing leaf writes or incompatible containers conflict with Enigma's encoder.
+Each is not a tuple-array format.
 The older Each2/Each3/Each4 types remain available for older Apple runtimes.
 
 `Result<Strategy, any Error>` converts a decoding failure to a Result value.

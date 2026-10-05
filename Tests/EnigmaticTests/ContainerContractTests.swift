@@ -34,6 +34,7 @@ final class ContainerContractTests: XCTestCase {
   func testUnkeyedCountAndSharedStorage() throws {
     let result = try Enigma(encode: EncodingProbe { encoder in
       var first = encoder.unkeyedContainer()
+      XCTAssertTrue(first.codingPath.isEmpty)
       XCTAssertEqual(first.count, 0)
       try first.encode(1)
       XCTAssertEqual(first.count, 1)
@@ -42,6 +43,7 @@ final class ContainerContractTests: XCTestCase {
       try second.encodeNil()
       XCTAssertEqual(first.count, 2)
       var nested = first.nestedContainer(keyedBy: Key.self)
+      XCTAssertEqual(nested.codingPath.map(Key.init), [2])
       try nested.encode(true, forKey: "flag")
       XCTAssertEqual(second.count, 3)
       var array = second.nestedUnkeyedContainer()
@@ -188,5 +190,121 @@ final class ContainerContractTests: XCTestCase {
     // Legacy Foundation representations still decode.
     XCTAssertEqual(try Enigma.double(date.timeIntervalSinceReferenceDate).decode(Date.self), date)
     XCTAssertEqual(try Enigma.array([0, 1, 255]).decode(Data.self), data)
+  }
+
+  func testDeepMaterializationAndConflictDiagnostics() throws {
+    let depth = 10_000
+    var tree = try Enigma(encode: EncodingProbe { encoder in
+      var child = encoder
+      for index in 0..<depth {
+        if index.isMultiple(of: 2) {
+          var c = child.container(keyedBy: Key.self)
+          child = c.superEncoder(forKey: "child")
+        } else {
+          var c = child.unkeyedContainer()
+          child = c.superEncoder()
+        }
+      }
+      var value = child.singleValueContainer()
+      try value.encode(42)
+      // Error reporting must not recursively materialize the already-built tree.
+      var conflicting = encoder.unkeyedContainer()
+      XCTAssertThrowsError(try conflicting.encode(0)) { error in
+        guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
+        XCTAssertEqual(context.codingPath.map(Key.init), [0])
+      }
+      var single = encoder.singleValueContainer()
+      XCTAssertThrowsError(try single.encode(0)) { error in
+        guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
+        XCTAssertTrue(context.codingPath.isEmpty)
+      }
+    })
+    // Inspect and release one level at a time; equality and other tree operations may recurse.
+    for index in 0..<depth {
+      let child = index.isMultiple(of: 2) ? tree["child"] : tree[0]
+      guard let child else { return XCTFail("Missing child at depth \(index)") }
+      tree = child
+    }
+    XCTAssertEqual(tree, 42)
+  }
+
+  func testNullErrorsAndUnkeyedRecovery() throws {
+    let single = try EnigmaDecoder.decoder(enigma: .null, userInfo: [:]).singleValueContainer()
+    assertDecodingError("valueNotFound", path: []) { _ = try single.decode(Int.self) }
+    XCTAssertNil(try single.decode(Int?.self))
+    XCTAssertEqual(try single.decode(Enigma.self), .null)
+
+    let keyed = try EnigmaDecoder.decoder(enigma: ["value": nil], userInfo: [:]).container(keyedBy: Key.self)
+    assertDecodingError("keyNotFound", path: []) { _ = try keyed.decodeNil(forKey: "missing") }
+    XCTAssertTrue(try keyed.decodeNil(forKey: "value"))
+    assertDecodingError("valueNotFound", path: ["value"]) { _ = try keyed.decode(Int.self, forKey: "value") }
+    assertDecodingError("valueNotFound", path: ["value"]) { _ = try keyed.nestedUnkeyedContainer(forKey: "value") }
+    XCTAssertNil(try keyed.decodeIfPresent(Int.self, forKey: "missing"))
+
+    let parent = try EnigmaDecoder.decoder(enigma: ["child": ["value": nil]], userInfo: [:]).container(keyedBy: Key.self)
+    let child = try parent.nestedContainer(keyedBy: Key.self, forKey: "child")
+    assertDecodingError("valueNotFound", path: ["child", "value"]) { _ = try child.decode(Int.self, forKey: "value") }
+
+    var array = try EnigmaDecoder.decoder(enigma: [nil, "wrong", 2], userInfo: [:]).unkeyedContainer()
+    assertDecodingError("valueNotFound", path: [0]) { _ = try array.decode(Int.self) }
+    XCTAssertEqual(array.currentIndex, 0)
+    XCTAssertTrue(try array.decodeNil())
+    assertDecodingError("typeMismatch", path: [1]) { _ = try array.decode([Int].self) }
+    XCTAssertEqual(array.currentIndex, 1)
+    XCTAssertEqual(try array.decode(String.self), "wrong")
+    XCTAssertEqual(try array.decode(Int.self), 2)
+    XCTAssertEqual(array.currentIndex, 3)
+    XCTAssertThrowsError(try array.nestedUnkeyedContainer()) { error in
+      guard case DecodingError.valueNotFound(let type, let context) = error else { return XCTFail("\(error)") }
+      XCTAssertTrue(type == [Enigma].self)
+      XCTAssertTrue(context.codingPath.isEmpty)
+    }
+    XCTAssertEqual(array.currentIndex, 3)
+  }
+
+  func testCompositionAndCaughtEncodingFailures() throws {
+    struct Failing: Encodable {
+      func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: Key.self)
+        try c.encode(1, forKey: "partial")
+        throw EncodingError.invalidValue(1, .init(codingPath: encoder.codingPath, debugDescription: "probe"))
+      }
+    }
+    let tree = try Enigma(encode: EncodingProbe { encoder in
+      var c = encoder.container(keyedBy: Key.self)
+      try c.encode([1], forKey: "array")
+      try c.encode([2], forKey: "array")
+      try c.encode(["a": 1], forKey: "object")
+      try c.encode(["b": 2], forKey: "object")
+      var array = c.nestedUnkeyedContainer(forKey: "failures")
+      XCTAssertThrowsError(try array.encode(Failing()))
+      XCTAssertEqual(array.count, 1)
+      try array.encode(2)
+    })
+    XCTAssertEqual(tree, ["array": [1, 2], "object": ["a": 1, "b": 2], "failures": [["partial": 1], 2]])
+  }
+
+  func testNullableSuperclassDecoders() throws {
+    let keyed = try EnigmaDecoder.decoder(enigma: ["super": nil, "parent": nil], userInfo: [:]).container(keyedBy: Key.self)
+    XCTAssertNil(try keyed.superDecoder().singleValueContainer().decode(Int?.self))
+    XCTAssertNil(try keyed.superDecoder(forKey: "parent").singleValueContainer().decode(Int?.self))
+    var array = try EnigmaDecoder.decoder(enigma: [nil, 2], userInfo: [:]).unkeyedContainer()
+    XCTAssertNil(try array.superDecoder().singleValueContainer().decode(Int?.self))
+    XCTAssertEqual(array.currentIndex, 1)
+    XCTAssertEqual(try array.decode(Int.self), 2)
+  }
+
+  func testEmbeddedEnigmaDateAndDataUseCodableRepresentation() throws {
+    let date = Enigma.date(Date(timeIntervalSinceReferenceDate: 1.25))
+    let data = Enigma.data(Data([1, 255]))
+    guard case .date = try Enigma(encode: date), case .data = try Enigma(encode: data) else {
+      return XCTFail("Root Enigma values must retain their cases")
+    }
+    let tree = try Enigma(encode: [date, data])
+    guard case .double(1.25) = tree[0], case .array = tree[1] else {
+      return XCTFail("Embedded Enigma values must use their Codable representation")
+    }
+    XCTAssertEqual(try tree[0]!.decode(Date.self), date.asDate)
+    XCTAssertEqual(try tree[1]!.decode(Data.self), data.asData)
   }
 }
