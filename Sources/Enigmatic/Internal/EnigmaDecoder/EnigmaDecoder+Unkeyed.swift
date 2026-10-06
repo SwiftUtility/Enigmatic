@@ -212,7 +212,7 @@ extension EnigmaDecoder {
     }
 
     mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
-      guard currentIndex < values.count else { throw valueNotFound([String: Enigma].self) }
+      guard currentIndex < values.count else { throw valueNotFound([Enigma].self) }
       guard let values = values[currentIndex].asArray else {
         throw values[currentIndex].decodingError(path, type: [Enigma].self)
       }

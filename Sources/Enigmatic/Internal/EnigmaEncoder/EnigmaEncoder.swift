@@ -52,28 +52,28 @@ final class EnigmaEncoder {
   func nestedRef(ref: Ref, key: (any CodingKey)?) -> Ref {
     if ref.failId >= 0 {
       let pin: Enigma.Pin = if let key { .str(key.stringValue) } else { .int(0) }
-      defer { fails.append(Link(prev: ref.failId, pin: pin)) }
+      defer { fails.append(Link(prev: ref.failId, key: key ?? Enigma.Pin.int(0))) }
       return Ref(nodeId: ref.nodeId, failId: fails.count)
     } else if let key {
-      let key = key.stringValue
       guard case .keyedId(let keyedId) = nodes[ref.nodeId].storage else {
-        defer { fails.append(Link(prev: 0, pin: .str(key))) }
+        defer { fails.append(Link(prev: 0, key: key)) }
         return Ref(nodeId: ref.nodeId, failId: fails.count)
       }
-      if let nodeId = keyed[keyedId][key] {
+      let string = key.stringValue
+      if let nodeId = keyed[keyedId][string] {
         return Ref(nodeId: nodeId, failId: -1)
       } else {
-        defer { nodes.append(Node(link: Link(prev: ref.nodeId, pin: .str(key)))) }
-        keyed[keyedId][key] = nodes.count
+        defer { nodes.append(Node(link: Link(prev: ref.nodeId, key: key))) }
+        keyed[keyedId][string] = nodes.count
         return Ref(nodeId: nodes.count, failId: -1)
       }
     } else {
       guard case .unkeyedId(let unkeyedId) = nodes[ref.nodeId].storage else {
-        defer { fails.append(Link(prev: 0, pin: .int(0))) }
+        defer { fails.append(Link(prev: 0, key: Enigma.Pin.int(0))) }
         return Ref(nodeId: ref.nodeId, failId: fails.count)
       }
       let nodeId = nodes.count
-      nodes.append(Node(link: Link(prev: ref.nodeId, pin: .int(unkeyed[unkeyedId].count))))
+      nodes.append(Node(link: Link(prev: ref.nodeId, key: Enigma.Pin.int(unkeyed[unkeyedId].count))))
       unkeyed[unkeyedId].append(nodeId)
       return Ref(nodeId: nodeId, failId:  -1)
     }
@@ -114,7 +114,7 @@ final class EnigmaEncoder {
     if let key { path.append(key) }
     var link = nodes[nodeId].link
     while let current = link {
-      path.append(current.pin)
+      path.append(current.key)
       link = nodes[current.prev].link
     }
     path.reverse()
@@ -126,7 +126,7 @@ final class EnigmaEncoder {
     if let key { path.append(key) }
     var link = fails[failId]
     while let current = link {
-      path.append(current.pin)
+      path.append(current.key)
       link = fails[current.prev]
     }
     path.reverse()
@@ -172,7 +172,7 @@ final class EnigmaEncoder {
 
   struct Link {
     let prev: Int
-    let pin: Enigma.Pin
+    let key: any CodingKey
   }
 
   struct Ref {
