@@ -4,9 +4,10 @@ import System
 #endif
 
 extension Codec {
-  /// Encodes a URL as its absolute string; decoding accepts Foundation FilePath syntax
+  /// Encodes a file URL as its filesystem path and decodes path strings as file URLs.
   public enum PathURL: Hashable, DecodeStrategy, EncodeStrategy {
     /// Decodes a filesystem path string as a file URL.
+    /// - Complexity: O(n) in the URL or path string length.
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try String(from: decoder)
@@ -31,6 +32,7 @@ extension Codec {
     }
 
     /// Encodes the URL's unescaped filesystem path as a string.
+    /// - Complexity: O(n) in the URL or path string length.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
       if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {

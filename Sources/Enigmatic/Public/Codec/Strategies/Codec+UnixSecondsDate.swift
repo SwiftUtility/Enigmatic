@@ -7,6 +7,7 @@ extension Codec {
   public enum UnixSecondsDate: Hashable, DecodeStrategy, EncodeStrategy, Error {
     /// Decodes finite seconds since 1970 into a date.
     /// - Throws: `DecodingError.dataCorrupted` for non-finite input.
+    /// - Complexity: O(1); the operation performs a fixed number of numeric conversions and arithmetic operations.
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try Double(from: decoder)
@@ -21,6 +22,7 @@ extension Codec {
 
     /// Encodes a date as finite seconds since 1970.
     /// - Throws: `EncodingError.invalidValue` for a non-finite date.
+    /// - Complexity: O(1); the operation performs a fixed number of numeric conversions and arithmetic operations.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
       let value = value.timeIntervalSince1970

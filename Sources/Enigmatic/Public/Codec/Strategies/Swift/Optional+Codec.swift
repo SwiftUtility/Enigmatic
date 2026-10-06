@@ -8,12 +8,14 @@ extension Optional: Codec.Strategy, Codec.OptionalStrategy where Wrapped: Codec.
 extension Optional: Codec.DecodeStrategy, Codec.DecodeOptionalStrategy
 where Wrapped: Codec.DecodeStrategy {
   /// Decodes an optional value, accepting a null representation.
+  /// - Complexity: O(1) for nil; for a present value, the cost of the wrapped strategy.
   @inlinable
   public static func decode(decoder: some Decoder) throws -> BoxedValue {
     try Codec.Box<Wrapped>?(from: decoder)?.wrappedValue
   }
 
   /// Decodes the present payload by delegating to the wrapped strategy.
+  /// - Complexity: O(1) for nil; for a present value, the cost of the wrapped strategy.
   @inlinable
   public static func decodePresent(decoder: some Decoder) throws -> WrappedBoxedValue {
     try Wrapped.decode(decoder: decoder)
@@ -23,6 +25,7 @@ where Wrapped: Codec.DecodeStrategy {
 extension Optional: Codec.EncodeStrategy, Codec.EncodeOptionalStrategy
 where Wrapped: Codec.EncodeStrategy {
   /// Encodes the optional value, writing null when it is nil.
+  /// - Complexity: O(1) for nil; for a present value, the cost of the wrapped strategy.
   @inlinable
   public static func encode(value: BoxedValue, encoder: some Encoder) throws {
     let mask: Codec.Box<Wrapped>? = if let value {
@@ -34,6 +37,7 @@ where Wrapped: Codec.EncodeStrategy {
   }
 
   /// Encodes a present payload by delegating to the wrapped strategy.
+  /// - Complexity: O(1) for nil; for a present value, the cost of the wrapped strategy.
   @inlinable
   public static func encodePresent(value: WrappedBoxedValue, encoder: some Encoder) throws {
     try Wrapped.encode(value: value, encoder: encoder)

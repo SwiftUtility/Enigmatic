@@ -5,6 +5,8 @@ extension Array: Codec.Strategy where Element: Codec.Strategy {
 
 extension Array: Codec.DecodeStrategy where Element: Codec.DecodeStrategy {
   /// Decodes each unkeyed element using `Element`'s strategy.
+  /// - Complexity: O(n) element strategy calls, plus the sum of element encoding or decoding costs, where n is
+  ///   the array count.
   @inlinable
   public static func decode(decoder: some Decoder) throws -> BoxedValue {
     var container = try decoder.unkeyedContainer()
@@ -20,6 +22,8 @@ extension Array: Codec.DecodeStrategy where Element: Codec.DecodeStrategy {
 }
 extension Array: Codec.EncodeStrategy where Element: Codec.EncodeStrategy {
   /// Encodes elements in array order using `Element`'s strategy.
+  /// - Complexity: O(n) element strategy calls, plus the sum of element encoding or decoding costs, where n is
+  ///   the array count.
   @inlinable
   public static func encode(value: BoxedValue, encoder: some Encoder) throws {
     var container = encoder.unkeyedContainer()

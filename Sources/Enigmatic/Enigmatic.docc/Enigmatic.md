@@ -18,7 +18,7 @@ specify Apple runtime requirements; Linux uses the toolchain runtime.
 
 - ``Enigma``
 - ``Enigma/Pin``
-- ``Enigma/paths``
+- ``Enigma/allPaths``
 - <TreeOperations>
 
 ### Strategies and errors
@@ -54,3 +54,11 @@ specify Apple runtime requirements; Linux uses the toolchain runtime.
 ### Serialization and compatibility
 
 - <Serialization>
+
+## Complexity notes
+
+Public executable symbols document their algorithmic complexity in a
+`Complexity` entry. For tree APIs, `n` denotes visited values, `d` denotes path
+depth, and collection copy-on-write can add work proportional to a modified
+collection's size when its storage is shared. Strategy methods include the work
+performed by the selected strategy or identify it as delegated work.

@@ -3,6 +3,8 @@ import Foundation
 extension Enigma: Decodable {
   /// Creates a tree from the first keyed, unkeyed, or single-value container available.
   /// Dates and data are retained in their native cases when supported by the decoder.
+  /// - Complexity: O(n) in the number of encoded or decoded values, plus the cost of nested Codable
+  ///   implementations; recursive traversal uses O(d) stack space, where d is nesting depth.
   public init(from decoder: Decoder) throws {
     if var container = try? decoder.container(keyedBy: Pin.self) {
       self = try Self.decode(keyed: &container)

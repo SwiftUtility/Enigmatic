@@ -3,16 +3,20 @@ extension Codec {
   ///
   /// If both fail, the decoding error retains both causes in a CompositeError.
   public enum Either<Right, Left> {
+    /// The selected right-hand value.
     case right(Right)
+    /// The selected left-hand value.
     case left(Left)
 
     /// Returns the right value, or nil when this value is left.
+    /// - Complexity: O(1); it checks the selected alternative.
     @inlinable
     public var right: Right? {
       if case .right(let right) = self { right } else { nil }
     }
 
     /// Returns the left value, or nil when this value is right.
+    /// - Complexity: O(1); it checks the selected alternative.
     @inlinable
     public var left: Left? {
       if case .left(let left) = self { left } else { nil }
@@ -24,6 +28,8 @@ extension Codec.Either: Sendable where Right: Sendable, Left: Sendable {}
 
 extension Codec.Either: Decodable where Right: Decodable, Left: Decodable {
   /// Decodes the right type first, then tries the left type if decoding fails.
+  /// - Complexity: O(R + L) worst case, where R and L are the costs of decoding the right and left alternatives;
+  ///   the left attempt runs only if the right fails.
   @inlinable
   public init(from decoder: Decoder) throws {
     var error = Enigma.CompositeError()
@@ -42,6 +48,7 @@ extension Codec.Either: Decodable where Right: Decodable, Left: Decodable {
 
 extension Codec.Either: Encodable where Right: Encodable, Left: Encodable {
   /// Encodes the active alternative using that alternative's Codable conformance.
+  /// - Complexity: The cost of encoding the selected alternative.
   @inlinable
   public func encode(to encoder: Encoder) throws {
     switch self {
@@ -53,6 +60,7 @@ extension Codec.Either: Encodable where Right: Encodable, Left: Encodable {
 
 extension Codec.Either: Equatable where Right: Equatable, Left: Equatable {
   /// Compares both the selected alternative and its associated value.
+  /// - Complexity: The cost of comparing the selected associated values.
   @inlinable
   public static func == (lhs: Self, rhs: Self) -> Bool {
     switch (lhs, rhs) {
@@ -65,6 +73,7 @@ extension Codec.Either: Equatable where Right: Equatable, Left: Equatable {
 
 extension Codec.Either: Hashable where Right: Hashable, Left: Hashable {
   /// Hashes the selected alternative and its associated value.
+  /// - Complexity: The cost of hashing the selected associated value.
   @inlinable
   public func hash(into hasher: inout Hasher) {
     switch self {
@@ -81,6 +90,8 @@ extension Codec.Either: Codec.Strategy where Right: Codec.Strategy, Left: Codec.
 
 extension Codec.Either: Codec.DecodeStrategy where Right: Codec.DecodeStrategy, Left: Codec.DecodeStrategy {
   /// Decodes the right strategy first and falls back to the left strategy.
+  /// - Complexity: O(R + L) worst case, where R and L are the costs of decoding the right and left alternatives;
+  ///   the left attempt runs only if the right fails.
   @inlinable
   public static func decode(decoder: some Decoder) throws -> BoxedValue {
     var error = Enigma.CompositeError()
@@ -100,6 +111,7 @@ extension Codec.Either: Codec.DecodeStrategy where Right: Codec.DecodeStrategy, 
 
 extension Codec.Either: Codec.EncodeStrategy where Right: Codec.EncodeStrategy, Left: Codec.EncodeStrategy {
   /// Encodes the active alternative with its corresponding strategy.
+  /// - Complexity: The cost of encoding the selected alternative.
   @inlinable
   public static func encode(value: BoxedValue, encoder: some Encoder) throws {
     switch value {

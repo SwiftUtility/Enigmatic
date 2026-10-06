@@ -8,9 +8,11 @@ extension Codec {
   /// Use `Codec.Each` when the deployment target supports it.
   public struct Each3<Value0, Value1, Value2> {
     /// The three component values.
+    /// - Complexity: O(1) to access or assign the fixed-size tuple value.
     public var values: (Value0, Value1, Value2)
 
     /// Creates a product from three component values.
+    /// - Complexity: O(k) in the number k of components to form the tuple.
     @inlinable
     public init(_ value0: Value0, _ value1: Value1, _ value2: Value2) {
       self.values = (value0, value1, value2)
@@ -24,6 +26,7 @@ where Value0: Sendable, Value1: Sendable, Value2: Sendable {}
 extension Codec.Each3: Decodable
 where Value0: Decodable, Value1: Decodable, Value2: Decodable {
   /// Decodes all component values from the same decoder.
+  /// - Complexity: O(k) in the number k of components to form the tuple.
   @inlinable
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
@@ -38,6 +41,7 @@ where Value0: Decodable, Value1: Decodable, Value2: Decodable {
 extension Codec.Each3: Encodable
 where Value0: Encodable, Value1: Encodable, Value2: Encodable {
   /// Encodes all component values into the same encoder.
+  /// - Complexity: O(k) strategy calls for k components, plus the sum of each component's encoding cost.
   @inlinable
   public func encode(to encoder: Encoder) throws {
     try values.0.encode(to: encoder)
@@ -49,6 +53,7 @@ where Value0: Encodable, Value1: Encodable, Value2: Encodable {
 extension Codec.Each3: Equatable
 where Value0: Equatable, Value1: Equatable, Value2: Equatable {
   /// Compares the corresponding component values.
+  /// - Complexity: O(k) component comparisons, plus the cost of comparing each component.
   @inlinable
   public static func == (lhs: Self, rhs: Self) -> Bool {
     lhs.values.0 == rhs.values.0
@@ -60,6 +65,7 @@ where Value0: Equatable, Value1: Equatable, Value2: Equatable {
 extension Codec.Each3: Hashable
 where Value0: Hashable, Value1: Hashable, Value2: Hashable {
   /// Combines all component values into the hasher.
+  /// - Complexity: O(k) component hash operations, plus the cost of hashing each component.
   @inlinable
   public func hash(into hasher: inout Hasher) {
     values.0.hash(into: &hasher)
@@ -81,6 +87,7 @@ where Value0: Codec.Strategy, Value1: Codec.Strategy, Value2: Codec.Strategy {
 extension Codec.Each3: Codec.DecodeStrategy
 where Value0: Codec.DecodeStrategy, Value1: Codec.DecodeStrategy, Value2: Codec.DecodeStrategy {
   /// Decodes all values with their corresponding strategies.
+  /// - Complexity: O(k) strategy calls for k components, plus the sum of each component's decoding cost.
   @inlinable
   public static func decode(decoder: some Decoder) throws -> BoxedValue {
     try (
@@ -94,6 +101,7 @@ where Value0: Codec.DecodeStrategy, Value1: Codec.DecodeStrategy, Value2: Codec.
 extension Codec.Each3: Codec.EncodeStrategy
 where Value0: Codec.EncodeStrategy, Value1: Codec.EncodeStrategy, Value2: Codec.EncodeStrategy {
   /// Encodes all values with their corresponding strategies.
+  /// - Complexity: O(k) strategy calls for k components, plus the sum of each component's encoding cost.
   @inlinable
   public static func encode(value: BoxedValue, encoder: some Encoder) throws {
     try Value0.encode(value: value.0, encoder: encoder)

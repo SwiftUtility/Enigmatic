@@ -1,13 +1,17 @@
 import Foundation
 
 extension Enigma {
-  /// Get the array value, or an empty array for other cases.
+  /// Gets the array value, or an empty array when the root is not an array.
+  /// Setting this property replaces the entire root with an array.
+  /// - Complexity: O(1) for the enum-case check and copy-on-write value access.
   public var array: [Self] {
     get { asArray ?? [] }
     set { self = .array(newValue) }
   }
 
-  /// Get value if it is Dictionary, empty dictionary otherwise
+  /// Gets the dictionary value, or an empty dictionary when the root is not a dictionary.
+  /// Setting this property replaces the entire root with a dictionary.
+  /// - Complexity: O(1) for the enum-case check and copy-on-write value access.
   public var dictionary: [String: Self] {
     get { asDictionary ?? [:] }
     set { self = .dictionary(newValue) }
@@ -16,6 +20,9 @@ extension Enigma {
   /// Gets, sets, or removes a value at a variadic path.
   /// Non-nil assignments follow the path creation and container replacement
   /// rules of `subscript(_:)`; nil removes a child, and `.null` stores a null.
+  /// - Complexity: O(d) expected for lookup, where d is path depth. Mutations also incur copy-on-write costs for
+  ///   modified collections; worst-case work is proportional to the sizes of collections copied along the
+  ///   path.
   public subscript(_ pins: Pin...) -> Self? {
     get { self[pins] }
     set { self[pins] = newValue }
@@ -25,6 +32,9 @@ extension Enigma {
   /// The autoclosure is evaluated only when the path has no value.
   /// Setting follows the same path creation and container replacement rules as
   /// `subscript(_:)`.
+  /// - Complexity: O(d) expected for lookup, where d is path depth. Mutations also incur copy-on-write costs for
+  ///   modified collections; worst-case work is proportional to the sizes of collections copied along the
+  ///   path.
   public subscript(_ pins: Pin..., or fallback: @autoclosure () -> Self) -> Self {
     get { self[pins, or: fallback()] }
     set { self[pins, or: fallback()] = newValue }
@@ -39,6 +49,9 @@ extension Enigma {
   /// child without creating containers; `.null` stores a null. An empty path
   /// can replace, but cannot delete, the root.
   /// - Parameter pins: The sequence of dictionary keys and array indices.
+  /// - Complexity: O(d) expected for lookup, where d is path depth. Mutations also incur copy-on-write costs for
+  ///   modified collections; worst-case work is proportional to the sizes of collections copied along the
+  ///   path.
   public subscript(_ pins: [Pin]) -> Self? {
     get { getValue(pins: pins) }
     set {
@@ -55,6 +68,9 @@ extension Enigma {
   /// The autoclosure is evaluated only when the path has no value.
   /// Setting follows the same path creation and container replacement rules as
   /// `subscript(_:)`.
+  /// - Complexity: O(d) expected for lookup, where d is path depth. Mutations also incur copy-on-write costs for
+  ///   modified collections; worst-case work is proportional to the sizes of collections copied along the
+  ///   path.
   public subscript(_ pins: [Pin], or fallback: @autoclosure () -> Self) -> Self {
     get { getValue(pins: pins) ?? fallback() }
     set {
@@ -63,6 +79,10 @@ extension Enigma {
     }
   }
 
+  /// Recursively merges dictionary pairs and passes other conflicts to `strategy`.
+  /// The original tree is unchanged if the strategy reports failure.
+  /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
+  ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
   public mutating func merge<E: Error>(
     _ other: Self,
     strategy: inout some MergeStrategy<E> & ~Copyable
@@ -71,6 +91,11 @@ extension Enigma {
     self = try strategy.merge(ctx: &ctx, old: self, new: other).get()
   }
 
+  /// Returns a recursively merged tree, leaving both input values unchanged.
+  /// Dictionary pairs recurse through their keys; other conflicts are delegated
+  /// to `strategy`.
+  /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
+  ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
   public consuming func merging<E: Error>(
     _ other: Self,
     strategy: consuming some MergeStrategy<E> & ~Copyable
@@ -80,20 +105,36 @@ extension Enigma {
     return try strategy.merge(ctx: &ctx, old: self, new: other).get()
   }
 
+  /// Recursively merges dictionary pairs and chooses a value for each other conflict.
+  /// When `replace` is true, the incoming value wins; otherwise the existing value wins.
+  /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
+  ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
   public mutating func merge(_ other: Self, replace: Bool) {
     var ctx = MergeContext()
     var strategy = SelectOneMergeStrategy(selectNew: replace)
     self = strategy.merge(ctx: &ctx, old: self, new: other).get()
   }
 
+  /// Returns a recursively merged tree, selecting old or incoming values at conflicts.
+  /// When `replace` is true, the incoming value wins; otherwise the existing value wins.
+  /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
+  ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
   public consuming func merging(_ other: Self, replace: Bool) -> Self {
     merging(other, strategy: SelectOneMergeStrategy(selectNew: replace))
   }
 
+  /// Recursively merges dictionary pairs. Equal conflicts are accepted when
+  /// `skipEqual` is true; otherwise every conflict throws `EncodingError.invalidValue`.
+  /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
+  ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
   public mutating func merge(_ other: Self, skipEqual: Bool) throws(EncodingError) {
     self = try merging(other, strategy: InteruptMergeStrategy(skipEqual: skipEqual))
   }
 
+  /// Returns a recursively merged tree. Equal conflicts are accepted when
+  /// `skipEqual` is true; otherwise every conflict throws `EncodingError.invalidValue`.
+  /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
+  ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
   public consuming func merging(_ other: Self, skipEqual: Bool) throws(EncodingError) -> Self {
     try merging(other, strategy: InteruptMergeStrategy(skipEqual: skipEqual))
   }
@@ -102,6 +143,13 @@ extension Enigma {
   ///
   /// The original value is unchanged if the resolver throws. Dictionary conflict
   /// visitation order is unspecified.
+  /// - Parameters:
+  ///   - other: The incoming tree.
+  ///   - #1: The error type inferred from `resolve`.
+  ///   - resolve: The callback that selects the value for a non-dictionary conflict.
+  /// - Throws: The error thrown by `resolve`; on failure, `self` remains unchanged.
+  /// - Complexity: O(n) expected in visited values and dictionary lookups, plus
+  ///   resolver work; copy-on-write may copy modified dictionaries.
   public mutating func merge<E: Error>(
     _ other: Self,
     throws _: E.Type = E.self,
@@ -118,6 +166,14 @@ extension Enigma {
   ///
   /// The original value is unchanged if the resolver throws. Dictionary conflict
   /// visitation order is unspecified.
+  /// - Parameters:
+  ///   - other: The incoming tree.
+  ///   - type: The error type inferred from `resolve`.
+  ///   - resolve: The callback that selects the value for a non-dictionary conflict.
+  /// - Returns: The merged tree.
+  /// - Throws: The error thrown by `resolve`.
+  /// - Complexity: O(n) expected in visited values and dictionary lookups, plus
+  ///   resolver work; copy-on-write may copy modified dictionaries.
   public consuming func merging<E: Error>(
     _ other: Self,
     throws type: E.Type = E.self,

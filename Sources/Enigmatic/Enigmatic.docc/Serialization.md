@@ -16,12 +16,15 @@ checks. Enigma does not conform to Hashable.
 
 ## Foundation and external encoders
 
-`rawAny` exports Swift values. It can be read back by `Enigma(cast:)`.
-This is an in-memory bridge, not a portable archive format. Dictionary keys supplied
-to `cast` are converted to their string descriptions; colliding descriptions are rejected.
+`asAny` exports nested Swift/Foundation values. It can be read back by `Enigma(cast:)`.
+This is an in-memory bridge, not a portable archive format. `cast` supports string
+and integer dictionary keys, `AnyHashable` keys with string-convertible bases, and
+`CodingKeyRepresentable` keys on supported runtimes. Keys normalize to strings;
+collisions and unsupported key types produce a decoding error. Arrays and sets
+convert to arrays, with set order unspecified.
 
-`jsonObject` rejects Date, Data, NaN, infinity and 128-bit integers. Use
-JSONSerialization's `fragmentsAllowed` option for a scalar root. `plistObject`
+`asJsonObject` rejects Date, Data, NaN, infinity and 128-bit integers. Use
+JSONSerialization's `fragmentsAllowed` option for a scalar root. `asPlistObject`
 rejects null and 128-bit integers. Array/dictionary roots are the portable choice
 for property-list document encoding. Conversion errors carry the offending path.
 

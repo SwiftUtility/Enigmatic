@@ -1,5 +1,7 @@
 extension Enigma: CustomDebugStringConvertible {
   /// A diagnostic representation of the tree; it is not a serialization format.
+  /// - Complexity: O(n) in the number of visited values or output characters; recursive values use O(d) stack
+  ///   space, where d is nesting depth.
   public var debugDescription: String {
     switch self {
     case .null: "null"

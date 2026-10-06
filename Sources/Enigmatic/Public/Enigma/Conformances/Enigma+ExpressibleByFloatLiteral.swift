@@ -1,5 +1,6 @@
 extension Enigma: ExpressibleByFloatLiteral {
   /// Creates a floating-point tree value from a floating-point literal.
+  /// - Complexity: O(1) for the literal value.
   public init(floatLiteral value: FloatLiteralType) {
     self = if let value = UInt8(exactly: value) {
       .uint8(value)

@@ -39,34 +39,37 @@ var tree = try Enigma(encode: User(name: "Ada", scores: [10]))
 tree["scores", 1] = 20                 // Append at the current array count.
 tree["name"] = "Grace"
 let user = try tree.decode(User.self) // User(name: "Grace", scores: [10, 20])
-let paths = tree.paths               // [name], [name, scores], [name, scores, 0], [name, scores, 1]
+let paths = tree.allPaths            // [name], [name, scores], [name, scores, 0], [name, scores, 1]
 ```
 
 A missing path returns `nil`; a stored null is `Enigma.null`. Assigning `nil`
 deletes a child, while assigning `.null` stores a null. Array deletion shifts
 later indices. An empty path reads/replaces the root; deleting the root is a
-no-op. Missing dictionary children and an array element at `count` can be created;
-negative indices, skipped indices, and incompatible existing parents are no-ops.
-The `or:` fallback is evaluated only for a missing value.
+no-op. Missing dictionary children are created, and a node is replaced with an
+empty dictionary or array when the next path pin requires that container. An
+array index equal to `count` appends; a negative index or an index greater than
+`count` makes the entire assignment a no-op, even if earlier path components
+would have replaced containers. The `or:` fallback is evaluated only for a
+missing value.
 
-`paths` includes every descendant, including empty containers, and excludes the
-root. Its depth-first order uses sorted dictionary keys and ascending indices.
+`allPaths` includes every descendant, including empty containers, and excludes
+the root. Its depth-first order uses sorted dictionary keys and ascending indices.
 
 ## Merge partial models
 
 ```swift
 let original: Enigma = ["settings": ["enabled": false, "retries": 2]]
 let patch: Enigma = ["settings": ["enabled": true]]
-let merged = original.merging(patch, or: Enigma.replace)
+let merged = original.merging(patch, replace: true)
 // ["settings": ["enabled": true, "retries": 2]]
 ```
 
-Only dictionaries merge recursively. Arrays and scalars go to the conflict
-resolver as whole values. `replace` chooses the incoming value, `skipEqual`
-accepts equal values and throws otherwise, and `fail` rejects every conflict.
-A custom resolver receives the path and both values. A throwing mutating merge
-leaves the original tree unchanged. Dictionary conflict visitation order is not
-specified.
+Only dictionary pairs merge recursively. Other conflicts are resolved as whole
+values. `merging(_:replace:)` chooses the incoming value when true and the
+existing value when false. `merging(_:skipEqual:)` accepts equal conflicts when
+true and throws `EncodingError.invalidValue` otherwise. A custom resolver
+receives the path and both values. A throwing mutating merge leaves the original
+tree unchanged. Dictionary conflict visitation order is unspecified.
 
 ## Coding strategies
 
@@ -106,11 +109,15 @@ a decoding error as a value; encoding that failure throws and preserves its caus
   rounding but rejects finite overflow. NaN compares equal to NaN in `Enigma`;
   Float/Double equality follows the library's Float rounding behavior.
 - Root and nested `Date`/`Data` values retain `.date`/`.data` in an Enigma tree.
-- `rawAny` preserves Swift values; `rawObject` bridges to Foundation. Neither
-  promises a JSON/plist-compatible object.
-- `jsonObject` rejects dates, data, non-finite numbers and 128-bit integers.
+- `asAny` converts the tree to nested Swift/Foundation values. It is an in-memory
+  bridge, not a promise of JSON/plist compatibility.
+- `Enigma(cast:)` supports dictionaries with string or integer keys, `AnyHashable`
+  keys whose bases convert to strings, and `CodingKeyRepresentable` keys where
+  available. Keys normalize to strings; collisions and unsupported key types
+  throw. Arrays and sets convert to arrays; set element order is unspecified.
+- `asJsonObject` rejects dates, data, non-finite numbers and 128-bit integers.
   Scalars require `.fragmentsAllowed` when passed to `JSONSerialization`.
-- `plistObject` rejects null and 128-bit integers. Use arrays/dictionaries as
+- `asPlistObject` rejects null and 128-bit integers. Use arrays/dictionaries as
   document roots for portable property-list encoding.
 - When encoding Enigma through an external `Encoder`, keyed Date/Data fields use
   that encoder's strategies. Root and array Date/Data nodes invoke Foundation's
@@ -124,6 +131,16 @@ Date strategies reject non-finite dates and invalid decimal scale factors.
 Foundation `Date` uses floating-point storage, so extreme dates and scales may
 lose precision even if finite.
 
+## Complexity
+
+Public API symbol documentation includes a `Complexity` note. Tree path lookup
+is expected O(d) for a path of depth d. Mutation also walks the path in expected
+O(d), with possible copy-on-write costs proportional to modified collection
+sizes when storage is shared. Tree conversion, Codable traversal, and descriptions
+are linear in the number of visited values. `allPaths` additionally sorts keys
+within each dictionary. Recursive dictionary merge is expected linear in visited
+values and dictionary operations, plus custom resolver work.
+
 See the [DocC catalog](Sources/Enigmatic/Enigmatic.docc/Enigmatic.md) for API
 guides and symbol documentation.
 
@@ -133,12 +150,12 @@ guides and symbol documentation.
 swift test --skip PerformanceTests
 swift test -c release --skip PerformanceTests
 swift test --enable-code-coverage --skip PerformanceTests
-python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)"
+python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)" --minimum 100
 swift test -c release --filter PerformanceTests
 ```
 
-Coverage checks only executable lines under `Sources/Enigmatic`, with a 90%
-minimum on pull requests. Benchmarks are separate, run without coverage, and report
+Coverage checks require 100% of executable lines under `Sources/Enigmatic` on
+pull requests and release tags. Benchmarks are separate, run without coverage, and report
 relative timings without noisy CI timing thresholds. The manual CI workflow also
 uploads benchmark results. README examples are exercised in
 `DocumentationExamplesTests`.
@@ -154,6 +171,10 @@ xcrun docc convert Sources/Enigmatic/Enigmatic.docc \
 
 CI setup follows the [Swift GitHub Actions guide](https://docs.github.com/en/actions/tutorials/build-and-test-code/swift)
 and [setup-swift](https://github.com/swift-actions/setup-swift).
+
+Pushing a tag whose name starts with `v` runs the release workflow. It tests Debug
+and Release builds on macOS 26 and Ubuntu 24.04, enforces 100% library line
+coverage on macOS, then creates a GitHub release with generated notes.
 
 ## License
 

@@ -49,7 +49,8 @@ Encoding a failed Result throws `EncodingError.invalidValue` and retains the
 original error in `underlyingError`.
 
 `Base64Data` maps `Data` to Base64 text. `StringURL` uses Foundation's general
-URL parser and permits relative URLs. `PathURL` maps file URLs to path strings.
+URL parser and permits relative URLs. `PathURL` decodes filesystem path strings
+as file URLs and encodes file URLs as their unescaped path strings.
 `Id<Value>` delegates to the wrapped value's Codable implementation.
 
 ## Dates
@@ -66,3 +67,13 @@ a floating-point time interval. Use scales appropriate to the required precision
 The generic Unix strategies require Apple OS 26; the named seconds and
 milliseconds strategies remain available for older deployment targets.
 `PlistDate` instead uses seconds relative to Foundation's 2001 reference date.
+
+## Complexity
+
+Scalar transformations such as URL and date strategies use constant-time
+arithmetic apart from parsing or formatting their strings. Base64 conversion is
+linear in the data size. Array and set strategies visit each element once;
+dictionary strategies visit each entry once on average. The cost of nested
+strategies is additional and accumulates across the elements. `Either` attempts
+the right strategy first and attempts the left only if the right fails, so its
+worst-case decode cost is the sum of both alternatives.

@@ -3,6 +3,8 @@ import Foundation
 extension Enigma: Equatable {
   /// Compares two trees by value, allowing exactly representable numeric cases to compare equal.
   /// NaN compares equal to NaN; this comparison does not guarantee identical numeric storage.
+  /// - Complexity: O(n) in the number of visited values or output characters; recursive values use O(d) stack
+  ///   space, where d is nesting depth.
   public static func == (lhs: Self, rhs: Self) -> Bool {
     switch lhs {
     case .null: rhs.isNull

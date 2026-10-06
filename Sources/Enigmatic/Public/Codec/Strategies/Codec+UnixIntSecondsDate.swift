@@ -6,6 +6,7 @@ extension Codec {
   @available(anyAppleOS, deprecated: 26.0)
   public enum UnixIntSecondsDate: Hashable, DecodeStrategy, EncodeStrategy, Error {
     /// Decodes integer seconds since 1970 into a date.
+    /// - Complexity: O(1); the operation performs a fixed number of numeric conversions and arithmetic operations.
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       try Date(timeIntervalSince1970: Double(Int(from: decoder)))
@@ -13,6 +14,7 @@ extension Codec {
 
     /// Encodes finite seconds since 1970 as an integer truncated toward zero.
     /// - Throws: `EncodingError.invalidValue` for non-finite values or integer overflow.
+    /// - Complexity: O(1); the operation performs a fixed number of numeric conversions and arithmetic operations.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
       let value = value.timeIntervalSince1970

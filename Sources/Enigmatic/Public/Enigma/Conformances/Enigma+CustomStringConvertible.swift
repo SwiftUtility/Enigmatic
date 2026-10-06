@@ -1,5 +1,7 @@
 extension Enigma: CustomStringConvertible {
   /// A human-readable description. This is not a JSON serialization.
+  /// - Complexity: O(n) in the number of visited values or output characters; recursive values use O(d) stack
+  ///   space, where d is nesting depth.
   public var description: String {
     switch self {
     case .null: "null"

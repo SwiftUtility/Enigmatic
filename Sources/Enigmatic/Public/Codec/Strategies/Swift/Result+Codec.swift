@@ -5,6 +5,8 @@ extension Result: Codec.Strategy where Success: Codec.Strategy {
 
 extension Result: Codec.DecodeStrategy where Success: Codec.DecodeStrategy, Failure == any Error {
   /// Captures a success value or stores a thrown decoding error as `.failure`.
+  /// - Complexity: The cost of the success strategy; a thrown decoding error is captured without retrying
+  ///   another strategy.
   @inlinable
   public static func decode(decoder: some Decoder) throws -> BoxedValue {
     do {
@@ -17,6 +19,7 @@ extension Result: Codec.DecodeStrategy where Success: Codec.DecodeStrategy, Fail
 
 extension Result: Codec.EncodeStrategy where Success: Codec.EncodeStrategy {
   /// Encodes a success value or throws an encoding error containing the stored failure.
+  /// - Complexity: The cost of the success strategy; encoding a failure constructs and throws an error in O(1).
   @inlinable
   public static func encode(value: BoxedValue, encoder: some Encoder) throws {
     switch value {

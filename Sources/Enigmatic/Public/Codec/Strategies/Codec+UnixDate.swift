@@ -8,6 +8,7 @@ extension Codec {
   public enum UnixDate<let scale: Int>: Hashable, DecodeStrategy, EncodeStrategy {
     /// Decodes scaled seconds since 1970 into a `Date`.
     /// - Throws: `DecodingError.dataCorrupted` for non-finite input or an invalid scale.
+    /// - Complexity: O(1); the operation performs a fixed number of numeric conversions and arithmetic operations.
     @inlinable
     public static func decode(decoder: some Decoder) throws -> BoxedValue {
       let value = try Double(from: decoder)
@@ -36,6 +37,7 @@ extension Codec {
 
     /// Encodes a date as seconds since 1970 multiplied by `10^scale`.
     /// - Throws: `EncodingError.invalidValue` for a non-finite date, scale, or result.
+    /// - Complexity: O(1); the operation performs a fixed number of numeric conversions and arithmetic operations.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
       let value = value.timeIntervalSince1970

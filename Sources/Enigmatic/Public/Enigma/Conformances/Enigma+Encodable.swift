@@ -1,5 +1,7 @@
 extension Enigma: Encodable {
   /// Writes this tree using the supplied encoder. Format and value restrictions may throw.
+  /// - Complexity: O(n) in the number of encoded or decoded values, plus the cost of nested Codable
+  ///   implementations; recursive traversal uses O(d) stack space, where d is nesting depth.
   public func encode(to encoder: Encoder) throws {
     switch self {
     case .null:
