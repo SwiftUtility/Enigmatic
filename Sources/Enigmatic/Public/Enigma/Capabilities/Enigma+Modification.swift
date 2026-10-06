@@ -79,48 +79,20 @@ extension Enigma {
     }
   }
 
-  /// Recursively merges dictionary pairs and passes other conflicts to `strategy`.
-  /// The original tree is unchanged if the strategy reports failure.
-  /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
-  ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
-  public mutating func merge<E: Error>(
-    _ other: Self,
-    strategy: inout some MergeStrategy<E> & ~Copyable
-  ) throws(E) {
-    var ctx = MergeContext()
-    self = try strategy.merge(ctx: &ctx, old: self, new: other).get()
-  }
-
-  /// Returns a recursively merged tree, leaving both input values unchanged.
-  /// Dictionary pairs recurse through their keys; other conflicts are delegated
-  /// to `strategy`.
-  /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
-  ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
-  public consuming func merging<E: Error>(
-    _ other: Self,
-    strategy: consuming some MergeStrategy<E> & ~Copyable
-  ) throws(E) -> Self {
-    var ctx = MergeContext()
-    var strategy = consume strategy
-    return try strategy.merge(ctx: &ctx, old: self, new: other).get()
-  }
-
   /// Recursively merges dictionary pairs and chooses a value for each other conflict.
   /// When `replace` is true, the incoming value wins; otherwise the existing value wins.
   /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
   ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
   public mutating func merge(_ other: Self, replace: Bool) {
-    var ctx = MergeContext()
-    var strategy = SelectOneMergeStrategy(selectNew: replace)
-    self = strategy.merge(ctx: &ctx, old: self, new: other).get()
+    self = SelectOneMergeStrategy(selectNew: replace).merge(old: self, new: other).get()
   }
 
   /// Returns a recursively merged tree, selecting old or incoming values at conflicts.
   /// When `replace` is true, the incoming value wins; otherwise the existing value wins.
   /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
   ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
-  public consuming func merging(_ other: Self, replace: Bool) -> Self {
-    merging(other, strategy: SelectOneMergeStrategy(selectNew: replace))
+  public func merging(_ other: Self, replace: Bool) -> Self {
+    SelectOneMergeStrategy(selectNew: replace).merge(old: self, new: other).get()
   }
 
   /// Recursively merges dictionary pairs. Equal conflicts are accepted when
@@ -128,15 +100,15 @@ extension Enigma {
   /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
   ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
   public mutating func merge(_ other: Self, skipEqual: Bool) throws(EncodingError) {
-    self = try merging(other, strategy: InteruptMergeStrategy(skipEqual: skipEqual))
+    self = try InteruptMergeStrategy(skipEqual: skipEqual).merge(old: self, new: other).get()
   }
 
   /// Returns a recursively merged tree. Equal conflicts are accepted when
   /// `skipEqual` is true; otherwise every conflict throws `EncodingError.invalidValue`.
   /// - Complexity: O(n) expected in the values visited and dictionary lookups, plus the resolver cost;
   ///   copy-on-write may copy modified dictionaries. n is the number of visited values.
-  public consuming func merging(_ other: Self, skipEqual: Bool) throws(EncodingError) -> Self {
-    try merging(other, strategy: InteruptMergeStrategy(skipEqual: skipEqual))
+  public func merging(_ other: Self, skipEqual: Bool) throws(EncodingError) -> Self {
+    try InteruptMergeStrategy(skipEqual: skipEqual).merge(old: self, new: other).get()
   }
 
   /// Recursively merges dictionaries and resolves all other pairs as whole values.
@@ -152,14 +124,13 @@ extension Enigma {
   ///   resolver work; copy-on-write may copy modified dictionaries.
   public mutating func merge<E: Error>(
     _ other: Self,
-    throws _: E.Type = E.self,
+    orThrow _: E.Type = E.self,
     resolve: ([Pin], Self, Self) throws(E) -> Self
   ) throws(E) {
     self = try withoutActuallyEscaping(resolve) { block in
-      var ctx = MergeContext()
-      var strategy = SimpleCustomMergeStrategy(block: block)
-      return strategy.merge(ctx: &ctx, old: self, new: other)
-    }.get()
+      CustomMergeStrategy(block: block).merge(old: self, new: other)
+    }
+    .get()
   }
 
   /// Recursively merges dictionaries and resolves all other pairs as whole values.
@@ -174,15 +145,14 @@ extension Enigma {
   /// - Throws: The error thrown by `resolve`.
   /// - Complexity: O(n) expected in visited values and dictionary lookups, plus
   ///   resolver work; copy-on-write may copy modified dictionaries.
-  public consuming func merging<E: Error>(
+  public func merging<E: Error>(
     _ other: Self,
-    throws type: E.Type = E.self,
+    orThrow type: E.Type = E.self,
     resolve: ([Pin], Self, Self) throws(E) -> Self
   ) throws(E) -> Self {
     try withoutActuallyEscaping(resolve) { block in
-      var ctx = MergeContext()
-      var strategy = SimpleCustomMergeStrategy(block: block)
-      return strategy.merge(ctx: &ctx, old: self, new: other)
-    }.get()
+      CustomMergeStrategy(block: block).merge(old: self, new: other)
+    }
+    .get()
   }
 }

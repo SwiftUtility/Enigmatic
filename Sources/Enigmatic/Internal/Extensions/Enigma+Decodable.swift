@@ -1,27 +1,8 @@
 import Foundation
 
-extension Enigma: Decodable {
-  /// Creates a tree from the first keyed, unkeyed, or single-value container available.
-  /// Dates and data are retained in their native cases when supported by the decoder.
-  /// - Complexity: O(n) in the number of encoded or decoded values, plus the cost of nested Codable
-  ///   implementations; recursive traversal uses O(d) stack space, where d is nesting depth.
-  public init(from decoder: Decoder) throws {
-    if var container = try? decoder.container(keyedBy: Pin.self) {
-      self = try Self.decode(keyed: &container)
-    } else if var container = try? decoder.unkeyedContainer() {
-      self = try Self.decode(unkeyed: &container)
-    } else if let container = try? decoder.singleValueContainer() {
-      self = try Self.decode(single: container)
-    } else {
-      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
-        codingPath: decoder.codingPath,
-        debugDescription: "Neither value nor array nor dictionary"
-      ))
-    }
-  }
-
+extension Enigma {
   @inline(__always)
-  private static func downscale(_ value: UInt) -> Self {
+  static func downscale(_ value: UInt) -> Self {
     if let value = UInt8(exactly: value) {
       .uint8(value)
     } else if let value = UInt16(exactly: value) {
@@ -34,7 +15,7 @@ extension Enigma: Decodable {
   }
 
   @inline(__always)
-  private static func downscale(_ value: Int) -> Self {
+  static func downscale(_ value: Int) -> Self {
     if let value = Int8(exactly: value) {
       .int8(value)
     } else if let value = Int16(exactly: value) {
@@ -47,7 +28,7 @@ extension Enigma: Decodable {
   }
 
   @inline(__always)
-  private static func downscale(_ value: Double) -> Self {
+  static func downscale(_ value: Double) -> Self {
     if let value = Float(exactly: value) {
       .float(value)
     } else {
@@ -56,7 +37,7 @@ extension Enigma: Decodable {
   }
 
   @inline(__always)
-  private static func decode(
+  static func decode(
     single container: borrowing some SingleValueDecodingContainer
   ) throws -> Self {
     if container.decodeNil() {
@@ -111,7 +92,7 @@ extension Enigma: Decodable {
     }
   }
 
-  private static func decode(
+  static func decode(
     keyed container: inout KeyedDecodingContainer<Pin>
   ) throws -> Self {
     let keys = container.allKeys
@@ -178,7 +159,7 @@ extension Enigma: Decodable {
     return .dictionary(result)
   }
 
-  private static func decode(
+  static func decode(
     unkeyed container: inout some UnkeyedDecodingContainer
   ) throws -> Self {
     var result: [Self] = []
