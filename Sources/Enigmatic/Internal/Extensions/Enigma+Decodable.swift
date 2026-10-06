@@ -226,4 +226,43 @@ extension Enigma {
     }
     return .array(result)
   }
+
+  func decodingError(_ path: [any CodingKey], type: Any.Type) -> DecodingError {
+    var description = "Found null"
+    var isNil = false
+    switch self {
+    case .null: isNil = true
+    case .bool: description = "Found Bool"
+    case .int: description = "Found Int"
+    case .int64: description = "Found Int64"
+    case .int32: description = "Found Int32"
+    case .int16: description = "Found Int16"
+    case .int8: description = "Found Int8"
+    case .uint: description = "Found UInt"
+    case .uint64: description = "Found UInt64"
+    case .uint32: description = "Found UInt32"
+    case .uint16: description = "Found UInt16"
+    case .uint8: description = "Found UInt8"
+    case .double: description = "Found Double"
+    case .float: description = "Found Float"
+    case .string: description = "Found String"
+    case .date: description = "Found Date"
+    case .data: description = "Found Data"
+    case .array: description = "Found [Any]"
+    case .dictionary: description = "Found [String: Any]"
+    case .int128: description = "Found Int128"
+    case .uint128: description = "Found UInt128"
+    }
+    if isNil {
+      return DecodingError.valueNotFound(type, DecodingError.Context(
+        codingPath: path,
+        debugDescription: description
+      ))
+    } else {
+      return DecodingError.typeMismatch(type, DecodingError.Context(
+        codingPath: path,
+        debugDescription: description
+      ))
+    }
+  }
 }

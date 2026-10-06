@@ -20,6 +20,10 @@ extension EnigmaDecoder {
       currentIndex >= values.count
     }
 
+    private var path: [any CodingKey] {
+      state.path(pathId: pathId, key: Enigma.Pin.int(currentIndex))
+    }
+
     mutating func decodeNil() throws -> Bool {
       guard currentIndex < values.count else { throw valueNotFound(Any?.self) }
       guard values[currentIndex].isNull else { return false }
@@ -29,98 +33,126 @@ extension EnigmaDecoder {
 
     mutating func decode(_ type: Bool.Type) throws -> Bool {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asBool else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asBool else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: String.Type) throws -> String {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asString else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asString else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: Double.Type) throws -> Double {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asDouble else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asDouble else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: Float.Type) throws -> Float {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asFloat else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asFloat else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: Int.Type) throws -> Int {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asInt else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asInt else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: Int8.Type) throws -> Int8 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asInt8 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asInt8 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: Int16.Type) throws -> Int16 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asInt16 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asInt16 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: Int32.Type) throws -> Int32 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asInt32 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asInt32 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: Int64.Type) throws -> Int64 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asInt64 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asInt64 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: UInt.Type) throws -> UInt {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asUInt else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asUInt else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: UInt8.Type) throws -> UInt8 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asUInt8 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asUInt8 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: UInt16.Type) throws -> UInt16 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asUInt16 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asUInt16 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: UInt32.Type) throws -> UInt32 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asUInt32 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asUInt32 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
 
     mutating func decode(_ type: UInt64.Type) throws -> UInt64 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asUInt64 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asUInt64 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
@@ -128,7 +160,9 @@ extension EnigmaDecoder {
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     mutating func decode(_ type: Int128.Type) throws -> Int128 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asInt128 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asInt128 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
@@ -136,7 +170,9 @@ extension EnigmaDecoder {
     @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
     mutating func decode(_ type: UInt128.Type) throws -> UInt128 {
       guard currentIndex < values.count else { throw valueNotFound(type) }
-      guard let value = values[currentIndex].asUInt128 else { throw typeMismatch(type) }
+      guard let value = values[currentIndex].asUInt128 else {
+        throw values[currentIndex].decodingError(path, type: type)
+      }
       currentIndex += 1
       return value
     }
@@ -164,7 +200,9 @@ extension EnigmaDecoder {
       keyedBy _: NestedKey.Type
     ) throws -> KeyedDecodingContainer<NestedKey> {
       guard currentIndex < values.count else { throw valueNotFound([String: Enigma].self) }
-      guard let values = values[currentIndex].asDictionary else { throw typeMismatch([String: Enigma].self) }
+      guard let values = values[currentIndex].asDictionary else {
+        throw values[currentIndex].decodingError(path, type: [String: Enigma].self)
+      }
       defer { currentIndex += 1 }
       return KeyedDecodingContainer(Keyed<NestedKey>(
         state: state,
@@ -175,7 +213,9 @@ extension EnigmaDecoder {
 
     mutating func nestedUnkeyedContainer() throws -> UnkeyedDecodingContainer {
       guard currentIndex < values.count else { throw valueNotFound([String: Enigma].self) }
-      guard let values = values[currentIndex].asArray else { throw typeMismatch([Enigma].self) }
+      guard let values = values[currentIndex].asArray else {
+        throw values[currentIndex].decodingError(path, type: [Enigma].self)
+      }
       defer { currentIndex += 1 }
       return Unkeyed(
         state: state,
@@ -185,7 +225,7 @@ extension EnigmaDecoder {
     }
 
     mutating func superDecoder() throws -> Decoder {
-      guard currentIndex < values.count else { throw valueNotFound([String: Enigma].self) }
+      guard currentIndex < values.count else { throw valueNotFound(Decoder.self) }
       defer { currentIndex += 1 }
       return Single(
         state: state,
@@ -198,13 +238,6 @@ extension EnigmaDecoder {
       DecodingError.valueNotFound(type, DecodingError.Context(
         codingPath: codingPath,
         debugDescription: "Unkeyed container is at end"
-      ))
-    }
-
-    private func typeMismatch<T>(_ type: T.Type) -> DecodingError {
-      DecodingError.typeMismatch(type, DecodingError.Context(
-        codingPath: state.path(pathId: pathId, key: Enigma.Pin.int(currentIndex)),
-        debugDescription: "Expected \(type)"
       ))
     }
   }
