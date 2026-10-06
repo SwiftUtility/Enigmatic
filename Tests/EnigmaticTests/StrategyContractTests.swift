@@ -269,6 +269,36 @@ final class StrategyContractTests: XCTestCase {
   }
 
   @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
+  func testEachRejectsMultipleUnkeyedComponents() throws {
+    struct TwoUnkeyedValues: Encodable {
+      @Codec.Box<Codec.Each<[Codec.Id<Int>], [Codec.Id<Int>]>>
+      var values: ([Int], [Int])
+
+      init() {
+        self._values = Codec.Box(wrappedValue: ([1], [2]))
+      }
+    }
+
+    func assertUnkeyedConflict(
+      _ error: Error,
+      file: StaticString = #filePath,
+      line: UInt = #line
+    ) {
+      guard case EncodingError.invalidValue(_, let context) = error else {
+        return XCTFail("Expected EncodingError.invalidValue, got \(error)", file: file, line: line)
+      }
+      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["values"], file: file, line: line)
+    }
+
+    XCTAssertThrowsError(try JSONEncoder().encode(TwoUnkeyedValues())) {
+      assertUnkeyedConflict($0)
+    }
+    XCTAssertThrowsError(try Enigma(encode: TwoUnkeyedValues())) {
+      assertUnkeyedConflict($0)
+    }
+  }
+
+  @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
   func testEachCompositionAndConflicts() throws {
     struct A: Codable, Hashable { let a: Int }
     struct B: Codable, Hashable { let b: String }

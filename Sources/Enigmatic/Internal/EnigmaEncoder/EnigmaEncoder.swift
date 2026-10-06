@@ -42,16 +42,13 @@ final class EnigmaEncoder {
       defer { unkeyed.append([]) }
       nodes[ref.nodeId].storage = .unkeyedId(unkeyed.count)
       return Unkeyed(state: self, ref: ref)
-    case .unkeyedId:
-      return Unkeyed(state: self, ref: ref)
-    case .keyedId, .value:
+    case .unkeyedId, .keyedId, .value:
       return Unkeyed(state: self, ref: Ref(nodeId: ref.nodeId, failId: 0))
     }
   }
 
   func nestedRef(ref: Ref, key: (any CodingKey)?) -> Ref {
     if ref.failId >= 0 {
-      let pin: Enigma.Pin = if let key { .str(key.stringValue) } else { .int(0) }
       defer { fails.append(Link(prev: ref.failId, key: key ?? Enigma.Pin.int(0))) }
       return Ref(nodeId: ref.nodeId, failId: fails.count)
     } else if let key {
