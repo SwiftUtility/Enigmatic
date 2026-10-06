@@ -70,34 +70,6 @@ extension Enigma {
     }
   }
 
-  mutating func setValue(
-    _ value: Self,
-    pins: inout ArraySlice<Pin>,
-  ) {
-    guard let pin = pins.first else { return self = value }
-    pins = pins.dropFirst()
-    lazy var enigma = switch pins.first {
-    case .int?: Enigma.array([])
-    case .str?: Enigma.dictionary([:])
-    case .none: Enigma.null
-    }
-    switch pin {
-    case .int(let index):
-      guard case .array(var array) = self else { return }
-      self = .null
-      defer { self = .array(array) }
-      guard !array.indices.contains(index) else { return array[index].setValue(value, pins: &pins) }
-      guard index == array.count else { return }
-      enigma.setValue(value, pins: &pins)
-      array.append(enigma)
-    case .str(let key):
-      guard case .dictionary(var dictionary) = self else { return }
-      self = .null
-      defer { self = .dictionary(dictionary) }
-      dictionary[key, default: enigma].setValue(value, pins: &pins)
-    }
-  }
-
   func makePlistObject(pins: inout [Pin]) throws(EncodingError) -> NSObject {
     switch self {
     case .null:
@@ -233,6 +205,91 @@ extension Enigma {
         codingPath: pins,
         debugDescription: "Can not convert UInt128 to NSObject"
       ))
+    }
+  }
+
+  static func setValue(
+    _ value: Self,
+    pins: inout ArraySlice<Pin>,
+    original: inout Self
+  ) -> Bool {
+    guard let pin = pins.first else {
+      original = value
+      return true
+    }
+    pins = pins.dropFirst()
+    switch pin {
+    case .int(let index):
+      var backup: Self?
+      var result: [Self]
+      if case .array(let array) = original {
+        backup = nil
+        result = array
+      } else {
+        backup = original
+        result = []
+      }
+      _ = consume original
+      if result.indices.contains(index) {
+        if Self.setValue(value, pins: &pins, original: &result[index]) {
+          original = .array(result)
+          return true
+        } else {
+          original = backup ?? .array(result)
+          return false
+        }
+      } else if index == result.count {
+        var enigma = switch pins.first {
+        case .int?: Enigma.array([])
+        case .str?: Enigma.dictionary([:])
+        case .none: Enigma.null
+        }
+        if Self.setValue(value, pins: &pins, original: &enigma) {
+          result.append(enigma)
+          original = .array(result)
+          return true
+        } else {
+          original = backup ?? .array(result)
+          return false
+        }
+      } else {
+        original = backup ?? .array(result)
+        return false
+      }
+    case .str(let key):
+      var backup: Self?
+      var result: [String: Self] = [:]
+      if case .dictionary(let dictionary) = original {
+        result = dictionary
+      } else {
+        backup = original
+      }
+      _ = consume original
+      if var item = result.removeValue(forKey: key) {
+        if Self.setValue(value, pins: &pins, original: &item) {
+          result[key] = item
+          original = .dictionary(result)
+          return true
+        } else {
+          result[key] = item
+          original = backup ?? .dictionary(result)
+          return false
+        }
+      } else {
+        var enigma = switch pins.first {
+        case .int?: Enigma.array([])
+        case .str?: Enigma.dictionary([:])
+        case .none: Enigma.null
+        }
+        if Self.setValue(value, pins: &pins, original: &enigma) {
+          result[key] = enigma
+          original = .dictionary(result)
+          return true
+        } else {
+          original = backup ?? .dictionary(result)
+          return false
+        }
+      }
     }
   }
 }

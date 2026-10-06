@@ -14,7 +14,8 @@ extension Enigma {
   }
 
   /// Gets, sets, or removes a value at a variadic path.
-  /// Assigning nil removes a child; assigning `.null` stores an explicit null.
+  /// Non-nil assignments follow the path creation and container replacement
+  /// rules of `subscript(_:)`; nil removes a child, and `.null` stores a null.
   public subscript(_ pins: Pin...) -> Self? {
     get { self[pins] }
     set { self[pins] = newValue }
@@ -22,6 +23,8 @@ extension Enigma {
 
   /// Gets or sets a value at a variadic path, using `fallback` when it is absent.
   /// The autoclosure is evaluated only when the path has no value.
+  /// Setting follows the same path creation and container replacement rules as
+  /// `subscript(_:)`.
   public subscript(_ pins: Pin..., or fallback: @autoclosure () -> Self) -> Self {
     get { self[pins, or: fallback()] }
     set { self[pins, or: fallback()] = newValue }
@@ -29,16 +32,19 @@ extension Enigma {
 
   /// Reads, replaces, or removes a value at a path.
   ///
-  /// Missing dictionary children and array elements at count can be created.
-  /// Incompatible parents and invalid indices are no-ops. Nil deletes a child;
-  /// `.null` stores a null. An empty path can replace, but cannot delete, the root.
+  /// Non-nil assignment creates missing dictionary children, appends at the end
+  /// of arrays, and replaces values with dictionaries or arrays when the next
+  /// pin requires that container. Array indices below zero or greater than the
+  /// array count make the entire assignment a no-op. Nil removes an existing
+  /// child without creating containers; `.null` stores a null. An empty path
+  /// can replace, but cannot delete, the root.
   /// - Parameter pins: The sequence of dictionary keys and array indices.
   public subscript(_ pins: [Pin]) -> Self? {
     get { getValue(pins: pins) }
     set {
       var pins = ArraySlice(pins)
       if let newValue {
-        setValue(newValue, pins: &pins)
+        _ = Self.setValue(newValue, pins: &pins, original: &self)
       } else {
         delValue(pins: &pins)
       }
@@ -47,11 +53,13 @@ extension Enigma {
 
   /// Gets or sets a value at a path, using `fallback` when it is absent.
   /// The autoclosure is evaluated only when the path has no value.
+  /// Setting follows the same path creation and container replacement rules as
+  /// `subscript(_:)`.
   public subscript(_ pins: [Pin], or fallback: @autoclosure () -> Self) -> Self {
     get { getValue(pins: pins) ?? fallback() }
     set {
       var pins = ArraySlice(pins)
-      setValue(newValue, pins: &pins)
+      _ = Self.setValue(newValue, pins: &pins, original: &self)
     }
   }
 
@@ -69,11 +77,13 @@ extension Enigma {
   ) throws(E) -> Self {
     var ctx = MergeContext()
     var strategy = consume strategy
-    return try strategy.merge(ctx: &ctx, old: consume self, new: other).get()
+    return try strategy.merge(ctx: &ctx, old: self, new: other).get()
   }
 
   public mutating func merge(_ other: Self, replace: Bool) {
-    self = merging(other, strategy: SelectOneMergeStrategy(selectNew: replace))
+    var ctx = MergeContext()
+    var strategy = SelectOneMergeStrategy(selectNew: replace)
+    self = strategy.merge(ctx: &ctx, old: self, new: other).get()
   }
 
   public consuming func merging(_ other: Self, replace: Bool) -> Self {

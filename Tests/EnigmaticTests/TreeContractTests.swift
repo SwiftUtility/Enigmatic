@@ -26,8 +26,6 @@ final class TreeContractTests: XCTestCase {
     let snapshot = tree
     tree["items", -1] = 4
     tree["items", 4] = 4
-    tree["items", "wrong"] = 4
-    tree["items", 0, "wrong"] = 4
     tree["missing", 0] = nil
     tree["items", 99] = nil
     XCTAssertEqual(tree, snapshot)
@@ -45,6 +43,46 @@ final class TreeContractTests: XCTestCase {
     XCTAssertEqual(tree, ["new": [["value": true]]])
     tree["new", 0, "value"] = nil
     XCTAssertEqual(tree, ["new": [[:]]])
+  }
+
+  func testPathWritesReplaceIncompatibleContainers() {
+    var tree: Enigma = 7
+    tree["value"] = 1
+    XCTAssertEqual(tree, ["value": 1])
+
+    tree["value", 0] = 2
+    XCTAssertEqual(tree, ["value": [2]])
+
+    tree["value", 0, "child"] = 3
+    XCTAssertEqual(tree, ["value": [["child": 3]]])
+
+    tree["value", "named"] = 4
+    XCTAssertEqual(tree, ["value": ["named": 4]])
+
+    tree["value", "named", 0] = 5
+    XCTAssertEqual(tree, ["value": ["named": [5]]])
+
+    tree["value", "named", 0, "leaf"] = true
+    XCTAssertEqual(tree, ["value": ["named": [["leaf": true]]]])
+  }
+
+  func testInvalidIndexMakesNestedWriteAnAtomicNoOp() {
+    var tree: Enigma = ["outer": ["items": [1]], "keep": true]
+    let snapshot = tree
+
+    tree["outer", "items", -1] = 2
+    XCTAssertEqual(tree, snapshot)
+
+    tree["outer", "items", 2] = 2
+    XCTAssertEqual(tree, snapshot)
+
+    // The path would replace `items` with a dictionary and then an array, but
+    // the final out-of-range index must leave the original tree unchanged.
+    tree["outer", "items", "replace", 3] = 2
+    XCTAssertEqual(tree, snapshot)
+
+    tree["outer", "items", 1] = 2
+    XCTAssertEqual(tree, ["outer": ["items": [1, 2]], "keep": true])
   }
 
   func testMergeConflictPathsAndAtomicity() throws {
