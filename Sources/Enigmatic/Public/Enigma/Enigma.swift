@@ -47,8 +47,9 @@ public enum Enigma: Sendable {
 }
 
 extension Enigma: Equatable {
-  /// Compares two trees by value, allowing exactly representable numeric cases to compare equal.
-  /// NaN compares equal to NaN; this comparison does not guarantee identical numeric storage.
+  /// Compares trees by value. Numeric cases compare using their canonical decimal
+  /// components, so equal values need not have the same storage case or IEEE bit pattern.
+  /// NaN compares equal to NaN, and positive and negative zero compare equal.
   /// - Complexity: O(n) in the number of visited values or output characters; recursive values use O(d) stack
   ///   space, where d is nesting depth.
   public static func == (lhs: Self, rhs: Self) -> Bool {
@@ -112,7 +113,9 @@ extension Enigma: Decodable {
 }
 
 extension Enigma: Encodable {
-  /// Writes this tree using the supplied encoder. Format and value restrictions may throw.
+  /// Writes this tree using the supplied encoder. A `.float` case is passed to
+  /// the encoder as `Float`; the target format may still discard Float/Double type
+  /// information. Format and value restrictions may throw.
   /// - Complexity: O(n) in the number of encoded or decoded values, plus the cost of nested Codable
   ///   implementations; recursive traversal uses O(d) stack space, where d is nesting depth.
   public func encode(to encoder: Encoder) throws {
@@ -367,4 +370,3 @@ extension Enigma: ExpressibleByDictionaryLiteral {
 #warning("add trait to disable inlining")
 #warning("add trait to enable short Ryu tables generation")
 #warning("inspect all #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)")
-

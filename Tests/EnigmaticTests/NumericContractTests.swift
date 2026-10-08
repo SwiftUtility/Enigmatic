@@ -300,8 +300,6 @@ final class NumericContractTests: XCTestCase {
 
   func testCanonicalFloatDoubleRoundTrips() {
     for (index, value) in [Float(1.1111111e38), -1.1111111e38, 1.5e-38, -1.5e-38, 0.1].enumerated() {
-      let parts = NumberComponents(value)
-      print("components", index, parts.low, parts.high, parts.exponent, parts.negative)
       guard let widened = NumberComponents(value).asDouble else {
         XCTFail("Float at index \(index) must convert to its canonical Double")
         continue
@@ -309,5 +307,14 @@ final class NumericContractTests: XCTestCase {
       XCTAssertEqual(NumberComponents(widened).asFloat, value)
       XCTAssertEqual(Enigma.double(widened).asFloat, value)
     }
+  }
+
+  func testCanonicalNumericIdentityAcrossCases() {
+    let floatPointOne = Enigma.float(0.1)
+    XCTAssertEqual(floatPointOne, .double(0.1))
+    XCTAssertNotEqual(floatPointOne, .double(Double(Float(0.1))))
+    XCTAssertEqual(Enigma.double(0.1).asFloat, Float(0.1))
+    XCTAssertNil(Enigma.double(Double(Float(0.1))).asFloat)
+    XCTAssertEqual(Enigma.float(-0.0), .double(0.0))
   }
 }

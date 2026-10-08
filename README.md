@@ -103,11 +103,12 @@ a decoding error as a value; encoding that failure throws and preserves its caus
 
 ## Serialization contracts
 
-- Integer conversions use exact representability: fractions and overflow return
-  `nil` from accessors and fail typed decoding. Integers must be exactly
-  representable when converted to Float/Double. Double-to-Float conversion allows
-  rounding but rejects finite overflow. NaN compares equal to NaN in `Enigma`;
-  Float/Double equality follows the library's Float rounding behavior.
+- Numeric equality and conversions use canonical decimal values: shortest
+  round-trip components for finite Float/Double values and exact decimal values
+  for integers. Conversions succeed only when the canonical value is preserved;
+  integer accessors also require an integral value in range. This differs from
+  ordinary Float rounding and from equality of IEEE bit patterns. NaN compares
+  equal to NaN, and positive and negative zero compare equal.
 - Root and nested `Date`/`Data` values retain `.date`/`.data` in an Enigma tree.
 - `asAny` converts the tree to nested Swift/Foundation values. It is an in-memory
   bridge, not a promise of JSON/plist compatibility.
@@ -119,6 +120,13 @@ a decoding error as a value; encoding that failure throws and preserves its caus
   Scalars require `.fragmentsAllowed` when passed to `JSONSerialization`.
 - `asPlistObject` rejects null and 128-bit integers. Use arrays/dictionaries as
   document roots for portable property-list encoding.
+- Through Codable, `Enigma.encode(to:)` passes a Float case to the supplied
+  `Encoder` as `Float`. The legacy `asJsonObject` and `asPlistObject` bridges box
+  it as `NSNumber`; JSON and property-list serializers write an ordinary number
+  without a Float/Double type tag. A bridged Float may therefore return as a
+  Double with different canonical components. Codable encoders targeting an
+  untyped format have the same wire-format limitation. Numeric identity survives
+  only when the serialized decimal has the same canonical components.
 - When encoding Enigma through an external `Encoder`, keyed Date/Data fields use
   that encoder's strategies. Root and array Date/Data nodes invoke Foundation's
   own `encode(to:)` representation. Use explicit `Codec.Box` strategies when a

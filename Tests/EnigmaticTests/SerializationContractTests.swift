@@ -66,6 +66,66 @@ final class SerializationContractTests: XCTestCase {
     XCTAssertEqual(try Enigma(cast: NSNull()), .null)
   }
 
+  func testCanonicalFloatFoundationSerializationRoundTrips() throws {
+    let values: [Float] = [
+      0.1,
+      1.1111111e38,
+      -1.1111111e38,
+      1.5e-38,
+      -1.5e-38,
+      Float.leastNonzeroMagnitude,
+      Float.greatestFiniteMagnitude,
+      -0.0,
+    ]
+
+    for value in values {
+      let original = Enigma.float(value)
+      let canonicalWidening = original.asDouble.map(Enigma.double)
+
+      let jsonData = try JSONSerialization.data(
+        withJSONObject: original.asJsonObject,
+        options: .fragmentsAllowed
+      )
+      let jsonValue = try JSONSerialization.jsonObject(with: jsonData, options: .fragmentsAllowed)
+      let jsonRoundTrip = try Enigma(cast: jsonValue)
+      assertFloatBridgeRoundTrip(jsonRoundTrip, source: value, canonicalWidening: canonicalWidening)
+
+      let plistObject = [try original.asPlistObject]
+      for format in [PropertyListSerialization.PropertyListFormat.xml, .binary] {
+        let plistData = try PropertyListSerialization.data(
+          fromPropertyList: plistObject,
+          format: format,
+          options: 0
+        )
+        let plistValues = try PropertyListSerialization.propertyList(from: plistData, format: nil) as! [Any]
+        let plistRoundTrip = try Enigma(cast: plistValues[0])
+        assertFloatBridgeRoundTrip(plistRoundTrip, source: value, canonicalWidening: canonicalWidening)
+      }
+    }
+
+    let largest = Enigma.float(.greatestFiniteMagnitude)
+    XCTAssertNotEqual(largest.asDouble.map(Enigma.double), largest)
+    XCTAssertNotEqual(Enigma.double(Double(Float.greatestFiniteMagnitude)), largest)
+  }
+
+  private func assertFloatBridgeRoundTrip(
+    _ roundTrip: Enigma,
+    source: Float,
+    canonicalWidening: Enigma?,
+    file: StaticString = #filePath,
+    line: UInt = #line
+  ) {
+    if let canonicalWidening {
+      XCTAssertEqual(roundTrip, canonicalWidening, file: file, line: line)
+      XCTAssertNotNil(roundTrip.asFloat, file: file, line: line)
+    } else {
+      let binaryWidening = Double(source)
+      let original = Enigma.float(source)
+      XCTAssertTrue(roundTrip == original || roundTrip == .double(binaryWidening), file: file, line: line)
+      XCTAssertEqual(roundTrip.asFloat != nil, roundTrip == original, file: file, line: line)
+    }
+  }
+
   func testAllCasesThroughTypedAccessors() {
     var values: [Enigma] = [
       .null, .bool(true), .int(1), .int64(1), .int32(1), .int16(1), .int8(1),

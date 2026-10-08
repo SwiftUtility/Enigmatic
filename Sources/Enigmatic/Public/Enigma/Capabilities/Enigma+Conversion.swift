@@ -73,6 +73,10 @@ extension Enigma {
   }
 
   /// Converts the tree to a Foundation object accepted by `PropertyListSerialization`.
+  /// This legacy bridge boxes Float values as `NSNumber`. Property-list formats
+  /// do not preserve a Float type tag, and a decoded number may have different
+  /// canonical components from the original Float. Codable encoding passes Float
+  /// to its encoder directly instead.
   ///
   /// - Throws: `EncodingError.invalidValue` when a value is unsupported by property lists.
   /// - Complexity: O(n) in the number of tree values; recursive conversion also uses O(d) stack space, where d
@@ -86,6 +90,10 @@ extension Enigma {
   }
 
   /// Converts the tree to a Foundation object accepted by `JSONSerialization`.
+  /// This legacy bridge boxes Float values as `NSNumber`. JSON does not preserve a
+  /// Float type tag, and a decoded number may have different canonical components
+  /// from the original Float. Codable encoding passes Float to its encoder directly
+  /// instead.
   ///
   /// - Throws: `EncodingError.invalidValue` for data, dates, non-finite numbers,
   ///   and 128-bit integers.

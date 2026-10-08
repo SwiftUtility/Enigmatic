@@ -32,6 +32,10 @@ extension Enigma {
       set { self = Self(newValue) }
     }
 
+    /// Converts to Float when the canonical decimal representation is preserved.
+    /// Returns nil when the value overflows or its canonical representation changes.
+    /// - Returns: The converted Float, or nil when conversion cannot preserve the value.
+    /// - Complexity: O(1), with a bounded decimal-component conversion.
     @inlinable
     public var asFloat: Float? {
 #warning("check")
@@ -42,6 +46,10 @@ extension Enigma {
       }
     }
 
+    /// Converts to Double when the canonical decimal representation is preserved.
+    /// Returns nil when the value overflows or its canonical representation changes.
+    /// - Returns: The converted Double, or nil when conversion cannot preserve the value.
+    /// - Complexity: O(1), with a bounded decimal-component conversion.
     @inlinable
     public var asDouble: Double? {
 #warning("check")
@@ -53,6 +61,10 @@ extension Enigma {
     }
 
     @inlinable
+    /// Converts to a fixed-width integer when the value fits the requested type.
+    /// Pass the target metatype to infer the requested integer type.
+    /// - Returns: The exact integer value, or nil for a negative value or overflow.
+    /// - Complexity: O(1) for a fixed-width target.
     public func asInteger<T: FixedWidthInteger>(_: T.Type = T.self) -> T? {
       #warning("check")
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
