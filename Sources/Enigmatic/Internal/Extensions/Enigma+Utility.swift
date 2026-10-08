@@ -103,7 +103,11 @@ extension Enigma {
     case .double(let value):
       return value as NSNumber
     case .float(let value):
-      return value as NSNumber
+      return if let value = value.asDouble {
+        value as NSNumber
+      } else {
+        value as NSNumber
+      }
     case .string(let value):
       return value as NSString
     case .array(let value):
@@ -163,7 +167,13 @@ extension Enigma {
         debugDescription: "Can not convert \(value) to JSONSerialization compatible NSObject"
       ))
     case .float(let value):
-      guard !value.isFinite else { return value as NSNumber }
+      guard !value.isFinite else {
+        return if let value = value.asDouble {
+          value as NSNumber
+        } else {
+          value as NSNumber
+        }
+      }
       throw EncodingError.invalidValue(Float.self, EncodingError.Context(
         codingPath: pins,
         debugDescription: "Can not convert \(value) to JSONSerialization compatible NSObject"

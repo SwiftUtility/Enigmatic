@@ -158,7 +158,7 @@ extension Enigma: Encodable {
       try container.encode(value)
     case .float(let value):
       var container = encoder.singleValueContainer()
-      try container.encode(asDouble ?? Double(value))
+      try container.encode(value)
     case .string(let value):
       var container = encoder.singleValueContainer()
       try container.encode(value)
