@@ -34,11 +34,10 @@ extension Enigma {
     /// - Complexity: O(1), with a bounded decimal-component conversion.
     @inlinable
     public var asFloat: Float? {
-#warning("check")
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         value.asFloat
       } else {
-        NumberComponents(self).asFloat
+        asFloatFallback()
       }
     }
 
@@ -48,11 +47,10 @@ extension Enigma {
     /// - Complexity: O(1), with a bounded decimal-component conversion.
     @inlinable
     public var asDouble: Double? {
-#warning("check")
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         value.asDouble
       } else {
-        NumberComponents(self).asDouble
+        asDoubleFallback()
       }
     }
 
@@ -60,16 +58,12 @@ extension Enigma {
     /// Pass the target metatype to infer the requested integer type.
     /// - Returns: The exact integer value, or nil for overflow.
     /// - Complexity: O(1) for a fixed-width target.
+    @inlinable
     public func asInteger<T: FixedWidthInteger>(_: T.Type = T.self) -> T? {
-      #warning("check")
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         T(exactly: value)
-      } else if high == 0 {
-        T(exactly: low)
-      } else if high == .max, low.leadingZeroBitCount == 0 {
-        T(exactly: Int64(bitPattern: low))
       } else {
-        nil
+        asIntegerFallback()
       }
     }
   }

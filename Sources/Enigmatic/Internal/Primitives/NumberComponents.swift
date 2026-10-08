@@ -191,7 +191,7 @@ struct NumberComponents {
 
     while true {
       let highDivision = high.quotientAndRemainder(dividingBy: 10)
-      let lowDivision = low.dividingFullWidth((high: highDivision.remainder, low: low))
+      let lowDivision = UInt64(10).dividingFullWidth((high: highDivision.remainder, low: low))
       guard lowDivision.remainder == 0 else { return }
       high = highDivision.quotient
       low = lowDivision.quotient

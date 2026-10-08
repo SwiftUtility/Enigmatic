@@ -317,4 +317,45 @@ final class NumericContractTests: XCTestCase {
     XCTAssertNil(Enigma.double(Double(Float(0.1))).asFloat)
     XCTAssertEqual(Enigma.float(-0.0), .double(0.0))
   }
+
+  @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+  func test128BitBoxLegacyConversionFallbacks() {
+    let signedValues: [Int128] = [
+      0,
+      1,
+      10,
+      Int128(Int64.max),
+      Int128(Int64.max) + 1,
+      -1,
+      -10,
+      Int128(Int64.min),
+      Int128(Int64.min) - 1,
+      -Int128(UInt64.max) - 1,
+      Int128.min,
+      Int128.max,
+    ]
+    for value in signedValues {
+      let box = Enigma.Int128Box(value)
+      XCTAssertEqual(box.asFloatFallback(), value.asFloat, "Int128 \(value) -> Float")
+      XCTAssertEqual(box.asDoubleFallback(), value.asDouble, "Int128 \(value) -> Double")
+      XCTAssertEqual(box.asIntegerFallback(Int64.self), Int64(exactly: value), "Int128 \(value) -> Int64")
+      XCTAssertEqual(box.asIntegerFallback(UInt64.self), UInt64(exactly: value), "Int128 \(value) -> UInt64")
+    }
+
+    let unsignedValues: [UInt128] = [
+      0,
+      1,
+      10,
+      UInt128(UInt64.max),
+      UInt128(UInt64.max) + 1,
+      UInt128.max,
+    ]
+    for value in unsignedValues {
+      let box = Enigma.UInt128Box(value)
+      XCTAssertEqual(box.asFloatFallback(), value.asFloat, "UInt128 \(value) -> Float")
+      XCTAssertEqual(box.asDoubleFallback(), value.asDouble, "UInt128 \(value) -> Double")
+      XCTAssertEqual(box.asIntegerFallback(Int64.self), Int64(exactly: value), "UInt128 \(value) -> Int64")
+      XCTAssertEqual(box.asIntegerFallback(UInt64.self), UInt64(exactly: value), "UInt128 \(value) -> UInt64")
+    }
+  }
 }
