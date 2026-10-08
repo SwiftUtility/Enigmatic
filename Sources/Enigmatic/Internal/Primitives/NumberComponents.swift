@@ -1,3 +1,5 @@
+import Foundation
+
 @usableFromInline
 struct NumberComponents {
   var low: UInt64 = 0
@@ -89,26 +91,88 @@ struct NumberComponents {
 
   @usableFromInline
   func asInteger<T: FixedWidthInteger>(_: T.Type = T.self) -> T? {
-#warning("tbd")
-    nil
+    guard exponent >= 0 else { return nil }
+    guard exponent != .max else { return nil }
+
+    let magnitude: T.Magnitude
+    if T.bitWidth <= 64 {
+      guard high == 0, let lowMagnitude = T.Magnitude(exactly: low) else { return nil }
+      magnitude = lowMagnitude
+    } else {
+      let highBits = T.bitWidth - 64
+      if highBits < 64, high >= (UInt64(1) << highBits) { return nil }
+      magnitude = (T.Magnitude(exactly: high)! << 64) | T.Magnitude(truncatingIfNeeded: low)
+    }
+
+    var scaled = magnitude
+    for _ in 0..<Int(exponent) {
+      let (next, overflow) = scaled.multipliedReportingOverflow(by: 10)
+      guard !overflow else { return nil }
+      scaled = next
+    }
+
+    if negative {
+      guard T.isSigned else { return nil }
+      let limit = T.max.magnitude + 1
+      guard scaled <= limit else { return nil }
+      let bits = T(truncatingIfNeeded: scaled)
+      return 0 &- bits
+    }
+
+    guard scaled <= T.max.magnitude else { return nil }
+    return T(truncatingIfNeeded: scaled)
   }
 
   @usableFromInline
   var asFloat: Float? {
-#warning("tbd")
-    nil
+    guard exponent != .max else {
+      guard high == .max, low == .max else { return nil }
+      return negative ? -.infinity : .infinity
+    }
+
+    let magnitude = Double(high) * 18_446_744_073_709_551_616.0 + Double(low)
+    let value = (negative ? -magnitude : magnitude) * pow(10.0, Double(exponent))
+    guard value.isFinite else { return nil }
+    let result = Float(value)
+    guard result.isFinite else { return nil }
+    let canonical = NumberComponents(result)
+    guard canonical.low == low, canonical.high == high,
+          canonical.exponent == exponent, canonical.negative == negative else { return nil }
+    return result
   }
 
   @usableFromInline
   var asDouble: Double? {
-#warning("tbd")
-    nil
+    guard exponent != .max else {
+      guard high == .max, low == .max else { return nil }
+      return negative ? -.infinity : .infinity
+    }
+
+    let magnitude = Double(high) * 18_446_744_073_709_551_616.0 + Double(low)
+    let result = (negative ? -magnitude : magnitude) * pow(10.0, Double(exponent))
+    guard result.isFinite else { return nil }
+    let canonical = NumberComponents(result)
+    guard canonical.low == low, canonical.high == high,
+          canonical.exponent == exponent, canonical.negative == negative else { return nil }
+    return result
   }
 
   @usableFromInline
-  func normalize() {
-    guard low.nonzeroBitCount + high.nonzeroBitCount > 0 else { return }
-#warning("tbd")
+  mutating func normalize() {
+    guard low != 0 || high != 0 else {
+      exponent = 0
+      negative = false
+      return
+    }
+
+    while true {
+      let highDivision = high.quotientAndRemainder(dividingBy: 10)
+      let lowDivision = low.dividingFullWidth((high: highDivision.remainder, low: low))
+      guard lowDivision.remainder == 0 else { return }
+      high = highDivision.quotient
+      low = lowDivision.quotient
+      exponent += 1
+    }
   }
 }
 
