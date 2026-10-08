@@ -18,7 +18,7 @@ For example, Float `1e12` equals integer `1000000000000`, although its exact bin
 integer value is `999999995904`. Equality does not guarantee identical storage,
 bits, or successful typed conversion. NaNs compare equal, including Date
 timestamps, and positive and negative zero compare equal. These non-finite rules
-extend the contract beyond JSON. `skipEqual` uses the same equality and keeps the
+extend the contract beyond JSON. `skipEqual: true` uses the same equality and keeps the
 existing value. Enigma does not conform to Hashable.
 
 External decoding tries integer types before floating-point types, including
@@ -32,9 +32,10 @@ change its decimal representation even when the binary value is preserved.
 
 ## Foundation and external encoders
 
-`asSwiftAny` exports Swift values. It can be read back by `Enigma(cast:)`.
-This is an in-memory bridge, not a portable archive format. Dictionary keys supplied
-to `cast` are converted to their string descriptions; colliding descriptions are rejected.
+`asAny` exports Swift values. It can be read back by `Enigma(cast:)`.
+This is an in-memory bridge, not a portable archive format. Swift dictionaries support String, Int, supported AnyHashable bases, and
+CodingKeyRepresentable keys. Foundation dictionary keys must bridge to String.
+Unsupported keys and collisions are rejected.
 
 `asJsonObject` rejects Date, Data, NaN, infinity and 128-bit integers. Use
 JSONSerialization's `fragmentsAllowed` option for a scalar root. `asPlistObject`

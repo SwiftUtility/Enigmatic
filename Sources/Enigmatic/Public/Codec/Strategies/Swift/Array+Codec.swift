@@ -18,7 +18,6 @@ extension Array: Codec.DecodeStrategy where Element: Codec.DecodeStrategy {
     return result
   }
 }
-
 extension Array: Codec.EncodeStrategy where Element: Codec.EncodeStrategy {
   /// Encodes elements in array order using `Element`'s strategy.
   @inlinable

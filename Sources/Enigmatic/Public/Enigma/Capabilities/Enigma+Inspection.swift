@@ -1,14 +1,10 @@
 import Foundation
 
-public extension Enigma {
-
-
-
-
+extension Enigma {
   /// Paths of all descendants, including containers, excluding the root.
   ///
   /// Traversal is depth first, with ascending array indices and sorted dictionary keys.
-  var allPaths: [[Pin]] {
+  public var allPaths: [[Pin]] {
     var result: [[Pin]] = []
     var current: [Pin] = []
     collectPins(into: &result, current: &current)
@@ -16,17 +12,17 @@ public extension Enigma {
   }
 
   /// Whether the root value is an explicit null.
-  var isNull: Bool {
+  public var isNull: Bool {
     if case .null = self { true } else { false }
   }
 
   /// Whether the root value is an array.
-  var isArray: Bool {
+  public var isArray: Bool {
     if case .array = self { true } else { false }
   }
 
   /// Whether the root value is a dictionary.
-  var isDictionary: Bool {
+  public var isDictionary: Bool {
     if case .dictionary = self { true } else { false }
   }
 }

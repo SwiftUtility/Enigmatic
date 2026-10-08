@@ -44,8 +44,4 @@ public enum Enigma: Sendable {
   case int128(Int128Value)
   /// An unsigned 128-bit integer on supported operating systems.
   case uint128(UInt128Value)
-
-
-
-
 }

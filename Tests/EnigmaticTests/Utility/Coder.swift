@@ -84,7 +84,7 @@ class Coder: @unchecked Sendable {
     if checker.nonPlistSeriablizable {
       XCTAssertThrowsError(try encodedEnigma.asPlistObject, "Scenario: \(scenario)", file: file, line: line)
       XCTAssertThrowsError(try PropertyListSerialization.data(
-        fromPropertyList: encodedEnigma.asSwiftAny,
+        fromPropertyList: encodedEnigma.asAny,
         format: fmt,
         options: 0
       ), "Scenario: \(scenario)", file: file, line: line)

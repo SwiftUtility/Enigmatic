@@ -18,7 +18,7 @@ final class DocumentationExamplesTests: XCTestCase {
   func testReadmeMergeExample() {
     let original: Enigma = ["settings": ["enabled": false, "retries": 2]]
     let patch: Enigma = ["settings": ["enabled": true]]
-    let merged = original.merging(patch, or: Enigma.replace)
+    let merged = original.merging(patch, replace: true)
     XCTAssertEqual(merged, ["settings": ["enabled": true, "retries": 2]])
   }
 

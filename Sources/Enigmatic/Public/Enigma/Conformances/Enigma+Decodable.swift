@@ -19,11 +19,9 @@ extension Enigma: Decodable {
       ))
     }
   }
-}
 
-private extension Enigma {
   @inline(__always)
-  static func downscale(_ value: UInt) -> Self {
+  private static func downscale(_ value: UInt) -> Self {
     if let value = UInt8(exactly: value) {
       .uint8(value)
     } else if let value = UInt16(exactly: value) {
@@ -36,7 +34,7 @@ private extension Enigma {
   }
 
   @inline(__always)
-  static func downscale(_ value: Int) -> Self {
+  private static func downscale(_ value: Int) -> Self {
     if let value = Int8(exactly: value) {
       .int8(value)
     } else if let value = Int16(exactly: value) {
@@ -49,7 +47,7 @@ private extension Enigma {
   }
 
   @inline(__always)
-  static func downscale(_ value: Double) -> Self {
+  private static func downscale(_ value: Double) -> Self {
     if let float = Float(exactly: value), Self.float(float) == .double(value) {
       .float(float)
     } else {
@@ -58,7 +56,7 @@ private extension Enigma {
   }
 
   @inline(__always)
-  static func decode(
+  private static func decode(
     single container: borrowing some SingleValueDecodingContainer
   ) throws -> Self {
     if container.decodeNil() {
@@ -113,7 +111,7 @@ private extension Enigma {
     }
   }
 
-  static func decode(
+  private static func decode(
     keyed container: inout KeyedDecodingContainer<Pin>
   ) throws -> Self {
     let keys = container.allKeys
@@ -177,11 +175,10 @@ private extension Enigma {
         ))
       }
     }
-
     return .dictionary(result)
   }
 
-  static func decode(
+  private static func decode(
     unkeyed container: inout some UnkeyedDecodingContainer
   ) throws -> Self {
     var result: [Self] = []
@@ -246,7 +243,6 @@ private extension Enigma {
         ))
       }
     }
-
     return .array(result)
   }
 }

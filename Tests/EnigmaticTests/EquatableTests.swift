@@ -165,24 +165,24 @@ final class EquatableTests: XCTestCase {
     let a = Enigma.double(0.1)
     let b = Enigma.float(0.1)
     let c = Enigma.double(Double(Float(0.1)))
-    XCTAssertEqual(try a.merging(b, or: Enigma.skipEqual).asDouble?.bitPattern, Double(0.1).bitPattern)
-    XCTAssertEqual(try b.merging(a, or: Enigma.skipEqual).asFloat?.bitPattern, Float(0.1).bitPattern)
-    XCTAssertThrowsError(try b.merging(c, or: Enigma.skipEqual))
-    XCTAssertThrowsError(try a.merging(c, or: Enigma.skipEqual))
+    XCTAssertEqual(try a.merging(b, skipEqual: true).asDouble?.bitPattern, Double(0.1).bitPattern)
+    XCTAssertEqual(try b.merging(a, skipEqual: true).asFloat?.bitPattern, Float(0.1).bitPattern)
+    XCTAssertThrowsError(try b.merging(c, skipEqual: true))
+    XCTAssertThrowsError(try a.merging(c, skipEqual: true))
     // Both groupings must reject the conflicting decimal representation.
-    XCTAssertThrowsError(try a.merging(b, or: Enigma.skipEqual).merging(c, or: Enigma.skipEqual))
-    XCTAssertThrowsError(try a.merging(b.merging(c, or: Enigma.skipEqual), or: Enigma.skipEqual))
-    XCTAssertThrowsError(try Enigma.double(.leastNonzeroMagnitude).merging(.float(0), or: Enigma.skipEqual))
-    XCTAssertEqual(try Enigma.array([a]).merging(.array([b]), or: Enigma.skipEqual), .array([a]))
+    XCTAssertThrowsError(try a.merging(b, skipEqual: true).merging(c, skipEqual: true))
+    XCTAssertThrowsError(try a.merging(b.merging(c, skipEqual: true), skipEqual: true))
+    XCTAssertThrowsError(try Enigma.double(.leastNonzeroMagnitude).merging(.float(0), skipEqual: true))
+    XCTAssertEqual(try Enigma.array([a]).merging(.array([b]), skipEqual: true), .array([a]))
 
     var tree = Enigma.dictionary(["value": .array([a])])
-    XCTAssertNoThrow(try tree.merge(.dictionary(["value": .array([b])]), or: Enigma.skipEqual))
-    XCTAssertThrowsError(try tree.merge(.dictionary(["value": .array([c])]), or: Enigma.skipEqual)) { error in
+    XCTAssertNoThrow(try tree.merge(.dictionary(["value": .array([b])]), skipEqual: true))
+    XCTAssertThrowsError(try tree.merge(.dictionary(["value": .array([c])]), skipEqual: true)) { error in
       guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
       XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["value"])
     }
     XCTAssertEqual(tree["value", 0]?.asDouble?.bitPattern, Double(0.1).bitPattern)
-    XCTAssertNoThrow(try Enigma.double(.nan).merging(.float(.nan), or: Enigma.skipEqual))
+    XCTAssertNoThrow(try Enigma.double(.nan).merging(.float(.nan), skipEqual: true))
   }
 
   func testNaNDateTreesAreReflexive() {
@@ -196,7 +196,7 @@ final class EquatableTests: XCTestCase {
     for (lhs, rhs) in pairs {
       XCTAssertEqual(lhs, lhs)
       XCTAssertEqual(lhs, rhs)
-      XCTAssertNoThrow(try lhs.merging(rhs, or: Enigma.skipEqual))
+      XCTAssertNoThrow(try lhs.merging(rhs, skipEqual: true))
     }
   }
 }

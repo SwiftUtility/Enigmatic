@@ -81,7 +81,7 @@ final class EnigmaEncoder {
 
   func store(_ value: Enigma, ref: Ref) throws {
     guard ref.failId < 0, case .unset = nodes[ref.nodeId].storage else {
-      throw EncodingError.invalidValue(value.asSwiftAny, EncodingError.Context(
+      throw EncodingError.invalidValue(value.asAny, EncodingError.Context(
         codingPath: codingPath(ref: ref),
         debugDescription: "attempt to overwrite an existing encoded value or container"
       ))
@@ -143,14 +143,14 @@ final class EnigmaEncoder {
     return take(0)
   }
 
-  static func encode(value: any Encodable, userInfo: [CodingUserInfoKey: Any]) throws -> Enigma {
+  static func encode(value: some Encodable, userInfo: [CodingUserInfoKey: Any]) throws -> Enigma {
     let state = EnigmaEncoder(userInfo: userInfo)
     let ref = Ref(nodeId: 0, failId: -1)
     if try !state.encodeSpecial(value, ref: ref) {
       try value.encode(to: Single(state: state, ref: ref))
     }
     if case .unset = state.nodes[0].storage {
-      throw EncodingError.invalidValue(nil as Enigma?, EncodingError.Context(
+      throw EncodingError.invalidValue(value, EncodingError.Context(
         codingPath: [],
         debugDescription: "top level encoded to nothing"
       ))

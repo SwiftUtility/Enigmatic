@@ -31,9 +31,9 @@ Dictionary pairs merge recursively; every other pair, including arrays, is passe
 to the resolver as a whole. New keys are inserted without calling the resolver.
 The resolver receives the path, existing value and incoming value.
 
-- `Enigma.replace` keeps the incoming value.
-- `Enigma.skipEqual` keeps equal values and throws on differences.
-- `Enigma.fail` rejects every conflict with `EncodingError.invalidValue`.
+- `replace: true` keeps the incoming value; `replace: false` keeps the existing value.
+- `skipEqual: true` keeps equal values and throws on differences.
+- `skipEqual: false` rejects every conflict with `EncodingError.invalidValue`.
 
 The mutating merge commits only after the complete operation succeeds. A thrown
 resolver leaves the original tree intact. Resolver visitation order for dictionary

@@ -3,13 +3,19 @@ extension Codec {
   /// Encodes components into the same encoder and decodes each from the same input.
   ///
   /// Use disjoint keyed models; overlapping writes can fail depending on the encoder.
+  @dynamicMemberLookup
   public struct Each<each Value> {
     /// The values encoded or decoded against the same input and output container.
-    public var values: (repeat each Value)
+    var values: (repeat each Value)
 
     /// Creates a product from its component values.
-    public init(values: (repeat each Value)) {
-      self.values = values
+    public init(_ value: repeat each Value) {
+      self.values = (repeat each value)
+    }
+
+    public subscript<T>(dynamicMember keyPath: WritableKeyPath<(repeat each Value), T>) -> T {
+      get { values[keyPath: keyPath] }
+      set { values[keyPath: keyPath] = newValue }
     }
   }
 }
@@ -20,7 +26,6 @@ extension Codec.Each: Sendable where repeat each Value: Sendable {}
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Decodable where repeat each Value: Decodable {
   /// Decodes every component from the same decoder.
-  @inlinable
   public init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
     self.values = (repeat try container.decode((each Value).self))
@@ -30,7 +35,6 @@ extension Codec.Each: Decodable where repeat each Value: Decodable {
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Encodable where repeat each Value: Encodable {
   /// Encodes each component into the same encoder.
-  @inlinable
   public func encode(to encoder: Encoder) throws {
     for value in repeat each values {
       try value.encode(to: encoder)
@@ -41,7 +45,6 @@ extension Codec.Each: Encodable where repeat each Value: Encodable {
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Equatable where repeat each Value: Equatable {
   /// Returns whether corresponding component values are equal.
-  @inlinable
   public static func == (lhs: Self, rhs: Self) -> Bool {
     for (lhs, rhs) in repeat (each lhs.values, each rhs.values) {
       guard lhs == rhs else { return false }
@@ -53,7 +56,6 @@ extension Codec.Each: Equatable where repeat each Value: Equatable {
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Hashable where repeat each Value: Hashable {
   /// Combines every component value into the hasher.
-  @inlinable
   public func hash(into hasher: inout Hasher) {
     for value in repeat each values {
       value.hash(into: &hasher)

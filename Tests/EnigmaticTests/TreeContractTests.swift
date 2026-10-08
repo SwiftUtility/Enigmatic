@@ -51,7 +51,7 @@ final class TreeContractTests: XCTestCase {
     enum Failure: Error { case conflict }
     var tree: Enigma = ["parent": ["value": 1], "array": [1]]
     let initial = tree
-    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], or: { path, lhs, rhs throws(Failure) in
+    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], resolve: { path, lhs, rhs throws(Failure) in
       XCTAssertEqual(path, ["parent", "value"])
       XCTAssertEqual(lhs, 1)
       XCTAssertEqual(rhs, 2)
@@ -59,17 +59,69 @@ final class TreeContractTests: XCTestCase {
     }))
     XCTAssertEqual(tree, initial)
     var paths: [[Enigma.Pin]] = []
-    let merged = tree.merging(["array": [2, 3], "new": true], or: { path, _, rhs in
+    let merged = tree.merging(["array": [2, 3], "new": true], resolve: { path, _, rhs in
       paths.append(path)
       return rhs
     })
     XCTAssertEqual(paths, [["array"]])
     XCTAssertEqual(merged, ["parent": ["value": 1], "array": [2, 3], "new": true])
     XCTAssertEqual(tree, initial)
-    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], or: Enigma.fail)) { error in
+    XCTAssertThrowsError(try tree.merge(["parent": ["value": 2]], skipEqual: false)) { error in
       guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
       XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["parent", "value"])
     }
+  }
+
+  func testNoncopyableMergeStrategyPreservesDecimalEqualityAndAtomicity() throws {
+    struct EqualStrategy: ~Copyable, Enigma.MergeStrategy {
+      var paths: [[Enigma.Pin]] = []
+
+      mutating func resolve(
+        ctx: inout Enigma.MergeContext, old: Enigma, new: Enigma
+      ) -> Result<Enigma, EncodingError> {
+        paths.append(ctx.pins)
+        return old == new ? .success(old) : .failure(ctx.error(new))
+      }
+    }
+
+    var tree: Enigma = ["parent": ["value": .double(0.1)]]
+    var strategy = EqualStrategy()
+    try tree.merge(["parent": ["value": .float(0.1)]], strategy: &strategy)
+    XCTAssertEqual(strategy.paths, [["parent", "value"]])
+    guard case .double(let value) = tree["parent", "value"] else {
+      return XCTFail("Equal merge must retain the original numeric representation")
+    }
+    XCTAssertEqual(value.bitPattern, Double(0.1).bitPattern)
+
+    let initial = tree
+    XCTAssertThrowsError(try tree.merge([
+      "parent": ["value": .double(Double(Float(0.1)))], "new": true,
+    ], strategy: &strategy)) { error in
+      guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
+      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["parent", "value"])
+    }
+    XCTAssertEqual(tree, initial)
+    XCTAssertEqual(strategy.paths, [["parent", "value"], ["parent", "value"]])
+    XCTAssertEqual(try initial.merging(initial, strategy: EqualStrategy()), initial)
+  }
+
+  func testMergeSelectionKeepsWholeArraysAndAddsDisjointDictionaryKeys() {
+    let original: Enigma = ["parent": ["value": .double(0.1)], "items": [1]]
+    let patch: Enigma = ["parent": ["value": .float(0.1), "added": true], "items": [2, 3]]
+    let kept = original.merging(patch, replace: false)
+    let replaced = original.merging(patch, replace: true)
+    XCTAssertEqual(kept["items"], [1])
+    XCTAssertEqual(replaced["items"], [2, 3])
+    XCTAssertEqual(kept["parent", "added"], true)
+    XCTAssertEqual(replaced["parent", "added"], true)
+    guard case .double = kept["parent", "value"], case .float = replaced["parent", "value"] else {
+      return XCTFail("Selection must preserve the chosen numeric representation")
+    }
+    var mutated = original
+    mutated.merge(patch, replace: false)
+    XCTAssertEqual(mutated, kept)
+    mutated.merge(patch, replace: true)
+    XCTAssertEqual(mutated, replaced)
   }
 
   func testPinCodingKeyAndHashing() {

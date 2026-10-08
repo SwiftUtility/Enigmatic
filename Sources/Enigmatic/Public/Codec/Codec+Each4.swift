@@ -12,8 +12,8 @@ extension Codec {
 
     /// Creates a product from four component values.
     @inlinable
-    public init(values: (Value0, Value1, Value2, Value3)) {
-      self.values = values
+    public init(_ value0: Value0, _ value1: Value1, _ value2: Value2, _ value3: Value3) {
+      self.values = (value0, value1, value2, value3)
     }
   }
 }

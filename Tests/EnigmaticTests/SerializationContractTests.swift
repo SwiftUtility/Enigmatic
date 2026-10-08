@@ -36,7 +36,7 @@ final class SerializationContractTests: XCTestCase {
   func testJSONAndPlistErrorPaths() throws {
     for value in [Enigma.data(Data()), .date(Date()), .double(.infinity), .float(.nan)] {
       let tree: Enigma = ["values": .array([value])]
-      XCTAssertEqual(try Enigma(cast: tree.asSwiftAny), tree)
+      XCTAssertEqual(try Enigma(cast: tree.asAny), tree)
       XCTAssertThrowsError(try tree.asJsonObject) { error in
         guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
         XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["values", 0])
@@ -52,7 +52,7 @@ final class SerializationContractTests: XCTestCase {
 
   func testSerializationAndFoundationBridging() throws {
     let tree: Enigma = ["list": [.bool(true), .int8(-1), .uint64(.max), .double(1.25), "text"], "empty": [:]]
-    XCTAssertEqual(try Enigma(cast: tree.asSwiftAny), tree)
+    XCTAssertEqual(try Enigma(cast: tree.asAny), tree)
     XCTAssertEqual(try Enigma(cast: tree.asJsonObject), tree)
     let bytes = try JSONSerialization.data(withJSONObject: tree.asJsonObject)
     XCTAssertEqual(try Enigma(cast: JSONSerialization.jsonObject(with: bytes)), tree)
@@ -64,7 +64,6 @@ final class SerializationContractTests: XCTestCase {
     XCTAssertEqual(try Enigma(cast: NSNumber(value: true)).asBool, true)
     XCTAssertEqual(try Enigma(cast: NSNumber(value: 2)).asInt, 2)
     XCTAssertEqual(try Enigma(cast: NSNull()), .null)
-    XCTAssertEqual(try Enigma(cast: nil), .null)
   }
 
   func testAllCasesThroughTypedAccessors() {
@@ -79,7 +78,7 @@ final class SerializationContractTests: XCTestCase {
     }
 
     for value in values {
-      _ = value.asSwiftAny
+      _ = value.asAny
       _ = value.array
       _ = value.dictionary
       _ = value.allPaths
@@ -155,7 +154,7 @@ final class SerializationContractTests: XCTestCase {
     }
     let nestedValues: Enigma = ["values": .array(values)]
     XCTAssertNoThrow(try JSONEncoder().encode(nestedValues))
-    let bridged = Enigma.array(values).asSwiftAny as? [Any]
+    let bridged = Enigma.array(values).asAny as? [Any]
     XCTAssertEqual(bridged?.count, values.count)
 
     let plistTree: Enigma = ["values": [.data(Data([1, 2])), .date(Date(timeIntervalSince1970: 2))]]
@@ -176,9 +175,9 @@ final class SerializationContractTests: XCTestCase {
   func testInt128NativeValuesAndSerializationRestrictions() throws {
     for value in [Int128.min, -1, 0, 1, Int128.max] {
       let tree = try Enigma(encode: value)
-      XCTAssertEqual(tree.asSwiftAny as? Int128, value)
+      XCTAssertEqual(tree.asAny as? Int128, value)
       XCTAssertEqual(try tree.decode(Int128.self), value)
-      XCTAssertEqual(try Enigma(cast: tree.asSwiftAny), tree)
+      XCTAssertEqual(try Enigma(cast: tree.asAny), tree)
       XCTAssertEqual(tree.description, String(describing: value))
       XCTAssertEqual(tree.debugDescription, String(reflecting: value))
       XCTAssertThrowsError(try tree.asJsonObject)
@@ -186,9 +185,9 @@ final class SerializationContractTests: XCTestCase {
     }
     for value in [UInt128.min, 1, UInt128.max] {
       let tree = try Enigma(encode: value)
-      XCTAssertEqual(tree.asSwiftAny as? UInt128, value)
+      XCTAssertEqual(tree.asAny as? UInt128, value)
       XCTAssertEqual(try tree.decode(UInt128.self), value)
-      XCTAssertEqual(try Enigma(cast: tree.asSwiftAny), tree)
+      XCTAssertEqual(try Enigma(cast: tree.asAny), tree)
       XCTAssertEqual(tree.description, String(describing: value))
       XCTAssertEqual(tree.debugDescription, String(reflecting: value))
       XCTAssertThrowsError(try tree.asJsonObject)

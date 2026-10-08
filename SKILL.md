@@ -42,10 +42,10 @@ The two public namespaces are:
 
 ```text
 Encodable model -> Enigma.init(encode:) -> EnigmaEncoder -> Enigma tree
-Any?/Foundation object -> Enigma.init(cast:) -> Reducer + conversion helpers -> tree
+Any/Foundation object -> Enigma.init(cast:) -> EnigmaConvertible helpers -> tree
 tree -> subscripts / allPaths / merge -> edited tree
 tree -> Enigma.decode(T.self) -> EnigmaDecoder -> Decodable model
-tree -> asSwiftAny / asJsonObject / asPlistObject -> native/serialization objects
+tree -> asAny / asJsonObject / asPlistObject -> native/serialization objects
 tree <-> Enigma's Codable conformances <-> external encoders/decoders
 
 @Codec.Box<S> -> S.encode / S.decode -> the selected encoder/decoder
@@ -70,9 +70,11 @@ containers hold tree values and a path ID. Primitive decoding uses `Enigma.as*`
 accessors; generic decoding special-cases native Data/Date, otherwise invokes
 `T.init(from:)`. Unkeyed containers own their current index.
 
-**Conversion/tree helpers:** `Internal/Enigma+Utility.swift` implements traversal,
-mutation, recursive merge, Foundation casting, and JSON/plist export. `Reducer`
-shares conversion path state through scoped pointers; it is noncopyable. NSNumber
+**Conversion/tree helpers:** `Internal/Extensions/Enigma+Utility.swift` implements
+traversal, mutation, and JSON/plist export. `Internal/Primitives/EnigmaConvertible.swift`
+and `EnigmaConvertibleObject.swift` handle Swift and Foundation casting with inout
+path state. `Enigma.MergeStrategy` recursively merges dictionaries through a
+noncopyable `MergeContext`, with built-in selection and conflict strategies. NSNumber
 casting distinguishes CFBoolean from numeric values and dispatches by ObjC type.
 128-bit wrapper structs store high/low UInt64 halves so the enum itself can exist
 on older Apple runtimes.
@@ -86,17 +88,17 @@ and test names refer to `Tests/EnigmaticTests/<name>.swift`.
 | Work area | Read/edit first | Relevant tests |
 | --- | --- | --- |
 | Tree cases and path keys | `E/Enigma.swift`, `E/Primitives/Enigma+Pin.swift` | `TreeContractTests`, `SerializationContractTests` |
-| Paths, read/write/delete, container access | `E/Enigma+Properties.swift`, `E/Capabilities/Enigma+Modification.swift`; helpers in `I/Enigma+Utility.swift` | `TreeContractTests`, `OperationsTests` |
-| Merge and resolvers | `E/Enigma+Merge.swift`; `merge` helper in `I/Enigma+Utility.swift` | `TreeContractTests`, `OperationsTests` |
-| Typed accessors, model entry points, Any/JSON/plist conversion | `E/Capabilities/Enigma+Casting.swift`, `I/Enigma+Utility.swift`, `I/Primitives/Reducer.swift` | `NumericContractTests`, `SerializationContractTests`, `CodableTests` |
+| Paths, read/write/delete, container access | `E/Capabilities/Enigma+Inspection.swift`, `E/Capabilities/Enigma+Modification.swift`; helpers in `I/Extensions/Enigma+Utility.swift` | `TreeContractTests`, `OperationsTests` |
+| Merge and resolvers | `E/Capabilities/Enigma+Modification.swift`, `E/Primitives/Enigma+{MergeStrategy,MergeContext}.swift`, `I/Primitives/{SelectOneMergeStrategy,InteruptMergePolicy}.swift` | `TreeContractTests`, `OperationsTests` |
+| Typed accessors, model entry points, Any/JSON/plist conversion | `E/Capabilities/Enigma+Conversion.swift`, `I/Extensions/Enigma+Utility.swift`, `I/Primitives/EnigmaConvertible{,Object}.swift` | `NumericContractTests`, `SerializationContractTests`, `CodableTests` |
 | Numeric equality and floating conversion | `E/Conformances/Enigma+Equatable.swift`, casting accessors, `I/Extensions/Double.swift` | `EquatableTests`, `NumericContractTests` |
 | 128-bit storage and Foundation bridging | `E/Primitives/Enigma+{Int128Value,UInt128Value}.swift`, `I/Primitives/ObjCType.swift`, `I/Extensions/NSValue.swift`, utility helpers | `NumericContractTests`, `SerializationContractTests` |
 | Literals and diagnostic text | `E/Conformances/Enigma+ExpressibleBy*.swift`, `Enigma+Custom{DebugString,String}Convertible.swift` in the same directory | `NumericContractTests`, `EquatableTests` |
 | Model -> tree encoding; conflicts/nested/super containers | `I/EnigmaEncoder/EnigmaEncoder.swift` plus `EnigmaEncoder+{Single,Keyed,Unkeyed}.swift` | `ContainerContractTests`, `NumericContractTests`, `CodableTests`, `StrategyContractTests` |
 | Tree -> model decoding; missing/type/end errors | `I/EnigmaDecoder/EnigmaDecoder.swift` plus `EnigmaDecoder+{Single,Keyed,Unkeyed}.swift` | `ContainerContractTests`, `NumericContractTests`, `CodableTests` |
 | Tree's own external Codable representation | `E/Conformances/Enigma+{Encodable,Decodable}.swift` | `SerializationContractTests`, `CodableTests` |
-| Strategy protocols and wrappers | `C/Codec+Strategies.swift`, `C/Codec+{Box,OptionalBox}.swift` | `StrategyContractTests` |
-| Optional wrapper/key behavior | Above plus `I/Codec/Codec+{OptionalEncoder,OptionalDecoder}.swift`, `C/Strategies/Swift/Optional+Codec.swift` | `StrategyContractTests`, `DocumentationExamplesTests` |
+| Strategy protocols and wrappers | `C/Codec.swift`, `C/Codec+{Box,OptionalBox}.swift` | `StrategyContractTests` |
+| Optional wrapper/key behavior | Above plus `I/Extensions/Keyed{Encoding,Decoding}Container+Codec.swift`, `C/Strategies/Swift/Optional+Codec.swift` | `StrategyContractTests`, `DocumentationExamplesTests` |
 | Array/dictionary/set/Result strategy composition | `C/Strategies/Swift/{Array,Dictionary,Set,Result}+Codec.swift` | `StrategyContractTests` |
 | Alternative decoding and aggregated causes | `C/Codec+Either.swift`, `E/Primitives/Enigma+CompositeError.swift` | `StrategyContractTests`, `ProductTests` |
 | Products sharing a container | `C/Codec+Each.swift`, compatibility variants `Codec+Each{2,3,4}.swift` | `StrategyContractTests`, `ProductTests` (XCTest class is **ContainersTests**) |
@@ -126,8 +128,10 @@ DocC has four pages: `Enigmatic.md` is the symbol/topic index; `TreeOperations.m
   `allPaths` excludes the root, includes empty containers, and traverses depth first
   with sorted dictionary keys and ascending array indices.
 - **Merge:** only dictionary/dictionary pairs recurse. Other pairs reach the
-  resolver as whole values with their path. `skip` keeps the existing value,
-  `replace` takes incoming, `skipEqual` accepts equality, `fail` throws. Mutating
+  resolver as whole values with their path. `replace: false` keeps the existing
+  value, `replace: true` takes incoming, `skipEqual: true` accepts equality, and
+  `skipEqual: false` rejects every conflict. Custom resolvers use `resolve:`;
+  stateful and noncopyable strategies use `strategy:`. Mutating
   merge assigns only after success, preserving the original on failure. Dictionary
   conflict order is unspecified.
 - **Numbers (product contract):** Enigma serves intermediate encoding and untyped
@@ -157,11 +161,12 @@ DocC has four pages: `Enigmatic.md` is the symbol/topic index; `TreeOperations.m
   as boundary examples; passing legacy tests does not establish the contract.
   Adding a case affects accessors, all three adapter containers, tree Codable
   switches, conversions, equality, literals/descriptions, and tests.
-- **Serialization:** `asSwiftAny` exports Swift/Foundation values. JSON export
+- **Serialization:** `asAny` exports Swift/Foundation values. JSON export
   rejects Date, Data, non-finite numbers, and 128-bit integers; scalar JSON roots
   need `.fragmentsAllowed`. Plist export rejects null and 128-bit integers; use
-  container document roots. Cast dictionary keys use their descriptions and reject
-  collisions. Conversion errors retain the offending path. Diagnostic strings
+  container document roots. Swift dictionary keys support String, Int, supported AnyHashable bases, and
+  CodingKeyRepresentable keys; Foundation dictionary keys must bridge to String.
+  Unsupported keys and collisions are rejected. Conversion errors retain the offending path. Diagnostic strings
   are not machine formats.
 - **Date/Data:** direct model-to-tree encoding retains native cases at root and
   nested positions. Encoding an existing tree through an external encoder is a
@@ -250,7 +255,7 @@ For API/DocC changes, use the macOS documentation commands from
 
 The README uses the current API and consumer behavior. The DocC catalog still
 describes public optional wrappers using outdated behavior. Current accessors are
-`allPaths`, `asSwiftAny`, `asJsonObject`,
+`allPaths`, `asAny`, `asJsonObject`,
 and `asPlistObject`; there is no public `rawObject` accessor.
 
 Source comments on `Codec.Box` also describe internal optional-key behavior as

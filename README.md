@@ -16,11 +16,11 @@ SwiftPM's default deployment targets; individual APIs have availability limits:
   Use the named seconds/milliseconds strategies on older Apple systems.
 - Linux uses the Swift toolchain runtime and does not have Apple OS availability limits.
 
-Add the package in Xcode, or use this SwiftPM dependency (pin a commit for a
+Add the package in Xcode, or use this SwiftPM dependency (pin a version for a
 reproducible build):
 
 ```swift
-.package(url: "https://github.com/SwiftUtility/Enigmatic.git", branch: "main")
+.package(url: "https://github.com/SwiftUtility/Enigmatic.git", .upToNextMajor(from: "3.0.0"))
 ```
 
 Add `.product(name: "Enigmatic", package: "Enigmatic")` to your target dependencies.
@@ -57,13 +57,13 @@ root. Its depth-first order uses sorted dictionary keys and ascending indices.
 ```swift
 let original: Enigma = ["settings": ["enabled": false, "retries": 2]]
 let patch: Enigma = ["settings": ["enabled": true]]
-let merged = original.merging(patch, or: Enigma.replace)
+let merged = original.merging(patch, replace: true)
 // ["settings": ["enabled": true, "retries": 2]]
 ```
 
 Only dictionaries merge recursively. Arrays and scalars go to the conflict
-resolver as whole values. `replace` chooses the incoming value, `skipEqual`
-accepts equal values and throws otherwise, and `fail` rejects every conflict.
+resolver as whole values. `replace: true` chooses the incoming value, `skipEqual: true`
+accepts equal values and throws otherwise, and `skipEqual: false` rejects every conflict.
 A custom resolver receives the path and both values. A throwing mutating merge
 leaves the original tree unchanged. Dictionary conflict visitation order is not
 specified.
@@ -114,11 +114,11 @@ failure throws and preserves its cause.
   `.double(Double(Float(0.1)))`. This supports JSON-style untyped comparison and
   does not imply equal binary values or successful exact typed conversions.
   NaNs compare equal, including Date timestamps; positive and negative zero compare
-  equal. `skipEqual` uses this same equality.
+  equal. `skipEqual: true` uses this same equality.
 - Direct `Date`/`Data` values encoded with `Enigma(encode:)` retain `.date`/`.data`
   at root and nested positions; explicit Codec strategies can select other
   representations.
-- `asSwiftAny` exports native Swift/Foundation values, using `NSNull` for null.
+- `asAny` exports native Swift/Foundation values, using `NSNull` for null.
   It does not promise a JSON/plist-compatible object.
 - `asJsonObject` rejects dates, data, non-finite numbers and 128-bit integers.
   Scalars require `.fragmentsAllowed` when passed to `JSONSerialization`.
