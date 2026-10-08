@@ -16,11 +16,11 @@ struct NumberComponents {
 
   @usableFromInline
   init(_ box: Enigma.Int128Box) {
-#warning("check")
-    if box.high.nonzeroBitCount == 0 {
-      negative = true
-      low = ~box.low
-      high = ~box.high
+    negative = box.high >> 63 != 0
+    if negative {
+      let (magnitudeLow, carry) = (~box.low).addingReportingOverflow(1)
+      low = magnitudeLow
+      high = (~box.high) &+ (carry ? 1 : 0)
     } else {
       low = box.low
       high = box.high
