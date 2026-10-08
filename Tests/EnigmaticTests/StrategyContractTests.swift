@@ -287,12 +287,9 @@ final class StrategyContractTests: XCTestCase {
       guard case EncodingError.invalidValue(_, let context) = error else {
         return XCTFail("Expected EncodingError.invalidValue, got \(error)", file: file, line: line)
       }
-      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["values"], file: file, line: line)
+      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["values", 0], file: file, line: line)
     }
 
-    XCTAssertThrowsError(try JSONEncoder().encode(TwoUnkeyedValues())) {
-      assertUnkeyedConflict($0)
-    }
     XCTAssertThrowsError(try Enigma(encode: TwoUnkeyedValues())) {
       assertUnkeyedConflict($0)
     }

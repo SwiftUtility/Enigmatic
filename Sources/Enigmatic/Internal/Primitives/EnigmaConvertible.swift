@@ -9,6 +9,7 @@ extension Enigma: EnigmaConvertible {
     self
   }
 
+  @usableFromInline
   static func make(pins: inout [Pin], value: Any) throws(DecodingError) -> Self {
     if type(of: value) is AnyClass {
       if let value = try (value as? any EnigmaConvertibleObject)?.convert(pins: &pins) {
@@ -65,7 +66,7 @@ extension Int64: EnigmaConvertible {
 @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
 extension Int128: EnigmaConvertible {
   func convert(pins _: inout [Enigma.Pin]) throws(DecodingError) -> Enigma? {
-    .int128(Enigma.Int128Value(self))
+    .int128(Enigma.Int128Box(self))
   }
 }
 
@@ -102,7 +103,7 @@ extension UInt64: EnigmaConvertible {
 @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
 extension UInt128: EnigmaConvertible {
   func convert(pins _: inout [Enigma.Pin]) throws(DecodingError) -> Enigma? {
-    .uint128(Enigma.UInt128Value(self))
+    .uint128(Enigma.UInt128Box(self))
   }
 }
 

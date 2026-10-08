@@ -26,8 +26,8 @@ extension NSValue: EnigmaConvertibleObject {
       if let enigma = number.asEnigma { return enigma }
     } else if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
       switch objCType.pointee {
-      case ObjCType.signedBitInt128: return .int128(Enigma.Int128Value(extract(seed: 0)))
-      case ObjCType.unsignedBitInt128: return .uint128(Enigma.UInt128Value(extract(seed: 0)))
+      case ObjCType.signedBitInt128: return .int128(Enigma.Int128Box(extract(seed: 0)))
+      case ObjCType.unsignedBitInt128: return .uint128(Enigma.UInt128Box(extract(seed: 0)))
       default: break
       }
     }

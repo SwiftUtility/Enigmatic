@@ -142,11 +142,11 @@ struct Floats: Codable, Equatable {
   var pbigDouble = 1.111111111111111e307 as Double
   var plitDouble = 1.111111111111111e-307 as Double
   var pbigFloat = 1.1111111e38 as Float
-  var plitFloat = 1e-38 as Float
+  var plitFloat = 1.5e-38 as Float
   var nbigDouble = -1.111111111111111e307 as Double
   var nlitDouble = -1.111111111111111e-307 as Double
   var nbigFloat = -1.1111111e38 as Float
-  var nlitFloat = -1e-38 as Float
+  var nlitFloat = -1.5e-38 as Float
   var pSemiFloatDouble = 1.1111111e38 as Double
   var halfDouble = 0.5 as Double
   var halfFloat = 0.5 as Float

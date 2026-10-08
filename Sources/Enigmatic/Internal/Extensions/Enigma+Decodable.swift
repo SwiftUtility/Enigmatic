@@ -78,12 +78,12 @@ extension Enigma {
       #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
       let value = try? container.decode(Int128.self)
     {
-      return .int128(Int128Value(value))
+      return .int128(Int128Box(value))
     } else if
       #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
       let value = try? container.decode(UInt128.self)
     {
-      return .uint128(UInt128Value(value))
+      return .uint128(UInt128Box(value))
     } else {
       throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
         codingPath: container.codingPath,
@@ -143,12 +143,12 @@ extension Enigma {
         #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
         let value = try? container.decode(Int128.self, forKey: key)
       {
-        result[key.stringValue] = .int128(Int128Value(value))
+        result[key.stringValue] = .int128(Int128Box(value))
       } else if
         #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
         let value = try? container.decode(UInt128.self, forKey: key)
       {
-        result[key.stringValue] = .uint128(UInt128Value(value))
+        result[key.stringValue] = .uint128(UInt128Box(value))
       } else {
         throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
           codingPath: container.codingPath,
@@ -211,12 +211,12 @@ extension Enigma {
         #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
         let value = try? container.decode(Int128.self)
       {
-        result.append(.int128(Int128Value(value)))
+        result.append(.int128(Int128Box(value)))
       } else if
         #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *),
         let value = try? container.decode(UInt128.self)
       {
-        result.append(.uint128(UInt128Value(value)))
+        result.append(.uint128(UInt128Box(value)))
       } else {
         throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
           codingPath: container.codingPath,

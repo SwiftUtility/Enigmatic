@@ -70,6 +70,7 @@ extension Enigma {
     }
   }
 
+  @usableFromInline
   func makePlistObject(pins: inout [Pin]) throws(EncodingError) -> NSObject {
     switch self {
     case .null:
@@ -128,18 +129,19 @@ extension Enigma {
     case .date(let value):
       return value as NSDate
     case .int128:
-      throw EncodingError.invalidValue(Int128Value.self, EncodingError.Context(
+      throw EncodingError.invalidValue(Int128Box.self, EncodingError.Context(
         codingPath: pins,
         debugDescription: "Can not convert Int128 to NSObject"
       ))
     case .uint128:
-      throw EncodingError.invalidValue(UInt128Value.self, EncodingError.Context(
+      throw EncodingError.invalidValue(UInt128Box.self, EncodingError.Context(
         codingPath: pins,
         debugDescription: "Can not convert UInt128 to NSObject"
       ))
     }
   }
 
+  @usableFromInline
   func makeJsonObject(pins: inout [Pin]) throws(EncodingError) -> NSObject {
     switch self {
     case .null: return NSNull()
@@ -196,12 +198,12 @@ extension Enigma {
         debugDescription: "Can not convert Date to JSONSerialization compatible NSObject"
       ))
     case .int128:
-      throw EncodingError.invalidValue(Int128Value.self, EncodingError.Context(
+      throw EncodingError.invalidValue(Int128Box.self, EncodingError.Context(
         codingPath: pins,
         debugDescription: "Can not convert Int128 to NSObject"
       ))
     case .uint128:
-      throw EncodingError.invalidValue(UInt128Value.self, EncodingError.Context(
+      throw EncodingError.invalidValue(UInt128Box.self, EncodingError.Context(
         codingPath: pins,
         debugDescription: "Can not convert UInt128 to NSObject"
       ))

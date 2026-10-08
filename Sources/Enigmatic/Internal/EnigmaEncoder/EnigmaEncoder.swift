@@ -1,5 +1,6 @@
 import Foundation
 
+@usableFromInline
 final class EnigmaEncoder {
   let userInfo: [CodingUserInfoKey: Any]
   private var nodes: [Node] = [Node(link: nil)]
@@ -139,6 +140,7 @@ final class EnigmaEncoder {
     }
   }
 
+  @usableFromInline
   static func encode(value: some Encodable, userInfo: [CodingUserInfoKey: Any]) throws -> Enigma {
     let state = EnigmaEncoder(userInfo: userInfo)
     let ref = Ref(nodeId: 0, failId: -1)

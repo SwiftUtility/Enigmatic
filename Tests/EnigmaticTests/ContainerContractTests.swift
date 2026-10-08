@@ -31,7 +31,7 @@ func assertDecodingError(
 final class ContainerContractTests: XCTestCase {
   typealias Key = Enigma.Pin
 
-  func testUnkeyedCountAndSharedStorage() throws {
+  func testUnkeyedContainerCannotBeReopened() throws {
     let result = try Enigma(encode: EncodingProbe { encoder in
       var first = encoder.unkeyedContainer()
       XCTAssertTrue(first.codingPath.isEmpty)
@@ -39,24 +39,29 @@ final class ContainerContractTests: XCTestCase {
       try first.encode(1)
       XCTAssertEqual(first.count, 1)
       var second = encoder.unkeyedContainer()
-      XCTAssertEqual(second.count, 1)
-      try second.encodeNil()
-      XCTAssertEqual(first.count, 2)
+      XCTAssertEqual(second.count, 0)
+      XCTAssertThrowsError(try second.encodeNil()) { error in
+        guard case EncodingError.invalidValue(_, let context) = error else {
+          return XCTFail("Unexpected \(error)")
+        }
+        XCTAssertEqual(context.codingPath.map(Key.init), [0])
+      }
+      XCTAssertEqual(first.count, 1)
       var nested = first.nestedContainer(keyedBy: Key.self)
-      XCTAssertEqual(nested.codingPath.map(Key.init), [2])
+      XCTAssertEqual(nested.codingPath.map(Key.init), [1])
       try nested.encode(true, forKey: "flag")
-      XCTAssertEqual(second.count, 3)
-      var array = second.nestedUnkeyedContainer()
+      XCTAssertEqual(first.count, 2)
+      var array = first.nestedUnkeyedContainer()
       try array.encode("a")
-      XCTAssertEqual(first.count, 4)
+      XCTAssertEqual(first.count, 3)
       var inherited = first.superEncoder().singleValueContainer()
       try inherited.encode(5)
-      XCTAssertEqual(second.count, 5)
+      XCTAssertEqual(first.count, 4)
     })
-    XCTAssertEqual(result, [1, nil, ["flag": true], ["a"], 5])
+    XCTAssertEqual(result, [1, ["flag": true], ["a"], 5])
   }
 
-  func testKeyedContainerCanBeReopened() throws {
+  func testKeyedContainerCanBeReopenedButUnkeyedChildCannot() throws {
     let result = try Enigma(encode: EncodingProbe { encoder in
       var first = encoder.container(keyedBy: Key.self)
       var second = encoder.container(keyedBy: Key.self)
@@ -65,10 +70,15 @@ final class ContainerContractTests: XCTestCase {
       var child = first.nestedUnkeyedContainer(forKey: "array")
       try child.encode(3)
       var reopened = second.nestedUnkeyedContainer(forKey: "array")
-      XCTAssertEqual(reopened.count, 1)
-      try reopened.encode(4)
+      XCTAssertEqual(reopened.count, 0)
+      XCTAssertThrowsError(try reopened.encode(4)) { error in
+        guard case EncodingError.invalidValue(_, let context) = error else {
+          return XCTFail("Unexpected \(error)")
+        }
+        XCTAssertEqual(context.codingPath.map(Key.init), ["array", 0])
+      }
     })
-    XCTAssertEqual(result, ["a": 1, "b": 2, "array": [3, 4]])
+    XCTAssertEqual(result, ["a": 1, "b": 2, "array": [3]])
   }
 
   func testConflictingContainersAndDuplicateWritesPreserveErrorPath() throws {
@@ -237,7 +247,12 @@ final class ContainerContractTests: XCTestCase {
     let tree = try Enigma(encode: EncodingProbe { encoder in
       var c = encoder.container(keyedBy: Key.self)
       try c.encode([1], forKey: "array")
-      try c.encode([2], forKey: "array")
+      XCTAssertThrowsError(try c.encode([2], forKey: "array")) { error in
+        guard case EncodingError.invalidValue(_, let context) = error else {
+          return XCTFail("Unexpected \(error)")
+        }
+        XCTAssertEqual(context.codingPath.map(Key.init), ["array", 0])
+      }
       try c.encode(["a": 1], forKey: "object")
       try c.encode(["b": 2], forKey: "object")
       var array = c.nestedUnkeyedContainer(forKey: "failures")
@@ -245,7 +260,7 @@ final class ContainerContractTests: XCTestCase {
       XCTAssertEqual(array.count, 1)
       try array.encode(2)
     })
-    XCTAssertEqual(tree, ["array": [1, 2], "object": ["a": 1, "b": 2], "failures": [["partial": 1], 2]])
+    XCTAssertEqual(tree, ["array": [1], "object": ["a": 1, "b": 2], "failures": [["partial": 1], 2]])
   }
 
   func testNullableSuperclassDecoders() throws {

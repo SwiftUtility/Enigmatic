@@ -4,7 +4,7 @@ import XCTest
 
 final class NumericContractTests: XCTestCase {
   @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
-  func testIntegerBoundariesAndExactConversions() throws {
+  func testIntegerBoundariesAndCanonicalConversions() throws {
     try checkIntegers(Int.self)
     try checkIntegers(Int8.self)
     try checkIntegers(Int16.self)
@@ -38,8 +38,18 @@ final class NumericContractTests: XCTestCase {
       XCTAssertEqual(tree.asUInt64, UInt64(exactly: value), "\(type): \(value) -> UInt64")
       XCTAssertEqual(tree.asInt128, Int128(exactly: value), "\(type): \(value) -> Int128")
       XCTAssertEqual(tree.asUInt128, UInt128(exactly: value), "\(type): \(value) -> UInt128")
-      XCTAssertEqual(tree.asDouble, Double(exactly: value), "\(type): \(value) -> Double")
-      XCTAssertEqual(tree.asFloat, Float(exactly: value), "\(type): \(value) -> Float")
+      let roundedDouble = Double(value)
+      if tree == .double(roundedDouble) {
+        XCTAssertEqual(tree.asDouble, roundedDouble, "\(type): \(value) -> Double")
+      } else {
+        XCTAssertNil(tree.asDouble, "\(type): \(value) -> Double")
+      }
+      let roundedFloat = Float(value)
+      if tree == .float(roundedFloat) {
+        XCTAssertEqual(tree.asFloat, roundedFloat, "\(type): \(value) -> Float")
+      } else {
+        XCTAssertNil(tree.asFloat, "\(type): \(value) -> Float")
+      }
       XCTAssertFalse(tree.description.isEmpty)
       XCTAssertFalse(tree.debugDescription.isEmpty)
       XCTAssertEqual(tree, tree)
@@ -241,6 +251,14 @@ final class NumericContractTests: XCTestCase {
     XCTAssertNil(Enigma.uint64(.max).asInt64)
     XCTAssertNil(Enigma.int64(16_777_217).asFloat)
     XCTAssertNil(Enigma.int64(9_007_199_254_740_993).asDouble)
+    XCTAssertEqual(Enigma.int64(1_000_000_000_000).asFloat, Float(1_000_000_000_000))
+    XCTAssertEqual(Enigma.int64(1_000_000_000_000).asDouble, Double(1_000_000_000_000))
+    XCTAssertEqual(Enigma.double(0.1).asFloat, Float(0.1))
+    XCTAssertEqual(Enigma.float(0.1).asDouble, Double(0.1))
+    XCTAssertNil(Enigma.double(Double(Float(0.1))).asFloat)
+    XCTAssertNil(Enigma.double(1e-45).asFloat)
+    XCTAssertNil(Enigma.double(.leastNonzeroMagnitude).asFloat)
+    XCTAssertNil(Enigma.double(Double(Float.greatestFiniteMagnitude).nextUp).asFloat)
     XCTAssertEqual(Enigma.double(.nan), .float(.nan))
     XCTAssertEqual(Enigma.float(.infinity), .double(.infinity))
     XCTAssertNotEqual(Enigma.float(.infinity), .double(.greatestFiniteMagnitude))
@@ -249,7 +267,12 @@ final class NumericContractTests: XCTestCase {
   func testLiteralDownscalingAndDescriptions() {
     for value in [0, -1, 256, -129, 65_536, -32_769, 4_294_967_296, -2_147_483_649, Int.max, Int.min] {
       XCTAssertEqual(Enigma(integerLiteral: value).asInt, value)
-      XCTAssertEqual(Enigma(floatLiteral: Double(value)).asDouble, Double(value))
+      let tree = Enigma(floatLiteral: Double(value))
+      if tree == .double(Double(value)) {
+        XCTAssertEqual(tree.asDouble, Double(value))
+      } else {
+        XCTAssertNil(tree.asDouble)
+      }
     }
     for value in [0.5, Double.pi, Double.greatestFiniteMagnitude] {
       XCTAssertEqual(Enigma(floatLiteral: value).asDouble, value)

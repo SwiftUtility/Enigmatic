@@ -41,9 +41,9 @@ public enum Enigma: Sendable {
   /// A date retained in its native form.
   case date(Date)
   /// A signed 128-bit integer on supported operating systems.
-  case int128(Int128Value)
+  case int128(Int128Box)
   /// An unsigned 128-bit integer on supported operating systems.
-  case uint128(UInt128Value)
+  case uint128(UInt128Box)
 }
 
 extension Enigma: Equatable {
@@ -55,27 +55,37 @@ extension Enigma: Equatable {
     switch lhs {
     case .null: rhs.isNull
     case .bool(let lhs): lhs == rhs.asBool
-    case .int(let lhs): lhs == rhs.asInt
-    case .int64(let lhs): lhs == rhs.asInt64
-    case .int32(let lhs): lhs == rhs.asInt32
-    case .int16(let lhs): lhs == rhs.asInt16
-    case .int8(let lhs): lhs == rhs.asInt8
-    case .uint(let lhs): lhs == rhs.asUInt
-    case .uint64(let lhs): lhs == rhs.asUInt64
-    case .uint32(let lhs): lhs == rhs.asUInt32
-    case .uint16(let lhs): lhs == rhs.asUInt16
-    case .uint8(let lhs): lhs == rhs.asUInt8
-    case .double(let lhs):
-      if case .float(let rhs) = rhs { rhs.isSame(double: lhs) } else { lhs.isSame(double: rhs.asDouble) }
-    case .float(let lhs):
-        if case .double(let rhs) = rhs { lhs.isSame(double: rhs) } else { lhs.isSame(float: rhs.asFloat) }
+    case .int(let lhs): rhs.isSame(integer: lhs)
+    case .int64(let lhs): rhs.isSame(integer: lhs)
+    case .int32(let lhs): rhs.isSame(integer: lhs)
+    case .int16(let lhs): rhs.isSame(integer: lhs)
+    case .int8(let lhs): rhs.isSame(integer: lhs)
+    case .uint(let lhs): rhs.isSame(integer: lhs)
+    case .uint64(let lhs): rhs.isSame(integer: lhs)
+    case .uint32(let lhs): rhs.isSame(integer: lhs)
+    case .uint16(let lhs): rhs.isSame(integer: lhs)
+    case .uint8(let lhs): rhs.isSame(integer: lhs)
+    case .double(let lhs): rhs.isSame(double: lhs)
+    case .float(let lhs): rhs.isSame(float: lhs)
     case .string(let lhs): lhs == rhs.asString
-    case .date(let lhs): lhs == rhs.asDate
+    case .date(let lhs):
+      lhs.timeIntervalSinceReferenceDate
+        .isSame(double: rhs.asDate?.timeIntervalSinceReferenceDate)
     case .data(let lhs): lhs == rhs.asData
     case .array(let lhs): lhs == rhs.asArray
     case .dictionary(let lhs): lhs == rhs.asDictionary
-    case .int128(let lhs): lhs.isSame(enigma: rhs)
-    case .uint128(let lhs): lhs.isSame(enigma: rhs)
+    case .int128(let lhs):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        rhs.isSame(integer: lhs.value)
+      } else {
+        false
+      }
+    case .uint128(let lhs):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        rhs.isSame(integer: lhs.value)
+      } else {
+        false
+      }
     }
   }
 }
@@ -148,7 +158,7 @@ extension Enigma: Encodable {
       try container.encode(value)
     case .float(let value):
       var container = encoder.singleValueContainer()
-      try container.encode(value)
+      try container.encode(asDouble ?? Double(value))
     case .string(let value):
       var container = encoder.singleValueContainer()
       try container.encode(value)
@@ -352,3 +362,9 @@ extension Enigma: ExpressibleByDictionaryLiteral {
     self = .dictionary([String: Enigma](uniqueKeysWithValues: elements))
   }
 }
+
+#warning("add/delete inlineable projectwide")
+#warning("add trait to disable inlining")
+#warning("add trait to enable short Ryu tables generation")
+#warning("inspect all #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)")
+

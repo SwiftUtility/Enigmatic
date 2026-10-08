@@ -1,5 +1,6 @@
 import Foundation
 
+@usableFromInline
 final class EnigmaDecoder {
   let userInfo: [CodingUserInfoKey: Any]
   private var path: [Link?] = [nil]
@@ -35,6 +36,7 @@ final class EnigmaDecoder {
     return path.count
   }
 
+  @usableFromInline
   static func decoder(enigma: Enigma, userInfo: [CodingUserInfoKey : Any]) -> Single {
     Single(state: EnigmaDecoder(userInfo: userInfo), value: enigma, pathId: 0)
   }
