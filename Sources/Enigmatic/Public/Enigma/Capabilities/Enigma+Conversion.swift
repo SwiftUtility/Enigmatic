@@ -106,8 +106,8 @@ extension Enigma {
     if case .bool(let value) = self { value } else { nil }
   }
 
-  /// Returns an exactly representable integer value, or nil for other values,
-  /// fractions, and overflow.
+  /// Returns an integer with the same canonical numeric value, or nil for
+  /// fractional values and overflow.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asInt: Int? {
@@ -130,8 +130,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable 64-bit integer, or nil for other values,
-  /// fractions, and overflow.
+  /// Returns a 64-bit integer with the same canonical numeric value, or nil
+  /// for fractional values and overflow.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asInt64: Int64? {
@@ -154,8 +154,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable 32-bit integer, or nil for other values,
-  /// fractions, and overflow.
+  /// Returns a 32-bit integer with the same canonical numeric value, or nil
+  /// for fractional values and overflow.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asInt32: Int32? {
@@ -178,8 +178,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable 16-bit integer, or nil for other values,
-  /// fractions, and overflow.
+  /// Returns a 16-bit integer with the same canonical numeric value, or nil
+  /// for fractional values and overflow.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asInt16: Int16? {
@@ -202,8 +202,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable 8-bit integer, or nil for other values,
-  /// fractions, and overflow.
+  /// Returns an 8-bit integer with the same canonical numeric value, or nil
+  /// for fractional values and overflow.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asInt8: Int8? {
@@ -226,8 +226,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable unsigned integer, or nil for other values,
-  /// negative values, fractions, and overflow.
+  /// Returns an unsigned integer with the same canonical numeric value, or nil
+  /// for negative, fractional, or out-of-range values.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asUInt: UInt? {
@@ -250,8 +250,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable unsigned 64-bit integer, or nil for other
-  /// values, negative values, fractions, and overflow.
+  /// Returns an unsigned 64-bit integer with the same canonical numeric value,
+  /// or nil for negative, fractional, or out-of-range values.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asUInt64: UInt64? {
@@ -274,8 +274,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable unsigned 32-bit integer, or nil for other
-  /// values, negative values, fractions, and overflow.
+  /// Returns an unsigned 32-bit integer with the same canonical numeric value,
+  /// or nil for negative, fractional, or out-of-range values.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asUInt32: UInt32? {
@@ -298,8 +298,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable unsigned 16-bit integer, or nil for other
-  /// values, negative values, fractions, and overflow.
+  /// Returns an unsigned 16-bit integer with the same canonical numeric value,
+  /// or nil for negative, fractional, or out-of-range values.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asUInt16: UInt16? {
@@ -322,8 +322,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable unsigned 8-bit integer, or nil for other
-  /// values, negative values, fractions, and overflow.
+  /// Returns an unsigned 8-bit integer with the same canonical numeric value,
+  /// or nil for negative, fractional, or out-of-range values.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asUInt8: UInt8? {
@@ -346,8 +346,9 @@ extension Enigma {
     }
   }
 
-  /// Returns a floating-point value. Conversion from Double permits rounding
-  /// and underflow but rejects finite overflow.
+  /// Returns a Float when its canonical numeric representation round-trips from
+  /// the source. Finite overflow and conversions that change that representation
+  /// return nil; NaN and infinity are preserved.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asFloat: Float? {
@@ -370,8 +371,8 @@ extension Enigma {
     }
   }
 
-  /// Returns a Double when the numeric value is exactly representable; values
-  /// already stored as Float convert without loss of their Float value.
+  /// Returns a Double with the same canonical numeric representation. Values
+  /// stored as Float convert from their canonical decimal value.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asDouble: Double? {
@@ -387,7 +388,7 @@ extension Enigma {
     case .uint16(let value): value.asDouble
     case .uint8(let value): value.asDouble
     case .double(let value): value
-    case .float(let value): Double(value)
+    case .float(let value): value.asDouble
     case .int128(let value): value.asDouble
     case .uint128(let value): value.asDouble
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
@@ -429,8 +430,8 @@ extension Enigma {
     if case .dictionary(let value) = self { value } else { nil }
   }
 
-  /// Returns an exactly representable signed 128-bit integer, or nil for other
-  /// values, fractions, and overflow.
+  /// Returns a signed 128-bit integer with the same canonical numeric value, or
+  /// nil for fractional values and overflow.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
   @inlinable
@@ -454,8 +455,8 @@ extension Enigma {
     }
   }
 
-  /// Returns an exactly representable unsigned 128-bit integer, or nil for other
-  /// values, negative values, fractions, and overflow.
+  /// Returns an unsigned 128-bit integer with the same canonical numeric value,
+  /// or nil for negative, fractional, or out-of-range values.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
   @inlinable

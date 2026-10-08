@@ -1,4 +1,10 @@
 extension Float {
+  @usableFromInline
+  var asDouble: Double? {
+    guard isFinite else { return Double(self) }
+    return NumberComponents(self).asDouble
+  }
+
   func isSame(float value: Float) -> Bool {
     guard !isNaN else { return value.isNaN }
     return self == value
@@ -11,15 +17,15 @@ extension Float {
   }
 
   func isSame<T: FixedWidthInteger>(integer value: T) -> Bool {
-    guard !isNaN else { return false }
-    guard Self(value) == self else { return false }
-    guard T(exactly: self) != value else { return true }
+    guard isFinite else { return false }
+    guard value.isOverFloat else { return Self(value) == self }
     return NumberComponents(value).asFloat == self
   }
 
   @usableFromInline
   func asInteger<T: FixedWidthInteger>(_: T.Type = T.self) -> T? {
     guard isFinite else { return nil }
-    return T(exactly: self) ?? NumberComponents(self).asInteger()
+    guard magnitude > Self(NumberComponents.exactFloat) else { return T(exactly: self) }
+    return NumberComponents(self).asInteger()
   }
 }

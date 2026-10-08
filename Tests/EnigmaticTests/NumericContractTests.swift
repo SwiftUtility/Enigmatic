@@ -256,7 +256,7 @@ final class NumericContractTests: XCTestCase {
     XCTAssertEqual(Enigma.double(0.1).asFloat, Float(0.1))
     XCTAssertEqual(Enigma.float(0.1).asDouble, Double(0.1))
     XCTAssertNil(Enigma.double(Double(Float(0.1))).asFloat)
-    XCTAssertNil(Enigma.double(1e-45).asFloat)
+    XCTAssertEqual(Enigma.double(1e-45).asFloat, Float(1e-45))
     XCTAssertNil(Enigma.double(.leastNonzeroMagnitude).asFloat)
     XCTAssertNil(Enigma.double(Double(Float.greatestFiniteMagnitude).nextUp).asFloat)
     XCTAssertEqual(Enigma.double(.nan), .float(.nan))
@@ -296,5 +296,18 @@ final class NumericContractTests: XCTestCase {
     tree.dictionary = ["a": 1]
     XCTAssertTrue(tree.isDictionary)
     XCTAssertFalse(tree.isArray)
+  }
+
+  func testCanonicalFloatDoubleRoundTrips() {
+    for (index, value) in [Float(1.1111111e38), -1.1111111e38, 1.5e-38, -1.5e-38, 0.1].enumerated() {
+      let parts = NumberComponents(value)
+      print("components", index, parts.low, parts.high, parts.exponent, parts.negative)
+      guard let widened = NumberComponents(value).asDouble else {
+        XCTFail("Float at index \(index) must convert to its canonical Double")
+        continue
+      }
+      XCTAssertEqual(NumberComponents(widened).asFloat, value)
+      XCTAssertEqual(Enigma.double(widened).asFloat, value)
+    }
   }
 }

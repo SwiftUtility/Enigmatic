@@ -1,11 +1,29 @@
 extension FixedWidthInteger {
   @usableFromInline
   var asDouble: Double? {
-    Double(exactly: self) ?? NumberComponents(self).asDouble
+    guard isOverDouble else { return Double(exactly: self) }
+    return NumberComponents(self).asDouble
   }
 
   @usableFromInline
   var asFloat: Float? {
-    Float(exactly: self) ?? NumberComponents(self).asFloat
+    guard isOverFloat else { return Float(exactly: self) }
+    return NumberComponents(self).asFloat
+  }
+
+  var isOverDouble: Bool {
+    if let limit = Magnitude(exactly: NumberComponents.exactDouble) {
+      magnitude > limit
+    } else {
+      true
+    }
+  }
+
+  var isOverFloat: Bool {
+    if let limit = Magnitude(exactly: NumberComponents.exactFloat) {
+      magnitude > limit
+    } else {
+      true
+    }
   }
 }

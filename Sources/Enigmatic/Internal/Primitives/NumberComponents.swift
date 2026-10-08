@@ -130,8 +130,20 @@ struct NumberComponents {
       return negative ? -.infinity : .infinity
     }
 
-    let magnitude = Double(high) * 18_446_744_073_709_551_616.0 + Double(low)
-    let value = (negative ? -magnitude : magnitude) * pow(10.0, Double(exponent))
+    var value = Double(high) * 18_446_744_073_709_551_616.0 + Double(low)
+    var power = Int(exponent)
+    while power >= 8 {
+      value *= 100_000_000.0
+      power -= 8
+    }
+    if power > 0 { value *= pow(10.0, Double(power)) }
+    power = Int(exponent)
+    while power <= -8 {
+      value /= 100_000_000.0
+      power += 8
+    }
+    if power < 0 { value /= pow(10.0, Double(-power)) }
+    if negative { value = -value }
     guard value.isFinite else { return nil }
     let result = Float(value)
     guard result.isFinite else { return nil }
@@ -148,8 +160,20 @@ struct NumberComponents {
       return negative ? -.infinity : .infinity
     }
 
-    let magnitude = Double(high) * 18_446_744_073_709_551_616.0 + Double(low)
-    let result = (negative ? -magnitude : magnitude) * pow(10.0, Double(exponent))
+    var result = Double(high) * 18_446_744_073_709_551_616.0 + Double(low)
+    var power = Int(exponent)
+    while power >= 8 {
+      result *= 100_000_000.0
+      power -= 8
+    }
+    if power > 0 { result *= pow(10.0, Double(power)) }
+    power = Int(exponent)
+    while power <= -8 {
+      result /= 100_000_000.0
+      power += 8
+    }
+    if power < 0 { result /= pow(10.0, Double(-power)) }
+    if negative { result = -result }
     guard result.isFinite else { return nil }
     let canonical = NumberComponents(result)
     guard canonical.low == low, canonical.high == high,
@@ -174,6 +198,9 @@ struct NumberComponents {
       exponent += 1
     }
   }
+
+  static let exactFloat: UInt32 = 16_777_216
+  static let exactDouble: UInt64 = 9_007_199_254_740_992
 }
 
 private struct FloatingDecimal64 {
