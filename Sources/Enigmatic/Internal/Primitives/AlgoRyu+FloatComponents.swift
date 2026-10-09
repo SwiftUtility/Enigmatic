@@ -96,23 +96,33 @@ extension AlgoRyu {
       let output: UInt32
 
       if vmTrailing || vrTrailing {
-        while vp / 10 > vm / 10 {
-          vmTrailing = vmTrailing && (vm % 10 == 0)
+        while true {
+          let (vp10, _) = vp.quotientAndRemainder(dividingBy: 10)
+          let (vm10, vmDigit) = vm.quotientAndRemainder(dividingBy: 10)
+          if vp10 <= vm10 { break }
+
+          let (vr10, vrDigit) = vr.quotientAndRemainder(dividingBy: 10)
+          vmTrailing = vmTrailing && vmDigit == 0
           vrTrailing = vrTrailing && lastRemovedDigit == 0
-          lastRemovedDigit = vr % 10
-          vr /= 10
-          vp /= 10
-          vm /= 10
+          lastRemovedDigit = vrDigit
+          vr = vr10
+          vp = vp10
+          vm = vm10
           removed += 1
         }
 
         if vmTrailing {
-          while vm % 10 == 0 {
+          while true {
+            let (vm10, vmDigit) = vm.quotientAndRemainder(dividingBy: 10)
+            if vmDigit != 0 { break }
+
+            let (vp10, _) = vp.quotientAndRemainder(dividingBy: 10)
+            let (vr10, vrDigit) = vr.quotientAndRemainder(dividingBy: 10)
             vrTrailing = vrTrailing && lastRemovedDigit == 0
-            lastRemovedDigit = vr % 10
-            vr /= 10
-            vp /= 10
-            vm /= 10
+            lastRemovedDigit = vrDigit
+            vr = vr10
+            vp = vp10
+            vm = vm10
             removed += 1
           }
         }
@@ -126,14 +136,32 @@ extension AlgoRyu {
           ? 1 : 0
         )
       } else {
-        while vp / 10 > vm / 10 {
-          lastRemovedDigit = vr % 10
-          vr /= 10
-          vp /= 10
-          vm /= 10
+        var roundUp = false
+
+        let (vp100, _) = vp.quotientAndRemainder(dividingBy: 100)
+        let (vm100, _) = vm.quotientAndRemainder(dividingBy: 100)
+        if vp100 > vm100 {
+          let (vr100, vrRemainder) = vr.quotientAndRemainder(dividingBy: 100)
+          roundUp = vrRemainder >= 50
+          vr = vr100
+          vp = vp100
+          vm = vm100
+          removed += 2
+        }
+
+        while true {
+          let (vp10, _) = vp.quotientAndRemainder(dividingBy: 10)
+          let (vm10, _) = vm.quotientAndRemainder(dividingBy: 10)
+          if vp10 <= vm10 { break }
+
+          let (vr10, vrRemainder) = vr.quotientAndRemainder(dividingBy: 10)
+          roundUp = vrRemainder >= 5
+          vr = vr10
+          vp = vp10
+          vm = vm10
           removed += 1
         }
-        output = vr + ((vr == vm || lastRemovedDigit >= 5) ? 1 : 0)
+        output = vr + ((vr == vm || roundUp) ? 1 : 0)
       }
 
       return Self(mantissa: output, exponent: e10 + removed)

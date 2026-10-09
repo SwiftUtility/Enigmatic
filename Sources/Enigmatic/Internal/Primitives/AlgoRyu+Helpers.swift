@@ -35,8 +35,6 @@ extension AlgoRyu {
   /// two `UInt64` words. This mirrors Ryu's 64x128 -> shifted-64 primitive.
   @inline(__always)
   static func mulShift64(_ m: UInt64, _ mul: Enigma.UInt128Box, _ j: Int32) -> UInt64 {
-    precondition(j >= 64 && j < 128)
-
     let p0 = m.multipliedFullWidth(by: mul.low)
     let p1 = m.multipliedFullWidth(by: mul.high)
     let (middle, carry) = p0.high.addingReportingOverflow(p1.low)
@@ -47,18 +45,18 @@ extension AlgoRyu {
     return (middle >> shift) | (high << (64 - shift))
   }
 
-  /// Ryu float primitive using only 32x32 -> 64 pieces.
+  /// Ryu float primitive using the full-width product of a 32-bit significand
+  /// and a 64-bit table factor.
   @inline(__always)
   static func mulShift32(_ m: UInt32, _ factor: UInt64, _ shift: Int32) -> UInt32 {
-    precondition(shift > 32 && shift < 96)
-
-    let factorLo = UInt32(truncatingIfNeeded: factor)
-    let factorHi = UInt32(truncatingIfNeeded: factor >> 32)
-    let bits0 = UInt64(m) * UInt64(factorLo)
-    let bits1 = UInt64(m) * UInt64(factorHi)
-    let sum = (bits0 >> 32) &+ bits1
-    let result = sum >> UInt64(shift - 32)
-    precondition(result <= UInt64(UInt32.max))
+    let product = UInt64(m).multipliedFullWidth(by: factor)
+    let shift = Int(shift)
+    let result: UInt64
+    if shift >= 64 {
+      result = product.high >> (shift - 64)
+    } else {
+      result = (product.low >> shift) | (product.high << (64 - shift))
+    }
     return UInt32(result)
   }
 
