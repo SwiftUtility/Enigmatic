@@ -27,45 +27,6 @@ extension Enigma {
       get { Int128(bitPattern: (UInt128(high) << 64) | UInt128(low)) }
       set { self = Self(newValue) }
     }
-
-    /// Converts to Float when the canonical decimal representation is preserved.
-    /// Returns nil when the value overflows or its canonical representation changes.
-    /// - Returns: The converted Float, or nil when conversion cannot preserve the value.
-    /// - Complexity: O(1), with a bounded decimal-component conversion.
-    @inlinable
-    public var asFloat: Float? {
-      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
-        value.asFloat
-      } else {
-        asFloatFallback()
-      }
-    }
-
-    /// Converts to Double when the canonical decimal representation is preserved.
-    /// Returns nil when the value overflows or its canonical representation changes.
-    /// - Returns: The converted Double, or nil when conversion cannot preserve the value.
-    /// - Complexity: O(1), with a bounded decimal-component conversion.
-    @inlinable
-    public var asDouble: Double? {
-      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
-        value.asDouble
-      } else {
-        asDoubleFallback()
-      }
-    }
-
-    /// Converts to a fixed-width integer when the canonical value is integral and fits.
-    /// Pass the target metatype to infer the requested integer type.
-    /// - Returns: The exact integer value, or nil for overflow.
-    /// - Complexity: O(1) for a fixed-width target.
-    @inlinable
-    public func asInteger<T: FixedWidthInteger>(_: T.Type = T.self) -> T? {
-      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
-        T(exactly: value)
-      } else {
-        asIntegerFallback()
-      }
-    }
   }
 }
 

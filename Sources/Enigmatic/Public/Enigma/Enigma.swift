@@ -28,8 +28,6 @@ public enum Enigma: Sendable {
   case uint8(UInt8)
   /// A 64-bit floating-point value.
   case double(Double)
-  /// A 32-bit floating-point value.
-  case float(Float)
   /// A string value.
   case string(String)
   /// An ordered sequence of values.
@@ -47,8 +45,9 @@ public enum Enigma: Sendable {
 }
 
 extension Enigma: Equatable {
-  /// Compares trees by value. Numeric cases compare using their canonical decimal
-  /// components, so equal values need not have the same storage case or IEEE bit pattern.
+  /// Compares numeric cases by their stored numeric values, so equal values need
+  /// not have the same integer storage case. Floating-point inputs retain their
+  /// binary value; for example, a Float is widened to Double before comparison.
   /// NaN compares equal to NaN, and positive and negative zero compare equal.
   /// - Complexity: O(n) in the number of visited values or output characters; recursive values use O(d) stack
   ///   space, where d is nesting depth.
@@ -67,7 +66,6 @@ extension Enigma: Equatable {
     case .uint16(let lhs): rhs.isSame(integer: lhs)
     case .uint8(let lhs): rhs.isSame(integer: lhs)
     case .double(let lhs): rhs.isSame(double: lhs)
-    case .float(let lhs): rhs.isSame(float: lhs)
     case .string(let lhs): lhs == rhs.asString
     case .date(let lhs):
       lhs.timeIntervalSinceReferenceDate
@@ -113,9 +111,10 @@ extension Enigma: Decodable {
 }
 
 extension Enigma: Encodable {
-  /// Writes this tree using the supplied encoder. A `.float` case is passed to
-  /// the encoder as `Float`; the target format may still discard Float/Double type
-  /// information. Format and value restrictions may throw.
+  /// Writes this tree using the supplied encoder. `Float` inputs have already
+  /// been widened to `Double` in the tree and are encoded as `Double`; the target
+  /// format may still discard floating-point type information. Format and value
+  /// restrictions may throw.
   /// - Complexity: O(n) in the number of encoded or decoded values, plus the cost of nested Codable
   ///   implementations; recursive traversal uses O(d) stack space, where d is nesting depth.
   public func encode(to encoder: Encoder) throws {
@@ -157,9 +156,6 @@ extension Enigma: Encodable {
       var container = encoder.singleValueContainer()
       try container.encode(value)
     case .double(let value):
-      var container = encoder.singleValueContainer()
-      try container.encode(value)
-    case .float(let value):
       var container = encoder.singleValueContainer()
       try container.encode(value)
     case .string(let value):
@@ -222,7 +218,6 @@ extension Enigma: CustomStringConvertible {
     case .uint16(let value): String(describing: value)
     case .uint8(let value): String(describing: value)
     case .double(let value): String(describing: value)
-    case .float(let value): String(describing: value)
     case .string(let value): String(describing: value)
     case .date(let value): String(describing: value)
     case .data(let value): String(describing: value)
@@ -253,7 +248,6 @@ extension Enigma: CustomDebugStringConvertible {
     case .uint16(let value): String(reflecting: value)
     case .uint8(let value): String(reflecting: value)
     case .double(let value): String(reflecting: value)
-    case .float(let value): String(reflecting: value)
     case .string(let value): String(reflecting: value)
     case .date(let value): String(reflecting: value)
     case .data(let value): String(reflecting: value)
@@ -276,7 +270,7 @@ extension Enigma: ExpressibleByNilLiteral {
 extension Enigma: ExpressibleByBooleanLiteral {
   /// Creates a Boolean tree value from a Boolean literal.
   /// - Complexity: O(1) for the literal value.
-  public init(booleanLiteral value: BooleanLiteralType) {
+  public init(booleanLiteral value: Bool) {
     self = .bool(value)
   }
 }
@@ -284,7 +278,7 @@ extension Enigma: ExpressibleByBooleanLiteral {
 extension Enigma: ExpressibleByIntegerLiteral {
   /// Creates an integer tree value from an integer literal.
   /// - Complexity: O(1) for the literal value.
-  public init(integerLiteral value: IntegerLiteralType) {
+  public init(integerLiteral value: Int) {
     self = if let value = UInt8(exactly: value) {
       .uint8(value)
     } else if let value = Int8(exactly: value) {
@@ -312,39 +306,15 @@ extension Enigma: ExpressibleByIntegerLiteral {
 extension Enigma: ExpressibleByFloatLiteral {
   /// Creates a floating-point tree value from a floating-point literal.
   /// - Complexity: O(1) for the literal value.
-  public init(floatLiteral value: FloatLiteralType) {
-    self = if let value = UInt8(exactly: value) {
-      .uint8(value)
-    } else if let value = Int8(exactly: value) {
-      .int8(value)
-    } else if let value = UInt16(exactly: value) {
-      .uint16(value)
-    } else if let value = Int16(exactly: value) {
-      .int16(value)
-    } else if let value = UInt32(exactly: value) {
-      .uint32(value)
-    } else if let value = Int32(exactly: value) {
-      .int32(value)
-    } else if let value = UInt64(exactly: value) {
-      .uint64(value)
-    } else if let value = Int64(exactly: value) {
-      .int64(value)
-    } else if let value = UInt(exactly: value) {
-      .uint(value)
-    } else if let value = Int(exactly: value) {
-      .int(value)
-    } else if let value = Float(exactly: value) {
-      .float(value)
-    } else {
-      .double(value)
-    }
+  public init(floatLiteral value: Double) {
+    self = .double(value)
   }
 }
 
 extension Enigma: ExpressibleByStringLiteral {
   /// Creates a string tree value from a string literal.
   /// - Complexity: O(1) for the literal value.
-  public init(stringLiteral value: StringLiteralType) {
+  public init(stringLiteral value: String) {
     self = .string(value)
   }
 }
@@ -367,6 +337,8 @@ extension Enigma: ExpressibleByDictionaryLiteral {
 }
 
 #warning("add/delete inlineable projectwide")
-#warning("add trait to disable inlining")
-#warning("add trait to enable short Ryu tables generation")
-#warning("inspect all #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)")
+#warning("дисклеймер на data date и nan/inf с предложением кодек боксов как альтернативы")
+#warning("сделать обрезанный информативный дескрипшен")
+#warning("добавить энкодеру свой каунт и кидать только если каунты разошлись со сторэджем, а повторное создание контейнера разрешить")
+#warning("заменить все try? на сбор в композит ошибку")
+#warning("генерить ошибку через композит эррор с кейсами =0, =1, >1")

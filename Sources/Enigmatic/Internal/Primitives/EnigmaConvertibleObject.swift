@@ -44,8 +44,7 @@ extension NSNumber {
     return switch objCType.pointee {
     case ObjCType.signedLong: .int(intValue)
     case ObjCType.unsignedLong: .uint(uintValue)
-    case ObjCType.double: .double(doubleValue)
-    case ObjCType.float: .float(floatValue)
+    case ObjCType.float, ObjCType.double: .double(doubleValue)
     case ObjCType.bool: .bool(boolValue)
     case ObjCType.signedChar: .int8(int8Value)
     case ObjCType.unsignedChar: .uint8(uint8Value)

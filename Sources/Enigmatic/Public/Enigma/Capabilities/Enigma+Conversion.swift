@@ -51,7 +51,6 @@ extension Enigma {
     case .uint16(let value): value
     case .uint8(let value): value
     case .double(let value): value
-    case .float(let value): value
     case .string(let value): value
     case .array(let value): value.map(\.asAny)
     case .dictionary(let value): value.mapValues(\.asAny)
@@ -116,7 +115,7 @@ extension Enigma {
 
   /// Returns an integer with the same canonical numeric value, or nil for
   /// fractional values and overflow.
-  /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
+  /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of numeric conversions.
   @inlinable
   public var asInt: Int? {
     switch self {
@@ -130,10 +129,19 @@ extension Enigma {
     case .uint32(let value): Int(exactly: value)
     case .uint16(let value): Int(exactly: value)
     case .uint8(let value): Int(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): Int(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -154,10 +162,19 @@ extension Enigma {
     case .uint32(let value): Int64(exactly: value)
     case .uint16(let value): Int64(exactly: value)
     case .uint8(let value): Int64(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): Int64(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int64(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int64(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -178,10 +195,19 @@ extension Enigma {
     case .uint32(let value): Int32(exactly: value)
     case .uint16(let value): Int32(exactly: value)
     case .uint8(let value): Int32(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): Int32(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int32(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int32(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -202,10 +228,19 @@ extension Enigma {
     case .uint32(let value): Int16(exactly: value)
     case .uint16(let value): Int16(exactly: value)
     case .uint8(let value): Int16(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): Int16(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int16(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int16(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -227,9 +262,18 @@ extension Enigma {
     case .uint16(let value): Int8(exactly: value)
     case .uint8(let value): Int8(exactly: value)
     case .double(let value): Int8(exactly: value)
-    case .float(let value): Int8(exactly: value)
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int8(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Int8(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -250,10 +294,19 @@ extension Enigma {
     case .uint32(let value): UInt(exactly: value)
     case .uint16(let value): UInt(exactly: value)
     case .uint8(let value): UInt(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): UInt(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -274,10 +327,19 @@ extension Enigma {
     case .uint32(let value): UInt64(exactly: value)
     case .uint16(let value): UInt64(exactly: value)
     case .uint8(let value): UInt64(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): UInt64(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt64(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt64(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -298,10 +360,19 @@ extension Enigma {
     case .uint32(let value): value
     case .uint16(let value): UInt32(exactly: value)
     case .uint8(let value): UInt32(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): UInt32(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt32(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt32(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -322,10 +393,19 @@ extension Enigma {
     case .uint32(let value): UInt16(exactly: value)
     case .uint16(let value): value
     case .uint8(let value): UInt16(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): UInt16(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt16(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt16(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -346,59 +426,85 @@ extension Enigma {
     case .uint32(let value): UInt8(exactly: value)
     case .uint16(let value): UInt8(exactly: value)
     case .uint8(let value): value
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
-    case .int128(let value): value.asInteger()
-    case .uint128(let value): value.asInteger()
+    case .double(let value): UInt8(exactly: value)
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt8(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        UInt8(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
 
-  /// Returns a Float when its canonical numeric representation round-trips from
-  /// the source. Finite overflow and conversions that change that representation
-  /// return nil; NaN and infinity are preserved.
+  /// Returns the nearest Float when conversion does not overflow or underflow
+  /// a nonzero finite value to zero. NaN and infinity are preserved.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asFloat: Float? {
     switch self {
-    case .int(let value): value.asFloat
-    case .int64(let value): value.asFloat
-    case .int32(let value): value.asFloat
-    case .int16(let value): value.asFloat
-    case .int8(let value): value.asFloat
-    case .uint(let value): value.asFloat
-    case .uint64(let value): value.asFloat
-    case .uint32(let value): value.asFloat
-    case .uint16(let value): value.asFloat
-    case .uint8(let value): value.asFloat
+    case .int(let value): Double(exactly: value)?.asFloat
+    case .int64(let value): Double(exactly: value)?.asFloat
+    case .int32(let value): Double(exactly: value)?.asFloat
+    case .int16(let value): Double(exactly: value)?.asFloat
+    case .int8(let value): Double(exactly: value)?.asFloat
+    case .uint(let value): Double(exactly: value)?.asFloat
+    case .uint64(let value): Double(exactly: value)?.asFloat
+    case .uint32(let value): Double(exactly: value)?.asFloat
+    case .uint16(let value): Double(exactly: value)?.asFloat
+    case .uint8(let value): Double(exactly: value)?.asFloat
     case .double(let value): value.asFloat
-    case .float(let value): value
-    case .int128(let value): value.asFloat
-    case .uint128(let value): value.asFloat
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Double(exactly: value.value)?.asFloat
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Double(exactly: value.value)?.asFloat
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
 
-  /// Returns a Double with the same canonical numeric representation. Values
-  /// stored as Float convert from their canonical decimal value.
+  /// Returns a Double when the integer value is exactly representable, or the
+  /// stored Double value. Floating-point conversions preserve the stored value.
   /// - Complexity: O(1); the accessor checks one enum case and performs a fixed number of exact numeric conversions.
   @inlinable
   public var asDouble: Double? {
     switch self {
-    case .int(let value): value.asDouble
-    case .int64(let value): value.asDouble
-    case .int32(let value): value.asDouble
-    case .int16(let value): value.asDouble
-    case .int8(let value): value.asDouble
-    case .uint(let value): value.asDouble
-    case .uint64(let value): value.asDouble
-    case .uint32(let value): value.asDouble
-    case .uint16(let value): value.asDouble
-    case .uint8(let value): value.asDouble
+    case .int(let value): Double(exactly: value)
+    case .int64(let value): Double(exactly: value)
+    case .int32(let value): Double(exactly: value)
+    case .int16(let value): Double(exactly: value)
+    case .int8(let value): Double(exactly: value)
+    case .uint(let value): Double(exactly: value)
+    case .uint64(let value): Double(exactly: value)
+    case .uint32(let value): Double(exactly: value)
+    case .uint16(let value): Double(exactly: value)
+    case .uint8(let value): Double(exactly: value)
     case .double(let value): value
-    case .float(let value): value.asDouble
-    case .int128(let value): value.asDouble
-    case .uint128(let value): value.asDouble
+    case .int128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Double(exactly: value.value)
+      } else {
+        nil
+      }
+    case .uint128(let value):
+      if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+        Double(exactly: value.value)
+      } else {
+        nil
+      }
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
     }
   }
@@ -455,8 +561,7 @@ extension Enigma {
     case .uint32(let value): Int128(exactly: value)
     case .uint16(let value): Int128(exactly: value)
     case .uint8(let value): Int128(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
+    case .double(let value): Int128(exactly: value)
     case .int128(let value): value.value
     case .uint128(let value): Int128(exactly: value.value)
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil
@@ -480,8 +585,7 @@ extension Enigma {
     case .uint32(let value): UInt128(exactly: value)
     case .uint16(let value): UInt128(exactly: value)
     case .uint8(let value): UInt128(exactly: value)
-    case .double(let value): value.asInteger()
-    case .float(let value): value.asInteger()
+    case .double(let value): UInt128(exactly: value)
     case .int128(let value): UInt128(exactly: value.value)
     case .uint128(let value): value.value
     case .array, .bool, .data, .date, .dictionary, .null, .string: nil

@@ -21,7 +21,7 @@ extension Enigma {
         defer { current.removeLast() }
         element.collectPins(into: &pins, current: &current)
       }
-    case .null, .bool, .data, .date, .string, .double, .float,
+    case .null, .bool, .data, .date, .string, .double,
         .int, .int8, .int16, .int32, .int64, .int128,
         .uint, .uint8, .uint16, .uint32, .uint64, .uint128:
       break
@@ -102,12 +102,6 @@ extension Enigma {
       return value as NSNumber
     case .double(let value):
       return value as NSNumber
-    case .float(let value):
-      return if let value = value.asDouble {
-        value as NSNumber
-      } else {
-        value as NSNumber
-      }
     case .string(let value):
       return value as NSString
     case .array(let value):
@@ -163,18 +157,6 @@ extension Enigma {
     case .double(let value):
       guard !value.isFinite else { return value as NSNumber }
       throw EncodingError.invalidValue(Double.self, EncodingError.Context(
-        codingPath: pins,
-        debugDescription: "Can not convert \(value) to JSONSerialization compatible NSObject"
-      ))
-    case .float(let value):
-      guard !value.isFinite else {
-        return if let value = value.asDouble {
-          value as NSNumber
-        } else {
-          value as NSNumber
-        }
-      }
-      throw EncodingError.invalidValue(Float.self, EncodingError.Context(
         codingPath: pins,
         debugDescription: "Can not convert \(value) to JSONSerialization compatible NSObject"
       ))

@@ -4,20 +4,20 @@ Distinguish the typed tree from a format-specific representation.
 
 ## Numeric identity and conversion
 
-The tree keeps explicit numeric cases. A finite Float or Double is identified by
-its shortest round-trip decimal components; integer cases use their exact decimal
-value. Numeric equality compares these canonical values, not IEEE bit patterns or
-storage cases. For example, `.float(0.1)` equals `.double(0.1)`, while
-`.float(0.1)` does not equal `.double(Double(Float(0.1)))`.
+The tree stores integers in width-specific integer cases and floating-point values
+in a `Double` case. A `Float` passed to an Enigma encoder is widened to `Double`
+before it enters the tree, preserving the exact numeric value of that `Float`.
+Numeric equality compares stored values, regardless of integer storage width. For
+example, a Float value `f` is equal to `.double(Double(f))`, and can differ from
+`.double(0.1)` when `f` is `Float(0.1)`. NaN values compare equal to one another,
+and positive and negative zero compare equal. `Enigma` does not conform to
+`Hashable`.
 
-Numeric accessors succeed only when the destination has the same canonical value.
-This is stricter than ordinary floating-point rounding and is not the same as
-requiring the source's binary fraction to be exactly representable. Integer
-accessors additionally require an integral canonical value within the destination
-range. Finite overflow or a changed canonical value returns nil. NaN and infinity
-are preserved by Float/Double accessors; integer accessors reject them. NaN values
-compare equal to one another, and positive and negative zero compare equal.
-`Enigma` does not conform to `Hashable`.
+Integer accessors return a value only when the stored number is an exact integer
+within the destination range. `asDouble` requires integer values to be exactly
+representable as `Double`. `asFloat` returns the nearest `Float` unless conversion
+overflows to infinity or underflows a nonzero finite value to zero. NaN and
+infinity are preserved by floating-point accessors.
 
 ## Foundation and external encoders
 
@@ -33,17 +33,13 @@ JSONSerialization's `fragmentsAllowed` option for a scalar root. `asPlistObject`
 rejects null and 128-bit integers. Array/dictionary roots are the portable choice
 for property-list document encoding. Conversion errors carry the offending path.
 
-The Codable path preserves the numeric type at the encoder boundary:
-`Enigma.encode(to:)` passes a `.float` case to the supplied `Encoder` as `Float`.
-The legacy Foundation bridges `asJsonObject` and `asPlistObject` instead box it as
-an `NSNumber` for `JSONSerialization` and `PropertyListSerialization`. Those
-serializers write an ordinary number without a Float/Double type tag, so a bridged
-Float can come back as a Double with different canonical components. In that case
-the Float accessor returns nil and numeric equality with the original Float is
-false. A Codable encoder can also target an untyped format; passing Float to it
-does not add a type tag to that format. A wire-format round trip preserves numeric
-identity only when the serialized decimal output has the same canonical
-components.
+`Enigma.encode(to:)` encodes floating-point values as `Double`. A `Float` passed
+through an Enigma encoder has already been widened to `Double`, so this does not
+preserve its original Float type. `asJsonObject` and `asPlistObject` also expose
+ordinary floating-point numbers without a Float/Double type tag. A serializer
+round trip preserves numeric identity when its parsed `Double` value is unchanged.
+`asFloat` can then produce the nearest Float if conversion does not overflow or
+underflow a nonzero finite value to zero.
 
 Root and nested Date/Data preserve their native cases when building an Enigma
 tree. Encoding that tree through an external encoder preserves the existing

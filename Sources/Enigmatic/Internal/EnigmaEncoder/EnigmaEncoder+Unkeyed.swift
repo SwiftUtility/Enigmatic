@@ -30,7 +30,7 @@ extension EnigmaEncoder {
     }
 
     mutating func encode(_ value: Float) throws {
-      try state.store(.float(value), ref: state.nestedRef(ref: ref, key: nil))
+      try state.store(.double(Double(value)), ref: state.nestedRef(ref: ref, key: nil))
     }
 
     mutating func encode(_ value: Int) throws {

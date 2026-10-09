@@ -15,7 +15,6 @@ extension Enigma {
     case .uint16(let value): try container.encode(value)
     case .uint8(let value): try container.encode(value)
     case .double(let value): try container.encode(value)
-    case .float(let value): try container.encode(value)
     case .string(let value): try container.encode(value)
     case .array(let array):
       var container = container.nestedUnkeyedContainer()
@@ -64,7 +63,6 @@ extension Enigma {
     case .uint16(let value): try container.encode(value, forKey: pin)
     case .uint8(let value): try container.encode(value, forKey: pin)
     case .double(let value): try container.encode(value, forKey: pin)
-    case .float(let value): try container.encode(value, forKey: pin)
     case .string(let value): try container.encode(value, forKey: pin)
     case .array(let array):
       var container = container.nestedUnkeyedContainer(forKey: pin)

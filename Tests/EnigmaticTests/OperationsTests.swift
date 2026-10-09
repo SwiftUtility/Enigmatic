@@ -8,24 +8,27 @@ final class OperationsTests: XCTestCase {
     XCTAssertEqual(value, decoded)
   }
 
-//  func testMerge() throws {
-//    var a = A()
-//    var enigma = try Enigma(encode: a)
-//    XCTAssertEqual(try enigma.decode(), a)
-//    XCTAssertThrowsError(try enigma.merging(encoded: a, policy: Enigma.fail))
-//    XCTAssertNoThrow(try enigma.merging(encoded: a, policy: Enigma.skipEqual))
-//    XCTAssertNoThrow(try enigma.merging(encoded: a, policy: Enigma.replace))
-//    a.int1 += 1
-//    XCTAssertThrowsError(try enigma.merging(encoded: a, policy: Enigma.fail))
-//    XCTAssertThrowsError(try enigma.merging(encoded: a, policy: Enigma.skipEqual))
-//    XCTAssertNoThrow(try enigma.merge(encoded: a, policy: Enigma.replace))
-//    let b = B()
-//    XCTAssertNoThrow(try enigma.merging(encoded: b, policy: Enigma.skipEqual))
-//    XCTAssertNoThrow(try enigma.merging(encoded: b, policy: Enigma.replace))
-//    XCTAssertNoThrow(try enigma.merge(encoded: b, policy: Enigma.fail))
-//    XCTAssertEqual(try enigma.decode(), b)
-//    XCTAssertEqual(try enigma.decode(), a)
-//  }
+  func testMerge() throws {
+    var a = A()
+    var enigma = try Enigma(encode: a)
+    XCTAssertEqual(try enigma.decode(), a)
+    let same = try Enigma(encode: a)
+    XCTAssertThrowsError(try enigma.merging(same, skipEqual: false))
+    XCTAssertNoThrow(try enigma.merging(same, skipEqual: true))
+    XCTAssertNoThrow(enigma.merging(same, replace: true))
+    a.int1 += 1
+    let changed = try Enigma(encode: a)
+    XCTAssertThrowsError(try enigma.merging(changed, skipEqual: false))
+    XCTAssertThrowsError(try enigma.merging(changed, skipEqual: true))
+    XCTAssertNoThrow(enigma.merge(changed, replace: true))
+    let b = B()
+    let other = try Enigma(encode: b)
+    XCTAssertNoThrow(try enigma.merging(other, skipEqual: true))
+    XCTAssertNoThrow(enigma.merging(other, replace: true))
+    XCTAssertNoThrow(try enigma.merge(other, skipEqual: false))
+    XCTAssertEqual(try enigma.decode(), b)
+    XCTAssertEqual(try enigma.decode(), a)
+  }
 
   func testPinsSubscript() throws {
     var enigma = [0] as Enigma

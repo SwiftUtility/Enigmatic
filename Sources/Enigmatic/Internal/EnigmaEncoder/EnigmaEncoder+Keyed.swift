@@ -26,7 +26,7 @@ extension EnigmaEncoder {
     }
 
     mutating func encode(_ value: Float, forKey key: Key) throws {
-      try state.store(.float(value), ref: state.nestedRef(ref: ref, key: key))
+      try state.store(.double(Double(value)), ref: state.nestedRef(ref: ref, key: key))
     }
 
     mutating func encode(_ value: Int, forKey key: Key) throws {

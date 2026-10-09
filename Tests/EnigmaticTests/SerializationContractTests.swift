@@ -113,8 +113,8 @@ final class SerializationContractTests: XCTestCase {
     }
 
     let largest = Enigma.float(.greatestFiniteMagnitude)
-    XCTAssertNotEqual(largest.asDouble.map(Enigma.double), largest)
-    XCTAssertNotEqual(Enigma.double(Double(Float.greatestFiniteMagnitude)), largest)
+    XCTAssertEqual(largest.asDouble.map(Enigma.double), largest)
+    XCTAssertEqual(Enigma.double(Double(Float.greatestFiniteMagnitude)), largest)
   }
 
   private func assertFloatBridgeRoundTrip(
@@ -126,7 +126,11 @@ final class SerializationContractTests: XCTestCase {
   ) {
     if let canonicalWidening {
       XCTAssertEqual(roundTrip, canonicalWidening, file: file, line: line)
-      XCTAssertNotNil(roundTrip.asFloat, file: file, line: line)
+      if source == 0 {
+        XCTAssertEqual(roundTrip.asFloat, 0, file: file, line: line)
+      } else {
+        XCTAssertEqual(roundTrip.asFloat?.bitPattern, source.bitPattern, file: file, line: line)
+      }
     } else {
       let binaryWidening = Double(source)
       let original = Enigma.float(source)
@@ -207,8 +211,6 @@ final class SerializationContractTests: XCTestCase {
       case .data, .date, .int128, .uint128:
         XCTAssertThrowsError(try value.asJsonObject)
       case .double(let number) where !number.isFinite:
-        XCTAssertThrowsError(try value.asJsonObject)
-      case .float(let number) where !number.isFinite:
         XCTAssertThrowsError(try value.asJsonObject)
       default:
         XCTAssertNoThrow(try value.asJsonObject)

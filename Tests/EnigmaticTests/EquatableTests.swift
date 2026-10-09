@@ -70,10 +70,9 @@ final class EquatableTests: XCTestCase {
     XCTAssertEqual(Enigma.int64(-9_007_199_254_740_992), .double(-9_007_199_254_740_992))
     XCTAssertNotEqual(Enigma.int64(9_007_199_254_740_993), .double(9_007_199_254_740_992))
 
-    // Above the safe boundary, preserve decimal equality rather than the exact
-    // integer represented by the floating-point bit pattern.
-    XCTAssertEqual(Enigma.float(1e12), .int64(1_000_000_000_000))
-    XCTAssertNotEqual(Enigma.float(1e12), .int64(999_999_995_904))
+    // Float input is widened exactly, so identity follows the binary Float value.
+    XCTAssertEqual(Enigma.float(1e12), .int64(999_999_995_904))
+    XCTAssertNotEqual(Enigma.float(1e12), .int64(1_000_000_000_000))
   }
 
   func testFraction() throws {
@@ -82,22 +81,23 @@ final class EquatableTests: XCTestCase {
     checkEq(.float(0.5), .double(0.5))
     XCTAssertEqual(Float(0.1 as Double), 0.1 as Float)
     XCTAssertNotEqual(Double(0.1 as Float), 0.1 as Double)
-    checkEq(.float(0.1), .double(0.1))
+    checkDif(.float(0.1), .double(0.1))
+    checkEq(.float(0.1), .double(Double(Float(0.1))))
     XCTAssertNotEqual(Double.nan, Double.nan)
     XCTAssertEqual(Enigma.double(Double.nan), Enigma.double(Double.nan))
     XCTAssertNotEqual(Float.nan, Float.nan)
     XCTAssertEqual(Enigma.float(Float.nan), Enigma.float(Float.nan))
   }
 
-  func testMixedFloatingEqualityUsesDecimalRepresentations() {
+  func testFloatInputUsesItsWidenedDoubleValueForIdentity() {
     let float = Enigma.float(0.1)
     let widened = Enigma.double(Double(Float(0.1)))
-    XCTAssertEqual(float, .double(0.1))
-    XCTAssertEqual(Enigma.double(0.1), float)
+    XCTAssertEqual(float, widened)
+    XCTAssertNotEqual(float, .double(0.1))
     XCTAssertNotEqual(.double(0.1), widened)
 
     let different: [(Enigma, Enigma)] = [
-      (widened, float),
+      (widened, .double(0.1)),
       (.double(16_777_217), .float(16_777_216)),
       (.double(.leastNonzeroMagnitude), .float(0)),
       (.double(-Double.leastNonzeroMagnitude), .float(-0.0)),
@@ -110,7 +110,7 @@ final class EquatableTests: XCTestCase {
       XCTAssertNotEqual(Enigma.dictionary(["value": .array([lhs])]), .dictionary(["value": .array([rhs])]))
     }
     XCTAssertFalse([widened].contains(.double(0.1)))
-    XCTAssertFalse([widened].contains(float))
+    XCTAssertTrue([widened].contains(float))
   }
 
   func testNumericEqualityLaws() {
@@ -136,7 +136,7 @@ final class EquatableTests: XCTestCase {
       bits = bits &* 1_664_525 &+ 1_013_904_223
       let value = Float(bitPattern: bits)
       if value.isFinite {
-        values += [.float(value), .double(Double(String(value))!), .double(Double(value))]
+        values += [.float(value), .double(Double(value))]
       }
     }
     if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
@@ -158,12 +158,12 @@ final class EquatableTests: XCTestCase {
     XCTAssertNotEqual(Enigma.double(.infinity), .float(-.infinity))
     XCTAssertNotEqual(Enigma.double(.greatestFiniteMagnitude), .float(.infinity))
     XCTAssertNotEqual(Enigma.bool(false), .int(0))
-    XCTAssertEqual(Enigma.float(1e12), .int64(1_000_000_000_000))
-    XCTAssertNotEqual(Enigma.float(1e12), .int64(999_999_995_904))
+    XCTAssertEqual(Enigma.float(1e12), .int64(999_999_995_904))
+    XCTAssertNotEqual(Enigma.float(1e12), .int64(1_000_000_000_000))
     XCTAssertEqual(Enigma.double(-1e12), .int64(-1_000_000_000_000))
     if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
-      XCTAssertEqual(Enigma.double(1e23), .uint128(.init(100_000_000_000_000_000_000_000)))
-      XCTAssertNotEqual(Enigma.double(1e23), .int128(.init(Int128(Double(1e23)))))
+      XCTAssertNotEqual(Enigma.double(1e23), .uint128(.init(100_000_000_000_000_000_000_000)))
+      XCTAssertEqual(Enigma.double(1e23), .int128(.init(Int128(Double(1e23)))))
     }
   }
 
@@ -185,23 +185,21 @@ final class EquatableTests: XCTestCase {
     }
   }
 
-  func testSkipEqualUsesDecimalEquality() throws {
+  func testSkipEqualUsesStoredNumericIdentity() throws {
     let a = Enigma.double(0.1)
     let b = Enigma.float(0.1)
     let c = Enigma.double(Double(Float(0.1)))
-    XCTAssertEqual(try a.merging(b, skipEqual: true).asDouble?.bitPattern, Double(0.1).bitPattern)
-    XCTAssertEqual(try b.merging(a, skipEqual: true).asFloat?.bitPattern, Float(0.1).bitPattern)
-    XCTAssertThrowsError(try b.merging(c, skipEqual: true))
+    XCTAssertThrowsError(try a.merging(b, skipEqual: true))
+    XCTAssertEqual(try b.merging(c, skipEqual: true).asDouble?.bitPattern, Double(Float(0.1)).bitPattern)
     XCTAssertThrowsError(try a.merging(c, skipEqual: true))
-    // Both groupings must reject the conflicting decimal representation.
+    // Both groupings must reject the different stored Double value.
     XCTAssertThrowsError(try a.merging(b, skipEqual: true).merging(c, skipEqual: true))
     XCTAssertThrowsError(try a.merging(b.merging(c, skipEqual: true), skipEqual: true))
     XCTAssertThrowsError(try Enigma.double(.leastNonzeroMagnitude).merging(.float(0), skipEqual: true))
-    XCTAssertEqual(try Enigma.array([a]).merging(.array([b]), skipEqual: true), .array([a]))
+    XCTAssertThrowsError(try Enigma.array([a]).merging(.array([b]), skipEqual: true))
 
     var tree = Enigma.dictionary(["value": .array([a])])
-    XCTAssertNoThrow(try tree.merge(.dictionary(["value": .array([b])]), skipEqual: true))
-    XCTAssertThrowsError(try tree.merge(.dictionary(["value": .array([c])]), skipEqual: true)) { error in
+    XCTAssertThrowsError(try tree.merge(.dictionary(["value": .array([b])]), skipEqual: true)) { error in
       guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
       XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["value"])
     }

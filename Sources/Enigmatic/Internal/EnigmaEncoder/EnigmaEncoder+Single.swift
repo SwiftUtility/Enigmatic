@@ -42,7 +42,7 @@ extension EnigmaEncoder {
     }
 
     mutating func encode(_ value: Float) throws {
-      try state.store(.float(value), ref: ref)
+      try state.store(.double(Double(value)), ref: ref)
     }
 
     mutating func encode(_ value: Int) throws {

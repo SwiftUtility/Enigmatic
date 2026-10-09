@@ -44,12 +44,13 @@ final class NumericContractTests: XCTestCase {
       } else {
         XCTAssertNil(tree.asDouble, "\(type): \(value) -> Double")
       }
-      let roundedFloat = Float(value)
-      if tree == .float(roundedFloat) {
-        XCTAssertEqual(tree.asFloat, roundedFloat, "\(type): \(value) -> Float")
-      } else {
-        XCTAssertNil(tree.asFloat, "\(type): \(value) -> Float")
+      let expectedFloat = Double(exactly: value).flatMap { double -> Float? in
+        let float = Float(double)
+        guard !double.isFinite || float.isFinite else { return nil }
+        guard double == 0 || float != 0 else { return nil }
+        return float
       }
+      XCTAssertEqual(tree.asFloat, expectedFloat, "\(type): \(value) -> Float")
       XCTAssertFalse(tree.description.isEmpty)
       XCTAssertFalse(tree.debugDescription.isEmpty)
       XCTAssertEqual(tree, tree)
@@ -249,16 +250,18 @@ final class NumericContractTests: XCTestCase {
     }
     XCTAssertNil(Enigma.int(-1).asUInt)
     XCTAssertNil(Enigma.uint64(.max).asInt64)
-    XCTAssertNil(Enigma.int64(16_777_217).asFloat)
+    XCTAssertEqual(Enigma.int64(16_777_217).asFloat, Float(16_777_217))
     XCTAssertNil(Enigma.int64(9_007_199_254_740_993).asDouble)
     XCTAssertEqual(Enigma.int64(1_000_000_000_000).asFloat, Float(1_000_000_000_000))
     XCTAssertEqual(Enigma.int64(1_000_000_000_000).asDouble, Double(1_000_000_000_000))
     XCTAssertEqual(Enigma.double(0.1).asFloat, Float(0.1))
-    XCTAssertEqual(Enigma.float(0.1).asDouble, Double(0.1))
-    XCTAssertNil(Enigma.double(Double(Float(0.1))).asFloat)
+    XCTAssertEqual(Enigma.float(0.1).asDouble, Double(Float(0.1)))
+    XCTAssertEqual(Enigma.double(Double(Float(0.1))).asFloat, Float(0.1))
     XCTAssertEqual(Enigma.double(1e-45).asFloat, Float(1e-45))
+    XCTAssertEqual(Enigma.double(Double(Float.leastNonzeroMagnitude)).asFloat, Float.leastNonzeroMagnitude)
     XCTAssertNil(Enigma.double(.leastNonzeroMagnitude).asFloat)
-    XCTAssertNil(Enigma.double(Double(Float.greatestFiniteMagnitude).nextUp).asFloat)
+    XCTAssertEqual(Enigma.double(Double(Float.greatestFiniteMagnitude).nextUp).asFloat, Float.greatestFiniteMagnitude)
+    XCTAssertNil(Enigma.double(Double(Float.greatestFiniteMagnitude) * 2).asFloat)
     XCTAssertEqual(Enigma.double(.nan), .float(.nan))
     XCTAssertEqual(Enigma.float(.infinity), .double(.infinity))
     XCTAssertNotEqual(Enigma.float(.infinity), .double(.greatestFiniteMagnitude))
@@ -299,22 +302,19 @@ final class NumericContractTests: XCTestCase {
   }
 
   func testCanonicalFloatDoubleRoundTrips() {
-    for (index, value) in [Float(1.1111111e38), -1.1111111e38, 1.5e-38, -1.5e-38, 0.1].enumerated() {
-      guard let widened = NumberComponents(value).asDouble else {
-        XCTFail("Float at index \(index) must convert to its canonical Double")
-        continue
-      }
-      XCTAssertEqual(NumberComponents(widened).asFloat, value)
-      XCTAssertEqual(Enigma.double(widened).asFloat, value)
+    for value in [Float(1.1111111e38), -1.1111111e38, 1.5e-38, -1.5e-38, 0.1] {
+      let widened = Double(value)
+      XCTAssertEqual(Float(widened).bitPattern, value.bitPattern)
+      XCTAssertEqual(Enigma.double(widened).asFloat?.bitPattern, value.bitPattern)
     }
   }
 
-  func testCanonicalNumericIdentityAcrossCases() {
+  func testNumericIdentityUsesStoredDoubleValue() {
     let floatPointOne = Enigma.float(0.1)
-    XCTAssertEqual(floatPointOne, .double(0.1))
-    XCTAssertNotEqual(floatPointOne, .double(Double(Float(0.1))))
+    XCTAssertNotEqual(floatPointOne, .double(0.1))
+    XCTAssertEqual(floatPointOne, .double(Double(Float(0.1))))
     XCTAssertEqual(Enigma.double(0.1).asFloat, Float(0.1))
-    XCTAssertNil(Enigma.double(Double(Float(0.1))).asFloat)
+    XCTAssertEqual(Enigma.double(Double(Float(0.1))).asFloat, Float(0.1))
     XCTAssertEqual(Enigma.float(-0.0), .double(0.0))
   }
 
@@ -341,11 +341,11 @@ final class NumericContractTests: XCTestCase {
       Int128.max,
     ]
     for value in signedValues {
-      let box = Enigma.Int128Box(value)
-      XCTAssertEqual(box.asFloatFallback(), value.asFloat, "Int128 \(value) -> Float")
-      XCTAssertEqual(box.asDoubleFallback(), value.asDouble, "Int128 \(value) -> Double")
-      XCTAssertEqual(box.asIntegerFallback(Int64.self), Int64(exactly: value), "Int128 \(value) -> Int64")
-      XCTAssertEqual(box.asIntegerFallback(UInt64.self), UInt64(exactly: value), "Int128 \(value) -> UInt64")
+      let tree = Enigma.int128(Enigma.Int128Box(value))
+      XCTAssertEqual(tree.asFloat, Double(exactly: value).map(Float.init), "Int128 \(value) -> Float")
+      XCTAssertEqual(tree.asDouble, Double(exactly: value), "Int128 \(value) -> Double")
+      XCTAssertEqual(tree.asInt64, Int64(exactly: value), "Int128 \(value) -> Int64")
+      XCTAssertEqual(tree.asUInt64, UInt64(exactly: value), "Int128 \(value) -> UInt64")
     }
 
     let unsignedTenTo19 = UInt128(tenTo19)
@@ -361,11 +361,11 @@ final class NumericContractTests: XCTestCase {
       UInt128.max,
     ]
     for value in unsignedValues {
-      let box = Enigma.UInt128Box(value)
-      XCTAssertEqual(box.asFloatFallback(), value.asFloat, "UInt128 \(value) -> Float")
-      XCTAssertEqual(box.asDoubleFallback(), value.asDouble, "UInt128 \(value) -> Double")
-      XCTAssertEqual(box.asIntegerFallback(Int64.self), Int64(exactly: value), "UInt128 \(value) -> Int64")
-      XCTAssertEqual(box.asIntegerFallback(UInt64.self), UInt64(exactly: value), "UInt128 \(value) -> UInt64")
+      let tree = Enigma.uint128(Enigma.UInt128Box(value))
+      XCTAssertEqual(tree.asFloat, Double(exactly: value).map(Float.init), "UInt128 \(value) -> Float")
+      XCTAssertEqual(tree.asDouble, Double(exactly: value), "UInt128 \(value) -> Double")
+      XCTAssertEqual(tree.asInt64, Int64(exactly: value), "UInt128 \(value) -> Int64")
+      XCTAssertEqual(tree.asUInt64, UInt64(exactly: value), "UInt128 \(value) -> UInt64")
     }
   }
 }

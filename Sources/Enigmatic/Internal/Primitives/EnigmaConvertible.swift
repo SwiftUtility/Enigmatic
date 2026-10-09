@@ -109,7 +109,7 @@ extension UInt128: EnigmaConvertible {
 
 extension Float: EnigmaConvertible {
   func convert(pins _: inout [Enigma.Pin]) throws(DecodingError) -> Enigma? {
-    .float(self)
+    .double(Double(self))
   }
 }
 

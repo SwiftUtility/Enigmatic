@@ -2,41 +2,6 @@ import Foundation
 
 extension Enigma {
   @inline(__always)
-  static func downscale(_ value: UInt) -> Self {
-    if let value = UInt8(exactly: value) {
-      .uint8(value)
-    } else if let value = UInt16(exactly: value) {
-      .uint16(value)
-    } else if let value = UInt32(exactly: value) {
-      .uint32(value)
-    } else {
-      .uint(value)
-    }
-  }
-
-  @inline(__always)
-  static func downscale(_ value: Int) -> Self {
-    if let value = Int8(exactly: value) {
-      .int8(value)
-    } else if let value = Int16(exactly: value) {
-      .int16(value)
-    } else if let value = Int32(exactly: value) {
-      .int32(value)
-    } else {
-      .int(value)
-    }
-  }
-
-  @inline(__always)
-  static func downscale(_ value: Double) -> Self {
-    if let value = Float(exactly: value) {
-      .float(value)
-    } else {
-      .double(value)
-    }
-  }
-
-  @inline(__always)
   static func decode(
     single container: borrowing some SingleValueDecodingContainer
   ) throws -> Self {
@@ -45,11 +10,11 @@ extension Enigma {
     } else if let value = try? container.decode(Bool.self) {
       return .bool(value)
     } else if let value = try? container.decode(UInt.self) {
-      return Self.downscale(value)
+      return .uint(value)
     } else if let value = try? container.decode(Int.self) {
-      return Self.downscale(value)
+      return .int(value)
     } else if let value = try? container.decode(Double.self) {
-      return Self.downscale(value)
+      return .double(value)
     } else if let value = try? container.decode(String.self) {
       return .string(value)
     } else if let value = try? container.decode(Data.self) {
@@ -57,7 +22,7 @@ extension Enigma {
     } else if let value = try? container.decode(Date.self) {
       return .date(value)
     } else if let value = try? container.decode(Float.self) {
-      return .float(value)
+      return .double(Double(value))
     } else if let value = try? container.decode(UInt8.self) {
       return .uint8(value)
     } else if let value = try? container.decode(Int8.self) {
@@ -110,11 +75,11 @@ extension Enigma {
       } else if let value = try? container.decode(Bool.self, forKey: key) {
         result[key.stringValue] = .bool(value)
       } else if let value = try? container.decode(UInt.self, forKey: key) {
-        result[key.stringValue] = Self.downscale(value)
+        result[key.stringValue] = .uint(value)
       } else if let value = try? container.decode(Int.self, forKey: key) {
-        result[key.stringValue] = Self.downscale(value)
+        result[key.stringValue] = .int(value)
       } else if let value = try? container.decode(Double.self, forKey: key) {
-        result[key.stringValue] = Self.downscale(value)
+        result[key.stringValue] = .double(value)
       } else if let value = try? container.decode(String.self, forKey: key) {
         result[key.stringValue] = .string(value)
       } else if let value = try? container.decode(Data.self, forKey: key) {
@@ -122,7 +87,7 @@ extension Enigma {
       } else if let value = try? container.decode(Date.self, forKey: key) {
         result[key.stringValue] = .date(value)
       } else if let value = try? container.decode(Float.self, forKey: key) {
-        result[key.stringValue] = .float(value)
+        result[key.stringValue] = .double(Double(value))
       } else if let value = try? container.decode(UInt8.self, forKey: key) {
         result[key.stringValue] = .uint8(value)
       } else if let value = try? container.decode(Int8.self, forKey: key) {
@@ -178,11 +143,11 @@ extension Enigma {
       } else if let value = try? container.decode(Bool.self) {
         result.append(.bool(value))
       } else if let value = try? container.decode(UInt.self) {
-        result.append(Self.downscale(value))
+        result.append(.uint(value))
       } else if let value = try? container.decode(Int.self) {
-        result.append(Self.downscale(value))
+        result.append(.int(value))
       } else if let value = try? container.decode(Double.self) {
-        result.append(Self.downscale(value))
+        result.append(.double(value))
       } else if let value = try? container.decode(String.self) {
         result.append(.string(value))
       } else if let value = try? container.decode(Data.self) {
@@ -190,7 +155,7 @@ extension Enigma {
       } else if let value = try? container.decode(Date.self) {
         result.append(.date(value))
       } else if let value = try? container.decode(Float.self) {
-        result.append(.float(value))
+        result.append(.double(Double(value)))
       } else if let value = try? container.decode(UInt8.self) {
         result.append(.uint8(value))
       } else if let value = try? container.decode(Int8.self) {
@@ -244,7 +209,6 @@ extension Enigma {
     case .uint16: description = "Found UInt16"
     case .uint8: description = "Found UInt8"
     case .double: description = "Found Double"
-    case .float: description = "Found Float"
     case .string: description = "Found String"
     case .date: description = "Found Date"
     case .data: description = "Found Data"
