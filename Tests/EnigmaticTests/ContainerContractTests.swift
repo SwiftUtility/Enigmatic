@@ -273,17 +273,99 @@ final class ContainerContractTests: XCTestCase {
     XCTAssertEqual(try array.decode(Int.self), 2)
   }
 
-  func testEmbeddedEnigmaDateAndDataUseCodableRepresentation() throws {
+  func testEmbeddedEnigmaDateAndDataRetainNativeCases() throws {
     let date = Enigma.date(Date(timeIntervalSinceReferenceDate: 1.25))
     let data = Enigma.data(Data([1, 255]))
     guard case .date = try Enigma(encode: date), case .data = try Enigma(encode: data) else {
       return XCTFail("Root Enigma values must retain their cases")
     }
     let tree = try Enigma(encode: [date, data])
-    guard case .double(1.25) = tree[0], case .array = tree[1] else {
-      return XCTFail("Embedded Enigma values must use their Codable representation")
+    guard case .date = tree[0], case .data = tree[1] else {
+      return XCTFail("Embedded Enigma values must retain their cases")
     }
     XCTAssertEqual(try tree[0]!.decode(Date.self), date.asDate)
     XCTAssertEqual(try tree[1]!.decode(Data.self), data.asData)
+    XCTAssertEqual(tree, .array([date, data]))
+
+    struct Model: Encodable {
+      let date: Enigma
+      let data: Enigma
+    }
+    let expected = Enigma.dictionary(["date": date, "data": data])
+    XCTAssertEqual(try Enigma(encode: Model(date: date, data: data)), expected)
+    XCTAssertEqual(try Enigma(encode: ["date": date, "data": data]), expected)
+
+    let mixed: Enigma = ["items": [.array([date, data]), expected]]
+    // Wrap the tree so this exercises encoding rather than the root identity shortcut.
+    XCTAssertEqual(try Enigma(encode: [mixed]), .array([mixed]))
+
+    for value in [date, data] {
+      let delegated = EncodingProbe { encoder in try value.encode(to: encoder) }
+      XCTAssertEqual(try Enigma(encode: delegated), value)
+      XCTAssertEqual(try Enigma(encode: [delegated]), .array([value]))
+      let single = EncodingProbe { encoder in
+        var container = encoder.singleValueContainer()
+        try container.encode(value)
+      }
+      XCTAssertEqual(try Enigma(encode: single), value)
+    }
+  }
+
+  func testEmbeddedEnigmaDateAndDataRejectOverwrites() throws {
+    for value in [Enigma.date(Date(timeIntervalSinceReferenceDate: 1.25)), .data(Data([1, 255]))] {
+      let tree = try Enigma(encode: EncodingProbe { encoder in
+        var root = encoder.container(keyedBy: Key.self)
+        var array = root.nestedUnkeyedContainer(forKey: "items")
+        let child = array.superEncoder()
+        try value.encode(to: child)
+        XCTAssertThrowsError(try value.encode(to: child)) { error in
+          guard case EncodingError.invalidValue(_, let context) = error else {
+            return XCTFail("Unexpected \(error)")
+          }
+          XCTAssertEqual(context.codingPath.map(Key.init), ["items", 0])
+        }
+      })
+      XCTAssertEqual(tree, ["items": .array([value])])
+    }
+  }
+
+  func testEmbeddedEnigmaDateAndDataKeepExternalRepresentation() throws {
+    let values: [Enigma] = [.date(Date(timeIntervalSinceReferenceDate: 1.25)), .data(Data([1, 255]))]
+    let expected: Enigma = [1.25, [1, 255]]
+    let json = JSONEncoder()
+    json.dateEncodingStrategy = .secondsSince1970
+    json.dataEncodingStrategy = .base64
+    XCTAssertEqual(try JSONDecoder().decode(Enigma.self, from: json.encode(values)), expected)
+    for format: PropertyListSerialization.PropertyListFormat in [.xml, .binary] {
+      let plist = PropertyListEncoder()
+      plist.outputFormat = format
+      XCTAssertEqual(try PropertyListDecoder().decode(Enigma.self, from: plist.encode(values)), expected)
+    }
+  }
+
+  func testCustomTypesSpecialKeepExternalRepresentation() throws {
+    var enigma = try Enigma(encode: DateValues())
+    for path in enigma.allPaths {
+      guard let value = enigma[path] else {
+        XCTFail("No value for \(path)")
+        continue
+      }
+      switch value {
+      case .array, .dictionary, .date, .null: continue
+      default: XCTFail("Unexpected \(value)")
+      }
+    }
+
+    enigma = try Enigma(encode: DataValues())
+    for path in enigma.allPaths {
+      guard let value = enigma[path] else {
+        XCTFail("No value for \(path)")
+        continue
+      }
+      switch value {
+      case .array, .dictionary, .data, .null: continue
+      default: XCTFail("Unexpected \(value)")
+      }
+    }
   }
 }

@@ -170,9 +170,17 @@ extension Enigma: Encodable {
         try item.encode(pin: Pin.str(key), keyed: &container)
       }
     case .data(let value):
-      try value.encode(to: encoder)
+      if let encoder = encoder as? EnigmaEncoder.Single {
+        try encoder.state.store(self, ref: encoder.ref)
+      } else {
+        try value.encode(to: encoder)
+      }
     case .date(let value):
-      try value.encode(to: encoder)
+      if let encoder = encoder as? EnigmaEncoder.Single {
+        try encoder.state.store(self, ref: encoder.ref)
+      } else {
+        try value.encode(to: encoder)
+      }
     case .int128(let value):
       if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
         var container = encoder.singleValueContainer()
