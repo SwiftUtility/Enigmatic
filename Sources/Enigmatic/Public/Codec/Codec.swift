@@ -26,6 +26,11 @@ public enum Codec {
     static func decodePresent(decoder: some Decoder) throws -> WrappedBoxedValue
   }
 
+  public protocol OptionalDecoder: Decodable {
+    init(wrappedValue: Strategy.WrappedBoxedValue?)
+    associatedtype Strategy: DecodeOptionalStrategy
+  }
+
   /// Writes a value to an encoder using a chosen representation.
   public protocol EncodeStrategy: Strategy {
     /// Encodes one boxed value using this strategy's representation.
@@ -38,5 +43,10 @@ public enum Codec {
     /// Writes the wrapped value after the caller has selected a present value.
     /// - Complexity: Defined by the conforming strategy and wrapped value.
     static func encodePresent(value: WrappedBoxedValue, encoder: some Encoder) throws
+  }
+
+  public protocol OptionalEncoder: Encodable {
+    var wrappedValue: Strategy.WrappedBoxedValue? { get }
+    associatedtype Strategy: EncodeOptionalStrategy
   }
 }

@@ -29,11 +29,13 @@ final class DocumentationExamplesTests: XCTestCase {
     }
     let payload = Payload(bytes: Data([1, 2, 3]), link: nil)
     let tree = try Enigma(encode: payload)
-    XCTAssertEqual(tree, ["bytes": "AQID", "link": nil])
+    XCTAssertEqual(tree, ["bytes": "AQID"])
+    XCTAssertNotEqual(tree, ["bytes": "AQID", "link": nil])
     let restored = try tree.decode(Payload.self)
     XCTAssertEqual(restored.bytes, payload.bytes)
     XCTAssertNil(restored.link)
-    XCTAssertThrowsError(try Enigma.dictionary(["bytes": "AQID"]).decode(Payload.self))
+    XCTAssertNoThrow(try Enigma.dictionary(["bytes": "AQID"]).decode(Payload.self))
+    XCTAssertNil(try Enigma.dictionary(["bytes": "AQID", "link": nil]).decode(Payload.self).link)
   }
 
   func testDocCTreeExample() {

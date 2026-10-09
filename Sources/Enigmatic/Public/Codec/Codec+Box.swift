@@ -20,6 +20,10 @@ extension Codec {
   }
 }
 
+extension Codec.Box: Sendable where Strategy.BoxedValue: Sendable {}
+extension Codec.Box: Codec.OptionalDecoder where Strategy: Codec.DecodeOptionalStrategy {}
+extension Codec.Box: Codec.OptionalEncoder where Strategy: Codec.EncodeOptionalStrategy {}
+
 extension Codec.Box: Decodable where Strategy: Codec.DecodeStrategy {
   /// Decodes the wrapped value with `Strategy.decode`.
   /// - Complexity: Delegated to the selected strategy.
@@ -37,8 +41,6 @@ extension Codec.Box: Encodable where Strategy: Codec.EncodeStrategy {
     try Strategy.encode(value: wrappedValue, encoder: encoder)
   }
 }
-
-extension Codec.Box: Sendable where Strategy.BoxedValue: Sendable {}
 
 extension Codec.Box: Equatable where Strategy.BoxedValue: Equatable {
   /// Compares the values stored in the two boxes.
