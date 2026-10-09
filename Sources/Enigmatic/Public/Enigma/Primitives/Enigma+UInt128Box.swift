@@ -80,7 +80,6 @@ extension Enigma.UInt128Box: CustomStringConvertible {
     if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
       return String(describing: value)
     } else {
-#warning("make Ryu based")
       return "<UInt128 unavailable>"
     }
   }
@@ -93,7 +92,6 @@ extension Enigma.UInt128Box: CustomDebugStringConvertible {
     if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
       return String(reflecting: value)
     } else {
-#warning("make Ryu based")
       return "<UInt128 unavailable>"
     }
   }

@@ -320,10 +320,16 @@ final class NumericContractTests: XCTestCase {
 
   @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
   func test128BitBoxLegacyConversionFallbacks() {
+    let tenTo19: Int128 = 10_000_000_000_000_000_000
+    let tenTo38 = tenTo19 * tenTo19
     let signedValues: [Int128] = [
       0,
       1,
       10,
+      tenTo19,
+      -tenTo19,
+      tenTo38,
+      -tenTo38,
       Int128(Int64.max),
       Int128(Int64.max) + 1,
       -1,
@@ -342,10 +348,14 @@ final class NumericContractTests: XCTestCase {
       XCTAssertEqual(box.asIntegerFallback(UInt64.self), UInt64(exactly: value), "Int128 \(value) -> UInt64")
     }
 
+    let unsignedTenTo19 = UInt128(tenTo19)
+    let unsignedTenTo38 = unsignedTenTo19 * unsignedTenTo19
     let unsignedValues: [UInt128] = [
       0,
       1,
       10,
+      unsignedTenTo19,
+      unsignedTenTo38,
       UInt128(UInt64.max),
       UInt128(UInt64.max) + 1,
       UInt128.max,

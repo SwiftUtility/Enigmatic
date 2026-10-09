@@ -33,6 +33,15 @@ final class SerializationContractTests: XCTestCase {
     XCTAssertThrowsError(try Enigma(from: NoContainerDecoder()))
   }
 
+  func testUUIDUsesCodableStringRepresentation() throws {
+    let uuid = UUID(uuidString: "550e8400-e29b-41d4-a716-446655440000")!
+    let tree = try Enigma(encode: uuid)
+
+    XCTAssertEqual(tree, .string(uuid.uuidString))
+    XCTAssertEqual(try tree.decode(UUID.self), uuid)
+    XCTAssertEqual(try JSONEncoder().encode(tree), try JSONEncoder().encode(uuid))
+  }
+
   func testJSONAndPlistErrorPaths() throws {
     for value in [Enigma.data(Data()), .date(Date()), .double(.infinity), .float(.nan)] {
       let tree: Enigma = ["values": .array([value])]
