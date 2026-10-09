@@ -95,17 +95,15 @@ extension Enigma: Decodable {
   /// - Complexity: O(n) in the number of encoded or decoded values, plus the cost of nested Codable
   ///   implementations; recursive traversal uses O(d) stack space, where d is nesting depth.
   public init(from decoder: Decoder) throws {
-    if var container = try? decoder.container(keyedBy: Pin.self) {
+    var error = CompositeError()
+    if var container = error.get(try decoder.container(keyedBy: Pin.self)) {
       self = try Self.decode(keyed: &container)
-    } else if var container = try? decoder.unkeyedContainer() {
+    } else if var container = error.get(try decoder.unkeyedContainer()) {
       self = try Self.decode(unkeyed: &container)
-    } else if let container = try? decoder.singleValueContainer() {
+    } else if let container = error.get(try decoder.singleValueContainer()) {
       self = try Self.decode(single: container)
     } else {
-      throw DecodingError.typeMismatch(Self.self, DecodingError.Context(
-        codingPath: decoder.codingPath,
-        debugDescription: "Neither value nor array nor dictionary"
-      ))
+      throw error.dataCorrupted(decoder.codingPath)
     }
   }
 }
@@ -340,5 +338,3 @@ extension Enigma: ExpressibleByDictionaryLiteral {
 #warning("дисклеймер на data date и nan/inf с предложением кодек боксов как альтернативы")
 #warning("сделать обрезанный информативный дескрипшен")
 #warning("добавить энкодеру свой каунт и кидать только если каунты разошлись со сторэджем, а повторное создание контейнера разрешить")
-#warning("заменить все try? на сбор в композит ошибку")
-#warning("генерить ошибку через композит эррор с кейсами =0, =1, >1")

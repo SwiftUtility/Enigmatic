@@ -20,13 +20,44 @@ extension Enigma {
     ///   unique storage and O(n) if copy-on-write must duplicate the error array,
     ///   where n is the number of recorded errors. This excludes autoclosure work.
     @inlinable
-    public mutating func report<T>(_ block: @autoclosure () throws -> T) -> T? {
+    public mutating func get<T>(_ block: @autoclosure () throws -> T) -> T? {
       do {
         return try block()
       } catch {
         errors.append(error)
         return nil
       }
+    }
+
+    @inlinable
+    public mutating func run(_ block: @autoclosure () throws -> ()) -> Bool {
+      do {
+        try block()
+        return true
+      } catch {
+        errors.append(error)
+        return false
+      }
+    }
+
+    var underlyingError: (any Error)? {
+      switch errors.count {
+      case 0: nil
+      case 1: errors.first
+      default: self
+      }
+    }
+
+    @usableFromInline
+    consuming func dataCorrupted(
+      _ codingPath: [any CodingKey],
+      _ debugDescription: String = "Neither value nor array nor dictionary"
+    ) -> DecodingError {
+      DecodingError.dataCorrupted(DecodingError.Context(
+        codingPath: codingPath,
+        debugDescription: debugDescription,
+        underlyingError: underlyingError
+      ))
     }
   }
 }

@@ -261,10 +261,10 @@ final class StrategyContractTests: XCTestCase {
     XCTAssertEqual(box.description, "2")
     XCTAssertEqual(box.debugDescription, "2")
     var errors = Enigma.CompositeError()
-    XCTAssertEqual(errors.report(3), 3)
+    XCTAssertEqual(errors.get(3), 3)
     enum Failure: Error { case expected }
     func fail() throws -> Int { throw Failure.expected }
-    XCTAssertNil(errors.report(try fail()))
+    XCTAssertNil(errors.get(try fail()))
     XCTAssertEqual(errors.errors.count, 1)
   }
 

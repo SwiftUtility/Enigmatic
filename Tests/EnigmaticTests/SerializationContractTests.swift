@@ -29,8 +29,18 @@ final class SerializationContractTests: XCTestCase {
       XCTAssertEqual(try Enigma(from: ExactSingleValueDecoder(value: value)), expected)
     }
 
-    XCTAssertThrowsError(try Enigma(from: ExactSingleValueDecoder(value: NSObject())))
-    XCTAssertThrowsError(try Enigma(from: NoContainerDecoder()))
+    XCTAssertThrowsError(try Enigma(from: ExactSingleValueDecoder(value: NSObject()))) { error in
+      guard case DecodingError.dataCorrupted(let context) = error else {
+        return XCTFail("Expected DecodingError.dataCorrupted, got \(error)")
+      }
+      XCTAssertTrue(context.underlyingError is Enigma.CompositeError)
+    }
+    XCTAssertThrowsError(try Enigma(from: NoContainerDecoder())) { error in
+      guard case DecodingError.dataCorrupted(let context) = error else {
+        return XCTFail("Expected DecodingError.dataCorrupted, got \(error)")
+      }
+      XCTAssertTrue(context.underlyingError is Enigma.CompositeError)
+    }
   }
 
   func testUUIDUsesCodableStringRepresentation() throws {

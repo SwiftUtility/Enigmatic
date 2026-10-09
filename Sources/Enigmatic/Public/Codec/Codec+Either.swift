@@ -33,16 +33,13 @@ extension Codec.Either: Decodable where Right: Decodable, Left: Decodable {
   @inlinable
   public init(from decoder: Decoder) throws {
     var error = Enigma.CompositeError()
-    guard let result = error.report(try Self.right(Right(from: decoder)))
-      ?? error.report(try Self.left(Left(from: decoder)))
-    else {
-      throw DecodingError.dataCorrupted(DecodingError.Context(
-        codingPath: decoder.codingPath,
-        debugDescription: "Neither \(Right.self) nor \(Left.self)",
-        underlyingError: error
-      ))
+    self = if let right = error.get(try Right(from: decoder)) {
+      .right(right)
+    } else if let left = error.get(try Left(from: decoder)) {
+      .left(left)
+    } else {
+      throw error.dataCorrupted(decoder.codingPath, "Neither \(Right.self) nor \(Left.self)")
     }
-    self = result
   }
 }
 
@@ -95,16 +92,12 @@ extension Codec.Either: Codec.DecodeStrategy where Right: Codec.DecodeStrategy, 
   @inlinable
   public static func decode(decoder: some Decoder) throws -> BoxedValue {
     var error = Enigma.CompositeError()
-    return if let right = error.report(try Right.decode(decoder: decoder)) {
+    return if let right = error.get(try Right.decode(decoder: decoder)) {
       .right(right)
-    } else if let left = error.report(try Left.decode(decoder: decoder)) {
+    } else if let left = error.get(try Left.decode(decoder: decoder)) {
       .left(left)
     } else {
-      throw DecodingError.dataCorrupted(DecodingError.Context(
-        codingPath: decoder.codingPath,
-        debugDescription: "Neither \(Right.BoxedValue.self) nor \(Left.BoxedValue.self)",
-        underlyingError: error
-      ))
+      throw error.dataCorrupted(decoder.codingPath, "Neither \(Right.BoxedValue.self) nor \(Left.BoxedValue.self)")
     }
   }
 }
