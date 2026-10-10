@@ -142,6 +142,46 @@ final class ContainerContractTests: XCTestCase {
     XCTAssertEqual(c.currentIndex, 5)
   }
 
+  func testFailedGenericDecodeCanRetryAfterReadingPartOfAChild() throws {
+    let decoder = EnigmaDecoder.decoder(enigma: ["items": [[1, "bad"], [2, 3]]], userInfo: [:])
+    let root = try decoder.container(keyedBy: Key.self)
+    var array = try root.nestedUnkeyedContainer(forKey: "items")
+    assertDecodingError("typeMismatch", path: ["items", 0, 1]) {
+      _ = try array.decode([Int].self)
+    }
+    XCTAssertEqual(array.currentIndex, 0)
+    XCTAssertEqual(try array.decode(Enigma.self), [1, "bad"])
+    XCTAssertEqual(array.currentIndex, 1)
+    XCTAssertEqual(try array.decode([Int].self), [2, 3])
+    XCTAssertTrue(array.isAtEnd)
+    assertDecodingError("valueNotFound", path: ["items"]) { _ = try array.decode([Int].self) }
+    XCTAssertEqual(array.currentIndex, 2)
+  }
+
+  func testFailedNestedContainerRequestsDoNotAdvanceTheArray() throws {
+    var array = try EnigmaDecoder.decoder(enigma: [[1], ["value": 2]], userInfo: [:]).unkeyedContainer()
+    assertDecodingError("typeMismatch", path: [0]) { _ = try array.nestedContainer(keyedBy: Key.self) }
+    XCTAssertEqual(array.currentIndex, 0)
+    var child = try array.nestedUnkeyedContainer()
+    XCTAssertEqual(try child.decode(Int.self), 1)
+    assertDecodingError("typeMismatch", path: [1]) { _ = try array.nestedUnkeyedContainer() }
+    XCTAssertEqual(array.currentIndex, 1)
+    let keyed = try array.nestedContainer(keyedBy: Key.self)
+    XCTAssertEqual(try keyed.decode(Int.self, forKey: "value"), 2)
+    XCTAssertTrue(array.isAtEnd)
+  }
+
+  func testAllKeysFiltersUnknownKeysWithoutHidingTheirValues() throws {
+    enum KnownKey: String, CodingKey { case known }
+    let decoder = EnigmaDecoder.decoder(enigma: ["known": 1, "unknown": 2], userInfo: [:])
+    let known = try decoder.container(keyedBy: KnownKey.self)
+    XCTAssertEqual(known.allKeys, [.known])
+    XCTAssertEqual(try known.decode(Int.self, forKey: .known), 1)
+    let all = try decoder.container(keyedBy: Key.self)
+    XCTAssertEqual(Set(all.allKeys), Set(["known", "unknown"] as [Key]))
+    XCTAssertEqual(try all.decode(Int.self, forKey: "unknown"), 2)
+  }
+
   func testMissingNullAndWrongTypes() throws {
     let decoder = EnigmaDecoder.decoder(enigma: ["nil": nil, "wrong": "s", "nested": [false]], userInfo: [:])
     let c = try decoder.container(keyedBy: Key.self)

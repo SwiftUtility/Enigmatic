@@ -43,6 +43,17 @@ final class StrategyContractTests: XCTestCase {
     }
   }
 
+  func testDictionaryStrategiesSupportIntegerAndUnkeyedKeys() throws {
+    let data = Data([1, 2, 3])
+    try roundTrip([Int: Codec.Base64Data].self, [-2: data], expected: ["-2": "AQID"])
+    // Codable uses alternating keys and values for keys such as Bool and enums.
+    try roundTrip([Bool: Codec.Base64Data?].self, [true: data], expected: [true, "AQID"])
+    try roundTrip([IntKeys: Codec.Base64Data?].self, [.one: nil], expected: [1, nil])
+    assertDecodingError("dataCorrupted", path: [1]) {
+      _ = try Enigma.array([true, "!"]).decode(Codec.Box<[Bool: Codec.Base64Data]>.self)
+    }
+  }
+
   func testOptionalBox() throws {
     typealias OptionalStrategy = Codec.Id<Int>?
     let box = Codec.OptionalBox<OptionalStrategy>(wrappedValue: 42)
@@ -253,6 +264,20 @@ final class StrategyContractTests: XCTestCase {
     }
   }
 
+  func testEitherFallbackStartsAtTheBeginningAfterAPartialRead() throws {
+    typealias Either = Codec.Either<[Int], [Enigma]>
+    typealias Strategy = Codec.Either<[Codec.Id<Int>], [Codec.Id<Enigma>]>
+    let tree: Enigma = [[1, "fallback"], [2, 3]]
+    let expected: [Either] = [.left([1, "fallback"]), .right([2, 3])]
+    XCTAssertEqual(try tree.decode([Either].self), expected)
+    let boxes = try tree.decode([Codec.Box<Strategy>].self)
+    XCTAssertEqual(boxes.map(\.wrappedValue), expected)
+    XCTAssertEqual(try Enigma(encode: boxes), tree)
+    let json = try JSONEncoder().encode(tree)
+    XCTAssertEqual(try JSONDecoder().decode([Either].self, from: json), expected)
+    XCTAssertEqual(try JSONDecoder().decode([Codec.Box<Strategy>].self, from: json).map(\.wrappedValue), expected)
+  }
+
   func testBoxValueSemanticsAndCompositeError() throws {
     var box = Codec.Box<Codec.Id<Int>>(wrappedValue: 1)
     box.wrappedValue = 2
@@ -266,6 +291,43 @@ final class StrategyContractTests: XCTestCase {
     func fail() throws -> Int { throw Failure.expected }
     XCTAssertNil(errors.get(try fail()))
     XCTAssertEqual(errors.errors.count, 1)
+  }
+
+  func testCompositeErrorRunPreservesCauseAndFailureOrder() {
+    enum Failure: Error, Equatable { case first, second }
+    func fail(_ failure: Failure) throws { throw failure }
+    var errors = Enigma.CompositeError()
+    guard case .dataCorrupted(let empty) = errors.dataCorrupted([]) else { return XCTFail("Wrong error") }
+    XCTAssertNil(empty.underlyingError)
+    var calls = 0
+    func succeed() { calls += 1 }
+    XCTAssertTrue(errors.run(succeed()))
+    XCTAssertEqual(calls, 1)
+    XCTAssertTrue(errors.errors.isEmpty)
+    XCTAssertFalse(errors.run(try fail(.first)))
+    guard case .dataCorrupted(let single) = errors.dataCorrupted([Enigma.Pin.str("value")]) else {
+      return XCTFail("Wrong error")
+    }
+    XCTAssertEqual(single.underlyingError as? Failure, .first)
+    XCTAssertEqual(single.codingPath.map(Enigma.Pin.init), ["value"])
+    XCTAssertFalse(errors.run(try fail(.second)))
+    guard case .dataCorrupted(let multiple) = errors.dataCorrupted([]) else { return XCTFail("Wrong error") }
+    let causes = multiple.underlyingError as? Enigma.CompositeError
+    XCTAssertEqual(causes?.errors.compactMap { $0 as? Failure }, [.first, .second])
+  }
+
+  @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)
+  func testEachWritableMembersKeepCopiesIndependent() throws {
+    struct A: Codable, Equatable { var a: Int }
+    struct B: Codable, Equatable { var b: String }
+    let original = Codec.Each(A(a: 1), B(b: "first"))
+    var changed = original
+    changed[dynamicMember: \.0].a = 2
+    changed[dynamicMember: \.1] = B(b: "second")
+    XCTAssertEqual(original[dynamicMember: \.0], A(a: 1))
+    XCTAssertEqual(original[dynamicMember: \.1], B(b: "first"))
+    XCTAssertNotEqual(changed, original)
+    XCTAssertEqual(try Enigma(encode: changed), ["a": 2, "b": "second"])
   }
 
   @available(macOS 14, iOS 17, tvOS 17, watchOS 10, *)

@@ -4,6 +4,51 @@ import XCTest
 
 final class NumericContractTests: XCTestCase {
   @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+  func testKeyedPrimitiveOverloadsDistinguishMissingNullAndMismatchedValues() throws {
+    typealias Key = Enigma.Pin
+    let decoder = EnigmaDecoder.decoder(enigma: ["nested": ["null": nil, "wrong": []]], userInfo: [:])
+    let root = try decoder.container(keyedBy: Key.self)
+    let container = try root.nestedContainer(keyedBy: Key.self, forKey: "nested")
+    let decodes: [(KeyedDecodingContainer<Key>, Key) throws -> Void] = [
+      { _ = try $0.decode(Bool.self, forKey: $1) },
+      { _ = try $0.decode(String.self, forKey: $1) },
+      { _ = try $0.decode(Double.self, forKey: $1) },
+      { _ = try $0.decode(Float.self, forKey: $1) },
+      { _ = try $0.decode(Int.self, forKey: $1) },
+      { _ = try $0.decode(Int8.self, forKey: $1) },
+      { _ = try $0.decode(Int16.self, forKey: $1) },
+      { _ = try $0.decode(Int32.self, forKey: $1) },
+      { _ = try $0.decode(Int64.self, forKey: $1) },
+      { _ = try $0.decode(UInt.self, forKey: $1) },
+      { _ = try $0.decode(UInt8.self, forKey: $1) },
+      { _ = try $0.decode(UInt16.self, forKey: $1) },
+      { _ = try $0.decode(UInt32.self, forKey: $1) },
+      { _ = try $0.decode(UInt64.self, forKey: $1) },
+      { _ = try $0.decode(Int128.self, forKey: $1) },
+      { _ = try $0.decode(UInt128.self, forKey: $1) },
+    ]
+    for decode in decodes {
+      assertDecodingError("keyNotFound", path: ["nested"]) { try decode(container, "missing") }
+      assertDecodingError("valueNotFound", path: ["nested", "null"]) { try decode(container, "null") }
+      assertDecodingError("typeMismatch", path: ["nested", "wrong"]) { try decode(container, "wrong") }
+    }
+  }
+
+  @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+  func testKeyed128BitOverloadsPreserveExtremeValues() throws {
+    let tree = try Enigma(encode: EncodingProbe { encoder in
+      var root = encoder.container(keyedBy: Enigma.Pin.self)
+      try root.encode(Int128.min, forKey: "signed")
+      try root.encode(UInt128.max, forKey: "unsigned")
+      try root.encodeNil(forKey: "null")
+    })
+    let container = try EnigmaDecoder.decoder(enigma: tree, userInfo: [:]).container(keyedBy: Enigma.Pin.self)
+    XCTAssertEqual(try container.decode(Int128.self, forKey: "signed"), .min)
+    XCTAssertEqual(try container.decode(UInt128.self, forKey: "unsigned"), .max)
+    XCTAssertTrue(try container.decodeNil(forKey: "null"))
+  }
+
+  @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
   func testIntegerBoundariesAndCanonicalConversions() throws {
     try checkIntegers(Int.self)
     try checkIntegers(Int8.self)

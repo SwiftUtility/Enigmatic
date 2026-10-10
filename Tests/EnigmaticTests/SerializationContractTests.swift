@@ -252,6 +252,93 @@ final class SerializationContractTests: XCTestCase {
     assertDecodingError("dataCorrupted", path: []) { _ = try Enigma(cast: keys) }
   }
 
+  func testIntegerAndAnyHashableDictionaryKeysNormalizeWithoutLosingValues() throws {
+    let integers = [Int.min: 1, -2: 2, 0: 3, Int.max: 4]
+    XCTAssertEqual(try Enigma(cast: integers), .dictionary([
+      String(Int.min): 1, "-2": 2, "0": 3, String(Int.max): 4,
+    ]))
+    let keys: [AnyHashable: Any] = [AnyHashable(Int8(-1)): true, AnyHashable(UInt64.max): "large"]
+    XCTAssertEqual(try Enigma(cast: keys), .dictionary(["-1": true, String(UInt64.max): "large"]))
+    assertDecodingError("dataCorrupted", path: ["outer", "-2", 0]) {
+      _ = try Enigma(cast: ["outer": [-2: [NSObject()]]])
+    }
+    assertDecodingError("dataCorrupted", path: ["outer"]) {
+      _ = try Enigma(cast: ["outer": [AnyHashable(UUID()): 1]])
+    }
+  }
+
+  @available(macOS 12.3, iOS 15.4, watchOS 8.5, tvOS 15.4, *)
+  func testCodingKeyRepresentableCastAndCollisionPaths() throws {
+    enum Key: String, CodingKeyRepresentable { case first, second }
+    let values: [Key: Enigma] = [.first: [1, nil], .second: true]
+    XCTAssertEqual(try Enigma(cast: values), ["first": [1, nil], "second": true])
+    assertDecodingError("dataCorrupted", path: ["outer", "first", 0]) {
+      _ = try Enigma(cast: ["outer": [Key.first: [NSObject()]]])
+    }
+    enum CollidingKey: String, CodingKeyRepresentable {
+      case first, second
+      var codingKey: any CodingKey { Enigma.Pin.str("shared") }
+    }
+    assertDecodingError("dataCorrupted", path: ["outer"]) {
+      _ = try Enigma(cast: ["outer": [CollidingKey.first: 1, .second: 2]])
+    }
+  }
+
+  func testAnyHashableValuesAndSetBridges() throws {
+    let date = Date(timeIntervalSince1970: 123)
+    let data = Data([1, 255])
+    let values: [AnyHashable] = [true, 42, "text", AnyHashable(date), AnyHashable(data)]
+    XCTAssertEqual(try Enigma(cast: values), .array([true, 42, "text", .date(date), .data(data)]))
+    for set: Any in [Set([1, 2]), NSSet(array: [1, 2])] {
+      XCTAssertEqual(Set(try Enigma(cast: set).decode([Int].self)), [1, 2])
+    }
+    assertDecodingError("dataCorrupted", path: ["items", 0]) {
+      _ = try Enigma(cast: ["items": Set([UUID()])])
+    }
+    assertDecodingError("dataCorrupted", path: ["items", 0]) {
+      _ = try Enigma(cast: ["items": NSSet(array: [NSObject()])])
+    }
+  }
+
+  func testFloatCastsPreserveTheWidenedBinaryValue() throws {
+    for value in [Float(0.1), .leastNonzeroMagnitude, .greatestFiniteMagnitude, -0.0] {
+      for source: Any in [value, NSNumber(value: value), AnyHashable(value)] {
+        let tree = try Enigma(cast: source)
+        XCTAssertEqual(tree.asDouble?.bitPattern, Double(value).bitPattern)
+        XCTAssertEqual(tree.asFloat?.bitPattern, value.bitPattern)
+      }
+    }
+  }
+
+  func testFoundationDictionariesRejectUnsupportedAndCollidingKeys() {
+    let unsupported = NSDictionary(object: 1, forKey: NSNumber(value: 1))
+    assertDecodingError("dataCorrupted", path: ["outer"]) {
+      _ = try Enigma(cast: ["outer": unsupported])
+    }
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+    // NSString can distinguish keys that Swift String considers canonically equal.
+    let colliding = NSDictionary(objects: [1, 2], forKeys: ["café" as NSString, "cafe\u{301}" as NSString])
+    XCTAssertEqual(colliding.count, 2)
+    assertDecodingError("dataCorrupted", path: ["outer", "café"]) {
+      _ = try Enigma(cast: ["outer": colliding])
+    }
+#endif
+  }
+
+  @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
+  func testTreeDecodingRetainsNativeValuesAcrossContainers() throws {
+    let values: [Enigma] = [
+      .date(Date(timeIntervalSince1970: 123.25)), .data(Data([1, 255])),
+      .int128(.init(.min)), .uint128(.init(.max)), .uint64(.max),
+    ]
+    for value in values {
+      for tree in [value, .array([value]), .dictionary(["value": value])] {
+        let decoder = EnigmaDecoder.decoder(enigma: tree, userInfo: [:])
+        XCTAssertEqual(try Enigma(from: decoder), tree)
+      }
+    }
+  }
+
   @available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *)
   func testInt128NativeValuesAndSerializationRestrictions() throws {
     for value in [Int128.min, -1, 0, 1, Int128.max] {

@@ -81,8 +81,69 @@ final class TreeContractTests: XCTestCase {
     tree["outer", "items", "replace", 3] = 2
     XCTAssertEqual(tree, snapshot)
 
+    let cases: [(Enigma, [Enigma.Pin])] = [
+      ([1], [0, "new", 2]),                 // Replace an existing array element.
+      ([1], [1, 0, 1]),                     // Append through two new arrays.
+      (["keep": true], ["missing", "child", 1]),
+      (7, ["missing", "child", 1]),         // Replace the root before failing.
+    ]
+    for (original, path) in cases {
+      var candidate = original
+      candidate[path] = true
+      XCTAssertEqual(candidate, original, "Invalid write at \(path)")
+      candidate[path] = nil
+      XCTAssertEqual(candidate, original, "Missing deletion at \(path)")
+    }
+
     tree["outer", "items", 1] = 2
     XCTAssertEqual(tree, ["outer": ["items": [1, 2]], "keep": true])
+  }
+
+  func testNestedEditsAndMergesDoNotMutateCopies() {
+    let original: Enigma = ["items": [["values": [1, 2]]], "settings": ["enabled": true]]
+    var edited = original
+    edited["items", 0, "values", or: []].array.append(3)
+    edited["items", 0, "values", 0] = nil
+    edited["settings", "enabled"] = false
+    XCTAssertEqual(edited, ["items": [["values": [2, 3]]], "settings": ["enabled": false]])
+
+    let patch: Enigma = ["items": [], "settings": ["enabled": false, "new": true]]
+    XCTAssertEqual(original.merging(patch, replace: false),
+                   ["items": [["values": [1, 2]]], "settings": ["enabled": true, "new": true]])
+    var merged = original
+    merged.merge(patch, replace: true)
+    XCTAssertEqual(merged, patch)
+    XCTAssertEqual(original, ["items": [["values": [1, 2]]], "settings": ["enabled": true]])
+  }
+
+  func testFallbackWritebackEvaluatesOnlyMissingValues() {
+    var tree: Enigma = ["items": [1], "null": nil]
+    var calls = 0
+    func fallback() -> Enigma { calls += 1; return [9] }
+    tree["items", or: fallback()].array.append(2)
+    tree["null", or: fallback()].dictionary["created"] = true
+    XCTAssertEqual(calls, 0)
+    let path: [Enigma.Pin] = ["missing"]
+    tree[path, or: fallback()].array.append(10)
+    XCTAssertEqual(calls, 1)
+    XCTAssertEqual(tree, ["items": [1, 2], "null": ["created": true], "missing": [9, 10]])
+  }
+
+  func testMergeRollsBackAfterResolvingAnEarlierConflict() {
+    enum Failure: Error { case conflict }
+    var tree: Enigma = ["a": 1, "nested": ["b": 2], "keep": true]
+    var calls = 0
+    XCTAssertThrowsError(try tree.merge(["a": 10, "nested": ["b": 20], "new": false], resolve: {
+      _, _, rhs throws(Failure) in
+      calls += 1
+      if calls == 2 { throw Failure.conflict }
+      return rhs
+    })) { error in
+      XCTAssertTrue(error is Failure)
+    }
+    // The resolver must have made progress before throwing, regardless of key order.
+    XCTAssertEqual(calls, 2)
+    XCTAssertEqual(tree, ["a": 1, "nested": ["b": 2], "keep": true])
   }
 
   func testMergeConflictPathsAndAtomicity() throws {

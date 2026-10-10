@@ -115,6 +115,8 @@ final class EquatableTests: XCTestCase {
 
   func testNumericEqualityLaws() {
     var values: [Enigma] = [
+      .null, .bool(false), .bool(true), .string("0"), .data(Data()),
+      .date(Date(timeIntervalSince1970: 0)), .array([]), .dictionary([:]),
       .int(0), .int64(0), .int32(0), .int16(0), .int8(0),
       .uint(0), .uint64(0), .uint32(0), .uint16(0), .uint8(0),
       .double(0), .double(-0.0), .float(0), .float(-0.0),
