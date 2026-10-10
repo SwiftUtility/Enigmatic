@@ -113,7 +113,7 @@ extension Enigma {
       } else if let value = error.get(try container.decode(Int64.self, forKey: key)) {
         result[key.stringValue] = .int64(value)
       } else {
-        throw error.dataCorrupted(container.codingPath)
+        throw error.dataCorrupted(container.codingPath + [key])
       }
     }
     return .dictionary(result)
@@ -179,7 +179,7 @@ extension Enigma {
       } else if let value = error.get(try container.decode(Int64.self)) {
         result.append(.int64(value))
       } else {
-        throw error.dataCorrupted(container.codingPath)
+        throw error.dataCorrupted(container.codingPath + [Pin.int(container.currentIndex)])
       }
     }
     return .array(result)

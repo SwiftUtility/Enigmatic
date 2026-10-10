@@ -254,13 +254,47 @@ final class ContainerContractTests: XCTestCase {
         XCTAssertEqual(context.codingPath.map(Key.init), ["array", 0])
       }
       try c.encode(["a": 1], forKey: "object")
-      try c.encode(["b": 2], forKey: "object")
+      XCTAssertThrowsError(try c.encode(["b": 2], forKey: "object"))
       var array = c.nestedUnkeyedContainer(forKey: "failures")
       XCTAssertThrowsError(try array.encode(Failing()))
       XCTAssertEqual(array.count, 1)
       try array.encode(2)
     })
-    XCTAssertEqual(tree, ["array": [1], "object": ["a": 1, "b": 2], "failures": [["partial": 1], 2]])
+    XCTAssertEqual(tree, ["array": [1], "object": ["a": 1], "failures": [["partial": 1], 2]])
+  }
+
+  func testDuplicateNestedContainerRejectsWritesOnly() throws {
+    for write in [false, true] {
+      let tree = try Enigma(encode: EncodingProbe { encoder in
+        var root = encoder.container(keyedBy: Key.self)
+        let child = root.superEncoder(forKey: "child")
+        // Repeated keyed conversion of the same encoder is still permitted.
+        var first = child.container(keyedBy: Key.self)
+        var second = child.container(keyedBy: Key.self)
+        try first.encode(1, forKey: "a")
+        try second.encode(2, forKey: "b")
+        var keyed = root.nestedContainer(keyedBy: Key.self, forKey: "child")
+        var unkeyed = root.nestedUnkeyedContainer(forKey: "child")
+        var single = root.superEncoder(forKey: "child").singleValueContainer()
+        // Empty encodings and unused invalid handles do not fail completion.
+        try root.encode([String: Int](), forKey: "child")
+        if write {
+          for (path, operation) in [
+            (["child", "c"] as [Key], { try keyed.encode(3, forKey: "c") }),
+            (["child", 0] as [Key], { try unkeyed.encode(3) }),
+            (["child"] as [Key], { try single.encode(3) }),
+          ] {
+            XCTAssertThrowsError(try operation()) { error in
+              guard case EncodingError.invalidValue(_, let context) = error else {
+                return XCTFail("Unexpected \(error)")
+              }
+              XCTAssertEqual(context.codingPath.map(Key.init), path)
+            }
+          }
+        }
+      })
+      XCTAssertEqual(tree, ["child": ["a": 1, "b": 2]])
+    }
   }
 
   func testNullableSuperclassDecoders() throws {

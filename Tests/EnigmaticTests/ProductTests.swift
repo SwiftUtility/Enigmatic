@@ -93,8 +93,8 @@ final class ContainersTests: XCTestCase {
   }
 
   func testInterleaved() throws {
-    XCTAssertThrowsError(try Enigma(encode: Codec.Each2(True(), False())))
-    XCTAssertThrowsError(try Enigma(encode: Codec.Each2(True(), True())))
-    XCTAssertNoThrow(try Enigma(encode: Codec.Each2(Box(value: A()), Box(value: B()))))
+    XCTAssertThrowsError(try Enigma(encode: Codec.Each(True(), False())))
+    XCTAssertThrowsError(try Enigma(encode: Codec.Each(True(), True())))
+    XCTAssertThrowsError(try Enigma(encode: Codec.Each(Box(value: A()), Box(value: B()))))
   }
 }

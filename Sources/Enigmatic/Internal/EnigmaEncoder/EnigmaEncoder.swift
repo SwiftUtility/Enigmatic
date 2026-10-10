@@ -58,13 +58,13 @@ final class EnigmaEncoder {
         return Ref(nodeId: ref.nodeId, failId: fails.count)
       }
       let string = key.stringValue
-      if let nodeId = keyed[keyedId][string] {
-        return Ref(nodeId: nodeId, failId: -1)
-      } else {
-        defer { nodes.append(Node(link: Link(prev: ref.nodeId, key: key))) }
-        keyed[keyedId][string] = nodes.count
-        return Ref(nodeId: nodes.count, failId: -1)
+      guard keyed[keyedId][string] == nil else {
+        defer { fails.append(Link(prev: 0, key: key)) }
+        return Ref(nodeId: ref.nodeId, failId: fails.count)
       }
+      defer { nodes.append(Node(link: Link(prev: ref.nodeId, key: key))) }
+      keyed[keyedId][string] = nodes.count
+      return Ref(nodeId: nodes.count, failId: -1)
     } else {
       guard case .unkeyedId(let unkeyedId) = nodes[ref.nodeId].storage else {
         defer { fails.append(Link(prev: 0, key: Enigma.Pin.int(0))) }
