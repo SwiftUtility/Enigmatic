@@ -1,0 +1,158 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable release version (vMAJOR.MINOR.PATCH), e.g. v3.0.0'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Check release version
+    runs-on: ubuntu-24.04
+    outputs:
+      baseline: ${{ steps.version.outputs.baseline }}
+      bump: ${{ steps.version.outputs.bump }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Release gate tests
+        run: python3 -m unittest discover -s Scripts/tests
+      - name: Determine baseline and bump
+        id: version
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: python3 Scripts/check-release.py version "$RELEASE_VERSION"
+      - name: Validate new release tag
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          case "$RELEASE_VERSION" in
+            v?*) ;;
+            *) echo 'Release version must start with v, e.g. v3.0.0' >&2; exit 1 ;;
+          esac
+          git check-ref-format "refs/tags/$RELEASE_VERSION"
+          git ls-remote --tags origin "refs/tags/$RELEASE_VERSION" > "$RUNNER_TEMP/release-tags"
+          if [ -s "$RUNNER_TEMP/release-tags" ]; then
+            echo "Tag already exists: $RELEASE_VERSION" >&2
+            exit 1
+          fi
+
+  validate:
+    name: ${{ matrix.os }} / ${{ matrix.configuration }}
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, ubuntu-24.04]
+        configuration: [debug, release]
+        include:
+          - os: ubuntu-24.04
+            container: swift:6.3.3
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Select Xcode 26.6
+        if: runner.os == 'macOS'
+        run: echo 'DEVELOPER_DIR=/Applications/Xcode_26.6.app/Contents/Developer' >> "$GITHUB_ENV"
+      - name: Verify Swift 6.3.3
+        run: |
+          swift --version
+          swift --version | grep -Eq 'Swift version 6\.3\.3([[:space:]]|$)'
+      - name: Run tests
+        run: swift test -c ${{ matrix.configuration }} --skip PerformanceTests
+      - name: Install API gate dependencies
+        if: runner.os == 'Linux' && matrix.configuration == 'debug' && needs.prepare.outputs.bump != 'major'
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3
+      - name: Check public API against the previous release
+        if: matrix.configuration == 'debug' && needs.prepare.outputs.bump != 'major'
+        env:
+          API_BASELINE: ${{ needs.prepare.outputs.baseline }}
+          RELEASE_BUMP: ${{ needs.prepare.outputs.bump }}
+        run: python3 Scripts/check-release.py api --baseline "$API_BASELINE" --bump "$RELEASE_BUMP"
+      - name: Enforce 95% coverage
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: |
+          python3 -m unittest discover -s Scripts/tests
+          swift test --enable-code-coverage --skip PerformanceTests
+          cp "$(swift test --show-codecov-path)" coverage.json
+          python3 Scripts/check-coverage.py coverage.json --minimum 95 --badge-output coverage-badge.json
+      - name: Build documentation
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: |
+          swift package dump-symbol-graph --minimum-access-level public
+          enigmatic_symbols="$(dirname "$(swift build --show-bin-path)")/symbolgraph"
+          mkdir -p .build/Enigmatic.symbolgraph
+          cp "$enigmatic_symbols/Enigmatic.symbols.json" .build/Enigmatic.symbolgraph/
+          for graph in "$enigmatic_symbols"/Enigmatic@*.symbols.json; do
+            [ -f "$graph" ] || continue
+            cp "$graph" .build/Enigmatic.symbolgraph/
+          done
+          xcrun docc convert Sources/Enigmatic/Enigmatic.docc \
+            --additional-symbol-graph-dir .build/Enigmatic.symbolgraph \
+            --output-path .build/Enigmatic.doccarchive \
+            --transform-for-static-hosting \
+            --hosting-base-path Enigmatic \
+            --warnings-as-errors
+      - name: Prepare documentation site
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: cp coverage-badge.json .build/Enigmatic.doccarchive/coverage-badge.json
+      - name: Upload GitHub Pages site
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: .build/Enigmatic.doccarchive
+
+  documentation:
+    name: Deploy release documentation
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+  publish:
+    name: Publish GitHub release
+    needs: [validate, documentation]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+      - name: Create release on the validated commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          git ls-remote --tags origin "refs/tags/$RELEASE_VERSION" > "$RUNNER_TEMP/release-tags"
+          if [ -s "$RUNNER_TEMP/release-tags" ]; then
+            echo "Tag already exists: $RELEASE_VERSION" >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_VERSION" --target "$GITHUB_SHA" --generate-notes

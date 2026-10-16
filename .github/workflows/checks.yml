@@ -1,0 +1,82 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: ${{ matrix.os }} / ${{ matrix.configuration }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, ubuntu-24.04]
+        configuration: [debug, release]
+        include:
+          - os: ubuntu-24.04
+            container: swift:6.3.3
+    steps:
+      - uses: actions/checkout@v6
+      - name: Select Xcode 26.6
+        if: runner.os == 'macOS'
+        run: echo 'DEVELOPER_DIR=/Applications/Xcode_26.6.app/Contents/Developer' >> "$GITHUB_ENV"
+      - name: Verify Swift 6.3.3
+        run: |
+          swift --version
+          swift --version | grep -Eq 'Swift version 6\.3\.3([[:space:]]|$)'
+      - name: Functional tests
+        run: swift test -c ${{ matrix.configuration }} --skip PerformanceTests
+      - name: Coverage gate tests
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: python3 -m unittest discover -s Scripts/tests
+      - name: Coverage
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: |
+          swift test --enable-code-coverage --skip PerformanceTests
+          cp "$(swift test --show-codecov-path)" coverage.json
+          python3 Scripts/check-coverage.py coverage.json --minimum 95
+      - name: Upload coverage
+        if: always() && matrix.os == 'macos-26' && matrix.configuration == 'debug' && hashFiles('coverage.json') != ''
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage
+          path: coverage.json
+          if-no-files-found: error
+      - name: Build documentation
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: |
+          swift package dump-symbol-graph --minimum-access-level public
+          enigmatic_symbols="$(dirname "$(swift build --show-bin-path)")/symbolgraph"
+          mkdir -p .build/Enigmatic.symbolgraph
+          cp "$enigmatic_symbols/Enigmatic.symbols.json" .build/Enigmatic.symbolgraph/
+          for graph in "$enigmatic_symbols"/Enigmatic@*.symbols.json; do
+            [ -f "$graph" ] || continue
+            cp "$graph" .build/Enigmatic.symbolgraph/
+          done
+          xcrun docc convert Sources/Enigmatic/Enigmatic.docc \
+            --additional-symbol-graph-dir .build/Enigmatic.symbolgraph \
+            --output-path .build/Enigmatic.doccarchive \
+            --transform-for-static-hosting \
+            --hosting-base-path Enigmatic \
+            --warnings-as-errors
+      - name: Pack documentation
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        run: tar -czf Enigmatic.doccarchive.tar.gz -C .build Enigmatic.doccarchive
+      - name: Upload documentation
+        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        uses: actions/upload-artifact@v6
+        with:
+          name: documentation
+          path: Enigmatic.doccarchive.tar.gz
+          compression-level: 0
+          if-no-files-found: error

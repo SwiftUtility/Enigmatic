@@ -1,0 +1,32 @@
+name: Benchmarks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: benchmarks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  benchmarks:
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify Swift 6.3.3
+        run: |
+          swift --version
+          swift --version | grep -Eq 'Swift version 6\.3\.3([[:space:]]|$)'
+      - name: Release benchmarks without instrumentation
+        shell: bash
+        run: |
+          set -o pipefail
+          swift test -c release --filter PerformanceTests 2>&1 | tee benchmarks.log
+      - uses: actions/upload-artifact@v6
+        with:
+          name: benchmarks
+          path: benchmarks.log

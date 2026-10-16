@@ -36,11 +36,19 @@ struct D: Codable, Equatable {
   var string4: String = "d"
 }
 
+struct Box<Value: Codable & Equatable>: Codable, Equatable {
+  var value: Value
+}
+
 struct Complex: Codable, Equatable {
   var regular = Regular()
   var infinits = InfinitFloats()
   var dataValues = DataValues()
   var dateValues = DateValues()
+  var dataValuesArray = [DataValues(), DataValues(), DataValues()]
+  var dateValuesArray = [DateValues(), DateValues(), DateValues()]
+  var dataValuesDict = [1: DataValues(), 2: DataValues(), 3: DataValues()]
+  var dateValuesDict = [1: DateValues(), 2: DateValues(), 3: DateValues()]
 }
 
 struct Regular: Codable, Equatable {
@@ -57,10 +65,16 @@ struct Regular: Codable, Equatable {
   var nilCustom = NilCustom()
   var arrays = Arrays()
   var dicts = Dicts()
-  var boolKeyDict: [Bool: String?] = [true: "", false: nil]
-  var floatKeyDict: [Float: String?] = [0.1: "", 0.0001: nil]
-  var doubleKeyDict: [Double: String?] = [0.1: "", 0.0001: nil]
-  var optKeyDict: [String?: String?] = ["": nil, nil: "nil"]
+  @Codec.Box<Codec.Base64Data>
+  var codecData = Data("Hello Codec<Base64Data>".utf8)
+  @Codec.Box<Codec.Base64Data?>
+  var codecOptData = Data("Hello Codec<Base64Data>".utf8)
+  @Codec.Box<[Codec.Base64Data]>
+  var codecDataArray = [Data("Hello".utf8), Data("Codec<Base64Data>".utf8)]
+  @Codec.Box<[String: Codec.Base64Data]>
+  var codecDataDict = ["Hello": Data("Hello".utf8), "Base64Data": Data("Codec<Base64Data>".utf8)]
+  @Codec.Box<Codec.StringURL?>
+  var url = URL(string: "net://net:net@net.net.net/net.net?net=net&net=net")
 }
 
 struct MaxInts: Codable, Equatable {
@@ -128,14 +142,16 @@ struct Floats: Codable, Equatable {
   var pbigDouble = 1.111111111111111e307 as Double
   var plitDouble = 1.111111111111111e-307 as Double
   var pbigFloat = 1.1111111e38 as Float
-  var plitFloat = 1e-38 as Float
+  var plitFloat = 1.5e-38 as Float
   var nbigDouble = -1.111111111111111e307 as Double
   var nlitDouble = -1.111111111111111e-307 as Double
   var nbigFloat = -1.1111111e38 as Float
-  var nlitFloat = -1e-38 as Float
+  var nlitFloat = -1.5e-38 as Float
   var pSemiFloatDouble = 1.1111111e38 as Double
-  var halfDouble = 0.5 as Float
+  var halfDouble = 0.5 as Double
   var halfFloat = 0.5 as Float
+  var problemDouble = 0.1 as Double
+  var problemFloat = 0.1 as Float
 }
 
 struct InfinitFloats: Codable, Equatable {
@@ -167,12 +183,20 @@ struct DateValues: Codable, Equatable {
   var date = Date(timeIntervalSinceReferenceDate: 1)
   var optDate: Date? = Date(timeIntervalSince1970: 1)
   var nilDate: Date?
+  var array: [Date] = [Date(timeIntervalSince1970: 1), Date(timeIntervalSince1970: 1)]
+  var optArray: [Date?] = [Date(timeIntervalSince1970: 1), nil]
+  var dict: [Int: Date] = [1: Date(timeIntervalSince1970: 1), 2: Date(timeIntervalSince1970: 1)]
+  var optDict: [Int: Date?] = [1: Date(timeIntervalSince1970: 1), 2: nil]
 }
 
 struct DataValues: Codable, Equatable {
   var data = Data("Hello Data".utf8)
   var optData: Data? = Data("Hello Data".utf8)
   var nilData: Data?
+  var array: [Data] = [Data("Hello Data".utf8), Data("Hello Data".utf8)]
+  var optArray: [Data?] = [Data("Hello Data".utf8), nil]
+  var dict: [Int: Data] = [1: Data("Hello Data".utf8), 2: Data("Hello Data".utf8)]
+  var optDict: [Int: Data?] = [1: Data("Hello Data".utf8), 2: nil]
 }
 
 struct Arrays: Codable, Equatable {
@@ -180,6 +204,11 @@ struct Arrays: Codable, Equatable {
   var empArray: [Int] = []
   var optArray: [Int]? = [1, 2]
   var nilArray: [Int]?
+  var dictsArray: [[Int: Int]] = [[1: 1, 2: 2], [3: 3], [:]]
+}
+
+struct OptArrays: Codable, Equatable {
+  var nilArray: [Int?] = [nil, 0, nil, 42]
   var dictsArray: [[Int: Int?]?] = [[1: 1, 2: nil], [3: 3], [:], nil]
 }
 
@@ -189,8 +218,31 @@ struct Dicts: Codable, Equatable {
   var optDict: [String: Int]? = ["": 0, "one": 1, "two": 2]
   var nilDict: [String: Int]?
   var intDict: [Int: Int] = [1: 1, 2: 2]
+  var intKeyDict: [IntKeys: Int] = [.zero: 0, .one: 1, .two: 2]
+  var strKeyDict: [StringKeys: Bool] = [.one: true, .two: false]
+  var boolKeyDict: [Bool: String] = [true: "", false: "f"]
+  var floatKeyDict: [Float: String] = [0.1: "", 0.0001: "a"]
+  var doubleKeyDict: [Double: String] = [0.1: "", 0.0001: "0"]
+}
+
+struct OptDicts: Codable, Equatable {
+  var dict: [String: Int?] = ["": 0, "one": 1, "two": nil]
+  var empDict: [String: Int?] = [:]
+  var optDict: [String: Int?]? = ["": nil, "one": 1, "two": 2]
+  var nilDict: [String: Int?]?
+  var intDict: [Int: Int?] = [1: 1, 2: nil]
   var intKeyDict: [IntKeys: Int?] = [.zero: nil, .one: 1, .two: 2]
   var strKeyDict: [StringKeys: Bool?] = [.zero: nil, .one: true, .two: false]
+  var boolKeyDict: [Bool: String?] = [true: "", false: nil]
+  var floatKeyDict: [Float: String?] = [0.1: "", 0.0001: nil]
+  var doubleKeyDict: [Double: String?] = [0.1: "", 0.0001: nil]
+  var optKeyDict: [String?: String?] = ["": nil, nil: "nil"]
+  @Codec.Box<Codec.Base64Data?>
+  var codecNilData = nil
+  @Codec.Box<[String: Codec.Base64Data?]>
+  var codecArrayOptData = ["hello": nil, "Base64Data": Data("Base64Data".utf8)]
+  @Codec.Box<[Codec.Base64Data?]>
+  var codecDictOptData = [nil, Data("Base64Data".utf8)]
 }
 
 enum StringKeys: String, Codable, Equatable {
