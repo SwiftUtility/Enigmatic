@@ -9,8 +9,8 @@ dates and data. Encode a model into a tree, modify selected paths, merge a secon
 model, then decode the result. ``Codec`` provides reusable coding strategies that
 compose through a property wrapper.
 
-The package requires Swift 6.3. Availability annotations on individual declarations
-specify Apple runtime requirements; Linux uses the toolchain runtime.
+The package requires Swift 6.2.3. Availability annotations on individual declarations
+specify Apple runtime requirements; Linux and Windows use the toolchain runtime.
 
 ## Serialization limitations
 
@@ -26,6 +26,9 @@ for date units, and a custom string strategy for non-finite numbers. See
 
 ## Compatibility
 
+The package supports macOS, iOS, tvOS, watchOS, visionOS, Linux, and Windows.
+Other platforms produce a compile-time error instead of using a fallback implementation.
+
 The manifest leaves deployment targets at SwiftPM's defaults. Some APIs have
 higher runtime requirements:
 
@@ -34,7 +37,7 @@ higher runtime requirements:
 - `Codec.UnixDate<scale>` and `Codec.UnixIntDate<scale>`: Apple OS 26.
   Use the named seconds/milliseconds strategies on older systems.
 
-Linux uses the toolchain runtime without Apple OS availability limits.
+Linux and Windows use the toolchain runtime without Apple OS availability limits.
 
 ## Topics
 

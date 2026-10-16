@@ -7,6 +7,19 @@ swift test --skip PerformanceTests
 swift test -c release --skip PerformanceTests
 ```
 
+To check Linux compatibility with the minimum compiler version from macOS, run
+the functional suite in the official Swift Docker image. The source mount is
+read-only; build artifacts stay in the container:
+
+```sh
+docker run --rm -v "$PWD:/package:ro" -w /package swift:6.2.3 \
+  swift test --scratch-path /tmp/enigmatic-build --skip PerformanceTests
+docker run --rm -v "$PWD:/package:ro" -w /package swift:6.2.3 \
+  swift test --scratch-path /tmp/enigmatic-build -c release --skip PerformanceTests
+```
+
+Apple-specific branches still require validation on macOS with Swift 6.2.3.
+
 On Windows, use Developer PowerShell for Visual Studio with the C++ tools and
 Windows SDK installed. Start a fresh shell after installing Swift so `PATH` and
 `SDKROOT` include the toolchain and its SDK.
@@ -32,9 +45,10 @@ These are toolchain workarounds, not package settings. The native build system i
 deprecated; recheck these workarounds when updating Swift. Windows validation
 does not replace the macOS and Linux CI jobs below.
 
-The macOS and Linux CI jobs use Swift 6.3.3 from Xcode 26.6 on macOS 26 and the
-`swift:6.3.3` container on Ubuntu 24.04. Each job verifies the compiler version
-before testing.
+The Checks workflow uses Swift 6.2.4 from Xcode 26.3 on macOS 26 and the
+`swift:6.2.3` container on Ubuntu 24.04 to test the minimum supported compiler.
+Benchmarks uses the same Xcode version as Checks.
+Each job verifies the compiler version before testing.
 The macOS Debug job also checks the coverage script, enforces 95% library line
 coverage, and builds DocC. It uploads the coverage report as `coverage.json` and
 the documentation as `Enigmatic.doccarchive.tar.gz`, preserving DocC filenames
@@ -43,6 +57,10 @@ inside the archive.
 Checks also runs separate Windows x64 Debug and Release jobs on `windows-2022`
 with Swift 6.4.1, Visual Studio's C++ environment, and the workarounds above.
 These jobs do not change the macOS/Linux checks or the Release workflow.
+
+Release validation uses Swift 6.3.3 from Xcode 26.6 and the `swift:6.3.3`
+container so the API gate can build previous releases requiring Swift 6.3.
+The Linux Checks jobs validate compatibility with the minimum supported compiler.
 
 The Release workflow publishes the DocC site to GitHub Pages after all release
 validation jobs pass and before creating the GitHub release. The site is at

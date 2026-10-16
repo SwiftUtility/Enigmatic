@@ -1,4 +1,4 @@
-// swift-tools-version:6.3
+// swift-tools-version:6.2.3
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -9,25 +9,10 @@ let package = Package(
     .library(name: "Enigmatic", targets: ["Enigmatic"]),
   ],
   targets: [
-    .target(
-      name: "Enigmatic",
-      swiftSettings: SwiftSetting.allSettings
-    ),
+    .target(name: "Enigmatic"),
     .testTarget(
       name: "EnigmaticTests",
-      dependencies: ["Enigmatic"],
-      swiftSettings: SwiftSetting.allSettings
+      dependencies: ["Enigmatic"]
     ),
   ]
 )
-
-extension SwiftSetting {
-#if compiler(<6.4)
-  static let anyAppleOSAvailability: [Self] = [.enableExperimentalFeature("AnyAppleOSAvailability")]
-#else
-  static let anyAppleOSAvailability: [Self] = []
-#endif
-  static let allSettings: [Self] = [
-    anyAppleOSAvailability,
-  ].flatMap(\.self)
-}

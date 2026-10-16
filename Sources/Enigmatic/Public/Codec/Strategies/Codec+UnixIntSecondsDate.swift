@@ -3,7 +3,15 @@ import Foundation
 extension Codec {
   /// Encodes seconds since 1970 as a truncated integer.
   /// Prefer `UnixIntDate<0>` when the deployment target supports it.
+#if compiler(<6.4)
+  @available(macOS, deprecated: 26.0)
+  @available(iOS, deprecated: 26.0)
+  @available(tvOS, deprecated: 26.0)
+  @available(watchOS, deprecated: 26.0)
+  @available(visionOS, deprecated: 26.0)
+#else
   @available(anyAppleOS, deprecated: 26.0)
+#endif
   public enum UnixIntSecondsDate: Hashable, DecodeStrategy, EncodeStrategy, Error {
     /// Decodes integer seconds since 1970 into a date.
     /// - Complexity: O(1); the operation performs a fixed number of numeric conversions and arithmetic operations.

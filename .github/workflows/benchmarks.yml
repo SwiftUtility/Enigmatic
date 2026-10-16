@@ -14,13 +14,13 @@ jobs:
   benchmarks:
     runs-on: macos-26
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
       - uses: actions/checkout@v6
-      - name: Verify Swift 6.3.3
+      - name: Verify Swift 6.2.4
         run: |
           swift --version
-          swift --version | grep -Eq 'Swift version 6\.3\.3([[:space:]]|$)'
+          swift --version | grep -Eq 'Swift version 6\.2\.4([[:space:]]|$)'
       - name: Release benchmarks without instrumentation
         shell: bash
         run: |

@@ -45,8 +45,10 @@ extension NSValue: EnigmaConvertibleObject {
   func extract<T: FixedWidthInteger>(seed: consuming T) -> T {
 #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     withUnsafeMutablePointer(to: &seed) { getValue($0, size: MemoryLayout<T>.size) }
-#else
+#elseif os(Linux) || os(Windows)
     withUnsafeMutablePointer(to: &seed) { getValue($0) }
+#else
+#error("Unsupported platform: Enigmatic supports Apple platforms, Linux, and Windows.")
 #endif
     return consume seed
   }
