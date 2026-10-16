@@ -161,6 +161,29 @@ final class SerializationContractTests: XCTestCase {
     XCTAssertEqual(try Enigma(cast: NSNull()), .null)
   }
 
+  func testFoundationBooleansRemainDistinctFromZeroAndOne() throws {
+    for value in [false, true] {
+      let tree = try Enigma(cast: NSNumber(value: value))
+      XCTAssertEqual(tree.asBool, value)
+      XCTAssertNil(tree.asInt)
+    }
+    for value in [0, 1] {
+      for number in [NSNumber(value: value), NSNumber(value: Int8(value)), NSNumber(value: Double(value))] {
+        let tree = try Enigma(cast: number)
+        XCTAssertNil(tree.asBool)
+        XCTAssertEqual(tree.asInt, value)
+      }
+    }
+    let tree: Enigma = [false, true, 0, 1]
+    let data = try JSONSerialization.data(withJSONObject: tree.asJsonObject)
+    let restored = try Enigma(cast: JSONSerialization.jsonObject(with: data))
+    XCTAssertEqual(restored[0]?.asBool, false)
+    XCTAssertEqual(restored[1]?.asBool, true)
+    XCTAssertNil(restored[2]?.asBool)
+    XCTAssertNil(restored[3]?.asBool)
+    XCTAssertEqual(restored, tree)
+  }
+
   func testFloatFoundationSerializationRoundTrips() throws {
     let values: [Float] = [
       0.1,

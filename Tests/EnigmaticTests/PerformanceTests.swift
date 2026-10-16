@@ -1,6 +1,5 @@
 @testable import Enigmatic
 import Foundation
-import CoreFoundation
 import XCTest
 
 final class PerformanceTests: XCTestCase {

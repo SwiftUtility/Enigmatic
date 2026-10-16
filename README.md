@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/github/license/SwiftUtility/Enigmatic)](LICENSE)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftutility.github.io%2FEnigmatic%2Fcoverage-badge.json)](https://github.com/SwiftUtility/Enigmatic/actions/workflows/release.yml)
 [![Documentation](https://img.shields.io/badge/Documentation-DocC-blue)](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/)
-[![Tested platforms](https://img.shields.io/badge/tested_on-macOS%20%7C%20Linux-blue)](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/development/)
+[![Tested platforms](https://img.shields.io/badge/tested_on-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/development/)
 
 Turn `Codable` values into a tree you can inspect, edit, merge, and decode again.
 Use `@Codec.Box` to choose how individual properties are encoded.

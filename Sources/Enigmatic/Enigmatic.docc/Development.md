@@ -7,6 +7,31 @@ swift test --skip PerformanceTests
 swift test -c release --skip PerformanceTests
 ```
 
+On Windows, use Developer PowerShell for Visual Studio with the C++ tools and
+Windows SDK installed. Start a fresh shell after installing Swift so `PATH` and
+`SDKROOT` include the toolchain and its SDK.
+
+The functional suite passed locally in Debug and Release on Windows x64 with
+Swift 6.4.1 on 2026-10-16. Windows is not currently part of the CI matrix.
+
+Local Windows x64 validation with Swift 6.4.1 encountered two toolchain issues:
+the default build system failed to find `stdlib.h`, and the compiler's debug-type
+round-trip check asserted on negative integer generic arguments in the strategy
+tests. To reproduce the successful validation, use:
+
+```powershell
+$windowsSwiftFlags = @(
+  '--build-system', 'native',
+  '-Xswiftc', '-Xfrontend', '-Xswiftc', '-disable-round-trip-debug-types'
+)
+swift test @windowsSwiftFlags --skip PerformanceTests
+swift test @windowsSwiftFlags -c release --skip PerformanceTests
+```
+
+These are toolchain workarounds, not package settings. The native build system is
+deprecated; recheck these workarounds when updating Swift. Windows validation
+does not replace the macOS and Linux CI jobs below.
+
 CI uses Swift 6.3.3 from Xcode 26.6 on macOS 26 and the `swift:6.3.3`
 container on Ubuntu 24.04. Each job verifies the compiler version before testing.
 The macOS Debug job also checks the coverage script, enforces 95% library line

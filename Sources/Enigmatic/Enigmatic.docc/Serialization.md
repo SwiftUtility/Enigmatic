@@ -46,6 +46,9 @@ require keys that bridge to String. Keys normalize to strings;
 collisions and unsupported key types produce a decoding error. Arrays and sets
 convert to arrays, with set order unspecified.
 
+Boxed Foundation booleans remain boolean nodes, distinct from numeric zero and
+one, including on Windows where CoreFoundation is not exposed by the SDK.
+
 On all platforms, `Enigma(cast:)` converts `NSDecimalNumber` values by
 parsing their `stringValue` with `Double.init(_:)`, rather than reading
 `doubleValue`. This avoids precision loss in Foundation's decimal-to-Double
