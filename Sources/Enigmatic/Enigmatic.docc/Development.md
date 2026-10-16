@@ -12,13 +12,21 @@ the functional suite in the official Swift Docker image. The source mount is
 read-only; build artifacts stay in the container:
 
 ```sh
-docker run --rm -v "$PWD:/package:ro" -w /package swift:6.2.3 \
+docker run --rm -v "$PWD:/package:ro" -w /package swift:6.1.0 \
   swift test --scratch-path /tmp/enigmatic-build --skip PerformanceTests
-docker run --rm -v "$PWD:/package:ro" -w /package swift:6.2.3 \
+docker run --rm -v "$PWD:/package:ro" -w /package swift:6.1.0 \
   swift test --scratch-path /tmp/enigmatic-build -c release --skip PerformanceTests
 ```
 
-Apple-specific branches still require validation on macOS with Swift 6.2.3.
+These commands pin the original Swift 6.1 release. The shorter `swift:6.1` tag
+can resolve to a later 6.1 patch release. Local validation with Swift 6.1 on
+macOS and Windows remains outstanding.
+The generic Unix date strategies and their tests are compiled only with Swift
+6.2.3 or newer; use the named seconds/milliseconds strategies on older compilers.
+
+The manifest enables `AnyAppleOSAvailability` only with Swift 6.3, where it is
+experimental. Swift 6.4 supports `anyAppleOS` without the flag. Earlier compilers
+use the explicit Apple platform fallbacks in conditional compilation guards.
 
 On Windows, use Developer PowerShell for Visual Studio with the C++ tools and
 Windows SDK installed. Start a fresh shell after installing Swift so `PATH` and
@@ -45,22 +53,29 @@ These are toolchain workarounds, not package settings. The native build system i
 deprecated; recheck these workarounds when updating Swift. Windows validation
 does not replace the macOS and Linux CI jobs below.
 
-The Checks workflow uses Swift 6.2.4 from Xcode 26.3 on macOS 26 and the
-`swift:6.2.3` container on Ubuntu 24.04 to test the minimum supported compiler.
-Benchmarks uses the same Xcode version as Checks.
-Each job verifies the compiler version before testing.
-The macOS Debug job also checks the coverage script, enforces 95% library line
+The Checks workflow runs each compiler independently on all three platforms in
+Debug and Release, producing 18 builds:
+
+| Swift | macOS | Linux (`ubuntu-24.04`) | Windows (`windows-2022`) |
+| --- | --- | --- | --- |
+| 6.1 | `macos-15`, Xcode 16.3 | `swift:6.1.0` | `swift-6.1-RELEASE` installer |
+| 6.2.3 | `macos-26`, Xcode 26.2 | `swift:6.2.3` | `swift-6.2.3-RELEASE` installer |
+| 6.4.1 | `macos-26`, official 6.4.1 toolchain with Xcode 26.6's SDK | `swift:6.4.1` | `swift-6.4.1-RELEASE` installer |
+
+Benchmarks uses Xcode 26.3.
+Each job verifies its compiler version before testing. The 6.1 builds require
+the original release (reported as 6.1 or 6.1.0), rejecting later patch versions.
+The macOS 6.2.3 Debug job also checks the coverage script, enforces 95% library line
 coverage, and builds DocC. It uploads the coverage report as `coverage.json` and
 the documentation as `Enigmatic.doccarchive.tar.gz`, preserving DocC filenames
 inside the archive.
 
-Checks also runs separate Windows x64 Debug and Release jobs on `windows-2022`
-with Swift 6.4.1, Visual Studio's C++ environment, and the workarounds above.
-These jobs do not change the macOS/Linux checks or the Release workflow.
+All Windows toolchains use Visual Studio's C++ environment. Only Swift 6.4.1
+uses the build-system and debug-type workarounds above.
 
 Release validation uses Swift 6.3.3 from Xcode 26.6 and the `swift:6.3.3`
 container so the API gate can build previous releases requiring Swift 6.3.
-The Linux Checks jobs validate compatibility with the minimum supported compiler.
+The Swift 6.1 Checks jobs validate the minimum compiler independently.
 
 The Release workflow publishes the DocC site to GitHub Pages after all release
 validation jobs pass and before creating the GitHub release. The site is at
@@ -99,7 +114,8 @@ be present on the default branch for their **Run workflow** buttons to appear.
 swift test -c release --filter PerformanceTests
 ```
 
-Build documentation with Xcode's documentation compiler. Set `enigmatic_symbols`
+Build documentation with Swift 6.2.3 or newer and Xcode's documentation compiler
+so links to the generic Unix date strategies resolve. Set `enigmatic_symbols`
 to the directory printed by `dump-symbol-graph`; the location depends on SwiftPM's
 build system. Copy only the library graphs, since SwiftPM can also emit a
 test-runner graph after tests have been built.

@@ -176,7 +176,8 @@ final class CodableTests: XCTestCase {
     XCTAssertEqual(direct, indirect)
   }
 
-#if compiler(<6.4)
+#if compiler(>=6.2.3)
+#if compiler(<6.3)
   @available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
 #else
   @available(anyAppleOS 26, *)
@@ -200,4 +201,5 @@ final class CodableTests: XCTestCase {
     )
     Checker().check(value: codecDates)
   }
+#endif
 }

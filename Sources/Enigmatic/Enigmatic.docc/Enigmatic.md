@@ -9,8 +9,9 @@ dates and data. Encode a model into a tree, modify selected paths, merge a secon
 model, then decode the result. ``Codec`` provides reusable coding strategies that
 compose through a property wrapper.
 
-The package requires Swift 6.2.3. Availability annotations on individual declarations
-specify Apple runtime requirements; Linux and Windows use the toolchain runtime.
+The package requires Swift 6.1. The generic Unix date strategies require Swift
+6.2.3 or newer. Availability annotations on individual declarations specify Apple
+runtime requirements; Linux and Windows use the toolchain runtime.
 
 ## Serialization limitations
 
@@ -20,8 +21,9 @@ specify Apple runtime requirements; Linux and Windows use the toolchain runtime.
 > rejects them. Apply ``Codec/Box`` strategies before building the tree to choose
 > a representation independently of Foundation encoder/decoder settings.
 
-Use ``Codec/Base64Data`` for Base64, ``Codec/PlistDate`` or ``Codec/UnixDate``
-for date units, and a custom string strategy for non-finite numbers. See
+Use ``Codec/Base64Data`` for Base64, ``Codec/PlistDate`` or
+``Codec/UnixSecondsDate`` for date units, and a custom string strategy for
+non-finite numbers. See
 <Serialization> for the limits and <CodingStrategies> for a complete example.
 
 ## Compatibility
@@ -30,12 +32,14 @@ The package supports macOS, iOS, tvOS, watchOS, visionOS, Linux, and Windows.
 Other platforms produce a compile-time error instead of using a fallback implementation.
 
 The manifest leaves deployment targets at SwiftPM's defaults. Some APIs have
-higher runtime requirements:
+additional compiler or runtime requirements:
 
 - `Codec.Each`: macOS 14, iOS/tvOS 17, watchOS 10. Use Each2/Each3/Each4 on older systems.
 - Int128/UInt128 access: macOS 15, iOS/tvOS 18, watchOS 11, visionOS 2.
-- `Codec.UnixDate<scale>` and `Codec.UnixIntDate<scale>`: Apple OS 26.
-  Use the named seconds/milliseconds strategies on older systems.
+- `Codec.UnixDate<scale>` and `Codec.UnixIntDate<scale>`: Swift 6.2.3 or newer
+  and, on Apple platforms, OS 26. Use the named seconds/milliseconds strategies
+  with earlier compilers or older systems. Their Apple OS 26 deprecations apply
+  only with Swift 6.2.3 or newer.
 
 Linux and Windows use the toolchain runtime without Apple OS availability limits.
 

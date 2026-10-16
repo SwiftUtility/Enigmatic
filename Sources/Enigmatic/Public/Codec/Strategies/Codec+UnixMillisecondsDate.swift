@@ -2,15 +2,16 @@ import Foundation
 
 extension Codec {
   /// Encodes seconds since 1970 multiplied by 1,000 as a floating-point value.
-  /// Prefer `UnixDate<3>` when the deployment target supports it.
-#if compiler(<6.4)
+  /// Prefer `UnixDate<3>` when both the compiler (Swift 6.2.3 or newer) and
+  /// deployment target support it.
+#if compiler(>=6.3)
+  @available(anyAppleOS, deprecated: 26.0)
+#elseif compiler(>=6.2.3)
   @available(macOS, deprecated: 26.0)
   @available(iOS, deprecated: 26.0)
   @available(tvOS, deprecated: 26.0)
   @available(watchOS, deprecated: 26.0)
   @available(visionOS, deprecated: 26.0)
-#else
-  @available(anyAppleOS, deprecated: 26.0)
 #endif
   public enum UnixMillisecondsDate: Hashable, DecodeStrategy, EncodeStrategy, Error {
     /// Decodes finite milliseconds since 1970 into a date.
