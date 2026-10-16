@@ -244,6 +244,71 @@ final class StrategyContractTests: XCTestCase {
     }
   }
 
+  func testPathURLPreservesLiteralCharactersThroughSynthesizedCodable() throws {
+    struct Payload: Codable {
+      @Codec.Box<Codec.PathURL> var file: URL
+    }
+    let path = "/tmp/enigmatic/café with spaces%20#.txt"
+    let payload = Payload(file: URL(fileURLWithPath: path, isDirectory: false))
+    let tree = try Enigma(encode: payload)
+    XCTAssertEqual(tree, ["file": .string(path)])
+    let restored = try tree.decode(Payload.self)
+    XCTAssertEqual(restored.file, payload.file)
+    XCTAssertNil(restored.file.query)
+    XCTAssertNil(restored.file.fragment)
+
+    let json = try JSONEncoder().encode(payload)
+    XCTAssertEqual(try JSONDecoder().decode([String: String].self, from: json), ["file": path])
+    XCTAssertEqual(try JSONDecoder().decode(Payload.self, from: json).file, payload.file)
+    assertDecodingError("typeMismatch", path: ["file"]) {
+      _ = try Enigma.dictionary(["file": 42]).decode(Payload.self)
+    }
+  }
+
+  func testPathURLResolvesRelativePathsAgainstTheWorkingDirectory() throws {
+    let path = "enigmatic relative/file.txt"
+    let expected = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+      .appendingPathComponent("enigmatic relative", isDirectory: true)
+      .appendingPathComponent("file.txt", isDirectory: false)
+    let box = try Enigma.string(path).decode(Codec.Box<Codec.PathURL>.self)
+    XCTAssertEqual(box.wrappedValue.absoluteURL, expected)
+    let tree = try Enigma(encode: box)
+    XCTAssertEqual(tree, .string(expected.path))
+    XCTAssertEqual(try tree.decode(Codec.Box<Codec.PathURL>.self).wrappedValue.absoluteURL, expected)
+  }
+
+  func testPathURLEncodesOnlyTheUnescapedPathOfANonFileURL() throws {
+    let url = URL(string: "https://example.com/path%20with%20spaces/%2520%23?query=value#fragment")!
+    let tree = try Enigma(encode: Codec.Box<Codec.PathURL>(wrappedValue: url))
+    XCTAssertEqual(tree, "/path with spaces/%20#")
+    let restored = try tree.decode(Codec.Box<Codec.PathURL>.self).wrappedValue
+    XCTAssertTrue(restored.isFileURL)
+    XCTAssertNil(restored.query)
+    XCTAssertNil(restored.fragment)
+  }
+
+#if os(Windows)
+  func testPathURLHandlesWindowsDriveAndNetworkPaths() throws {
+    for (input, path, isDirectory) in [
+      (#"C:\Enigmatic\café with spaces%20#.txt"#, "C:/Enigmatic/café with spaces%20#.txt", false),
+      ("C:/Enigmatic/file.txt", "C:/Enigmatic/file.txt", false),
+      (#"C:\Enigmatic\folder\"#, "C:/Enigmatic/folder/", true),
+      ("C:/Enigmatic/folder/", "C:/Enigmatic/folder/", true),
+      (#"C:\"#, "C:/", true),
+      ("C:/", "C:/", true),
+      (#"\\server\share\café with spaces%20#.txt"#, "//server/share/café with spaces%20#.txt", false),
+      (#"\\server\share\folder\"#, "//server/share/folder/", true),
+    ] {
+      let tree = Enigma.string(input)
+      let box = try tree.decode(Codec.Box<Codec.PathURL>.self)
+      XCTAssertTrue(box.wrappedValue.isFileURL, input)
+      XCTAssertEqual(box.wrappedValue.hasDirectoryPath, isDirectory, input)
+      XCTAssertEqual(try Enigma(encode: box), .string(path), input)
+      XCTAssertEqual(try JSONDecoder().decode(Codec.Box<Codec.PathURL>.self, from: JSONEncoder().encode(box)), box, input)
+    }
+  }
+#endif
+
 #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
   @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
   func testPathURLKeepsFilePathNormalization() throws {

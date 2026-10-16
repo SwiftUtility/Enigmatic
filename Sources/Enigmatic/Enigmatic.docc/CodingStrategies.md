@@ -21,7 +21,13 @@ the present payload of an optional strategy.
 `Base64Data` encodes a Base64 string and rejects malformed input. `StringURL`
 uses Foundation's URL initializer, which permits relative URLs; it does not enforce
 an HTTP scheme. `PathURL` turns filesystem paths into file URLs and encodes their
-unescaped paths. Encoding a non-file URL still writes only its path.
+unescaped paths. Relative paths resolve against the process's working directory;
+the original relative spelling and URL base are not preserved. Encoding a
+non-file URL still writes only its path.
+On Windows, `PathURL` accepts drive and network paths with either slash style.
+It encodes forward slashes, keeps drive prefixes such as `C:/` without an extra
+leading slash, and preserves trailing directory separators. Other platforms
+retain their existing Foundation and FilePath normalization.
 
 Strategy arrays, dictionaries, optionals and sets transform their elements:
 `[Codec.Base64Data]`, `[String: Codec.Base64Data?]`, `Set<Codec.Id<Int>>`.

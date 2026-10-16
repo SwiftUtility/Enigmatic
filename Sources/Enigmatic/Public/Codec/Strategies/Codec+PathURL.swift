@@ -23,20 +23,29 @@ extension Codec {
       } else {
         return URL(fileURLWithPath: value, isDirectory: value.hasSuffix("/"))
       }
+#elseif os(Windows)
+      return URL(fileURLWithPath: value, isDirectory: value.hasSuffix("/") || value.hasSuffix("\\"))
 #else
       return URL(fileURLWithPath: value, isDirectory: value.hasSuffix("/"))
 #endif
     }
 
     /// Encodes the URL's unescaped filesystem path as a string.
+    /// Windows paths use forward slashes and preserve a trailing directory separator.
     /// - Complexity: O(n) in the URL or path string length.
     @inlinable
     public static func encode(value: BoxedValue, encoder: some Encoder) throws {
+#if os(Windows)
+      var path = value.path
+      if value.hasDirectoryPath && !path.hasSuffix("/") { path += "/" }
+      try path.encode(to: encoder)
+#else
       if #available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *) {
         try value.path(percentEncoded: false).encode(to: encoder)
       } else {
         try value.path.encode(to: encoder)
       }
+#endif
     }
 
     /// The decoded and encoded value type.
