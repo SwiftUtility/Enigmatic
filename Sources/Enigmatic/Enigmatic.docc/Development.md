@@ -56,9 +56,14 @@ It reports actual library line coverage from the last successful release
 documentation deployment. Documentation and coverage links become available
 after the first successful Pages deployment.
 
-CI runs automatically for pushes to `main`. To check a pull request, start
-**Actions → Checks → Run workflow** and select its source branch. Pull requests
-and pushes to other branches do not start CI automatically.
+CI runs automatically for pushes to `main`. To check a pull request, add the
+`run-ci` label from the PR sidebar. Results appear in the PR's **Checks** tab.
+Opening a PR or pushing new commits to it does not start CI automatically,
+even while the label remains attached. Remove and reapply `run-ci` to check the
+latest changes. Other labels do not run tests or cancel an active `run-ci` run.
+
+You can also start **Actions → Checks → Run workflow** and select a branch.
+These manual branch runs do not appear as PR checks.
 
 ```sh
 python3 -m unittest discover -s Scripts/tests
