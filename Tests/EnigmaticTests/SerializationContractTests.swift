@@ -386,7 +386,7 @@ final class SerializationContractTests: XCTestCase {
     func boxed<T>(_ value: T, encoding: String) -> NSValue {
       encoding.withCString { type in
         withUnsafeBytes(of: value) { bytes in
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
           NSValue(bytes: bytes.baseAddress!, objCType: type)
 #elseif os(Linux)
           BitInt128Value(bytes: bytes.baseAddress!, objCType: type)
@@ -477,7 +477,7 @@ final class SerializationContractTests: XCTestCase {
     assertDecodingError("dataCorrupted", path: ["outer"]) {
       _ = try Enigma(cast: ["outer": unsupported])
     }
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     // NSString can distinguish keys that Swift String considers canonically equal.
     let colliding = NSDictionary(objects: [1, 2], forKeys: ["café" as NSString, "cafe\u{301}" as NSString])
     XCTAssertEqual(colliding.count, 2)

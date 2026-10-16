@@ -107,7 +107,7 @@ final class CodableTests: XCTestCase {
   func testAnyHashable() throws {
     let key1 = "café"
     let key2 = "cafe\u{301}"
-#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     XCTAssertNotEqual(key1 as NSString, key2 as NSString)
 #elseif os(Linux)
     XCTAssertEqual(key1 as NSString, key2 as NSString)
