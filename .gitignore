@@ -4,5 +4,9 @@
 
 # Swift Package Manager
 
-.swiftpm
+.swiftpm/
 .build/
+
+# Python development scripts
+
+__pycache__/

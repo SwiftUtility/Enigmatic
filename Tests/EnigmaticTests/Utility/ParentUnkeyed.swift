@@ -1,12 +1,12 @@
 class ParentUnkeyed: Codable {
-  var ints: [Int]
+  var ints: [Int?]
 
-  init(ints: [Int]) {
+  init(ints: [Int?]) {
     self.ints = ints
   }
 
   required init(from decoder: Decoder) throws {
-    self.ints = try decoder.singleValueContainer().decode([Int].self)
+    self.ints = try decoder.singleValueContainer().decode([Int?].self)
   }
 
   func encode(to encoder: Encoder) throws {
@@ -16,7 +16,7 @@ class ParentUnkeyed: Codable {
   final class DefaultKeyedChild: ParentUnkeyed, Equatable {
     var string: String
 
-    override init(ints: [Int]) {
+    override init(ints: [Int?]) {
       self.string = "DefaultKeyedChild"
       super.init(ints: ints)
     }
@@ -45,7 +45,7 @@ class ParentUnkeyed: Codable {
   final class CustomKeyedChild: ParentUnkeyed, Equatable {
     var string: String
 
-    override init(ints: [Int]) {
+    override init(ints: [Int?]) {
       self.string = "CustomKeyedChild"
       super.init(ints: ints)
     }
@@ -75,7 +75,7 @@ class ParentUnkeyed: Codable {
   final class ValueUnkeyedChild: ParentUnkeyed, Equatable {
     var string: String
 
-    override init(ints: [Int]) {
+    override init(ints: [Int?]) {
       self.string = "UnkeyedChild"
       super.init(ints: ints)
     }
@@ -100,7 +100,7 @@ class ParentUnkeyed: Codable {
   final class ArrayUnkeyedChild: ParentUnkeyed, Equatable {
     var strings: [String]
 
-    override init(ints: [Int]) {
+    override init(ints: [Int?]) {
       self.strings = ["one", "two"]
       super.init(ints: ints)
     }
