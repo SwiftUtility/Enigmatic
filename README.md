@@ -12,6 +12,26 @@
 Turn `Codable` values into a tree you can inspect, edit, merge, and decode again.
 Use `@Codec.Box` to choose how individual properties are encoded.
 
+## Choosing a library
+
+Choose Enigmatic when you need to edit or merge a `Codable` model as a tree, then
+decode it again without a JSON round trip. Its reusable property strategies also
+work on their own.
+
+| Alternative | When it may fit better |
+| --- | --- |
+| Native `Codable` | You only read or write known models with `JSONEncoder` and `JSONDecoder`. Custom `Codable` code can handle property formats too, without another library or tree. |
+| [SwiftyJSON](https://github.com/SwiftyJSON/SwiftyJSON) | You want JSON getters with defaults, edits, and simple merges. Enigmatic adds more merge rules and direct model/tree conversion. |
+| [AnyCodable](https://github.com/Flight-School/AnyCodable) | You only need mixed value types in `Codable` arrays or dictionaries. |
+| [PotentCodables](https://github.com/outfoxx/PotentCodables) | You need dedicated parsers, YAML or CBOR support, or more native value types. Enigmatic has no parser of its own. |
+| [CodableWrappers](https://github.com/GottaGetSwifty/CodableWrappers) | You want property wrappers or key-renaming macros. Enigmatic has no such macros. |
+| [BetterCodable](https://github.com/marksands/BetterCodable) | You want ready-made defaults or collections that skip invalid values. |
+
+In our local plain JSON tests, native tools used less time and memory.
+PotentCodables' own parser was much faster than decoding Enigma through
+Foundation's `JSONDecoder`. With that same decoder, Enigma and PotentCodables'
+`AnyValue` took similar time. Performance depends on what you do.
+
 ## Install
 
 Requires Swift 6.3 or newer. Add
@@ -19,7 +39,7 @@ Requires Swift 6.3 or newer. Add
 link the **Enigmatic** product to your target. For SwiftPM targets, use
 `.product(name: "Enigmatic", package: "Enigmatic")`.
 
-Some APIs require newer Apple runtimes; see the
+Some APIs require newer Apple OS versions; see the
 [compatibility notes](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/#Compatibility).
 
 ## Edit a model
@@ -38,9 +58,9 @@ tree["scores", 1] = 20
 let user = try tree.decode(User.self) // Grace, [10, 20]
 ```
 
-String keys and array indices form a path. Missing values return `nil`;
-assigning `nil` deletes a child, while `.null` stores a null. Array writes append
-at `count`; indices outside `0...count` leave the tree unchanged.
+String keys and array indices form a path. Reading a missing value returns `nil`.
+Assigning `nil` deletes a child; `.null` stores a null value. Writing at an array's
+`count` appends a value. An index outside `0...count` leaves the tree unchanged.
 
 ## Merge a patch
 
@@ -51,10 +71,11 @@ let merged = original.merging(patch, policy: .replace)
 // ["settings": ["enabled": true, "retries": 2]]
 ```
 
-Dictionaries merge recursively. `.replace` takes incoming values; `.skip` keeps
-existing ones. A policy can also zip, append, or prepend arrays.
+Nested dictionaries are merged too. `.replace` takes incoming values; `.skip`
+keeps existing ones. For arrays, you can merge elements by index, append, or
+prepend.
 
-## Choose a representation
+## Choose how a property is encoded
 
 ```swift
 import Foundation
@@ -70,32 +91,34 @@ let tree = try Enigma(encode: payload) // ["bytes": "AQID"]
 let restored = try tree.decode(Payload.self)
 ```
 
-Strategies compose with arrays, dictionaries, optionals, and sets. Optional box
-properties omit nil keys and decode missing or null keys as nil. `Codec.Either`
-tries Right first; `Codec.Each` combines disjoint keyed models.
+Strategies also work with arrays, dictionaries, optionals, and sets. An optional
+`Codec.Box` leaves out the key when its value is `nil`. Missing or null keys
+decode as `nil`. `Codec.Either` tries `Right` before `Left`. `Codec.Each` combines
+models that encode as dictionaries with no overlapping keys.
 
 ## Serialization limitations
 
-> **Warning:** Foundation's type-specific serialization strategies are not a
-> portable representation contract for an Enigma tree. Choose representations
-> with `Codec.Box` on the model before building the tree.
+> **Warning:** When you encode an Enigma tree, Foundation's date and data settings
+> do not choose how those values are written. Use `Codec.Box` on the model to
+> choose the format before building the tree.
 
-- `Data` and `Date` stay native in memory, but serializing a tree bypasses
+- `Data` and `Date` keep their original types in memory. Encoding a tree bypasses
   `JSONEncoder.dataEncodingStrategy`, `JSONEncoder.dateEncodingStrategy`, and
-  PropertyListEncoder's native handling. Data becomes a byte array; Date becomes
-  seconds since 2001-01-01. Use `@Codec.Box<Codec.Base64Data>` for Base64 and
-  `@Codec.Box<Codec.PlistDate>` for explicit reference-date seconds, or
-  `Codec.UnixDate<0>` for Unix seconds on supported runtimes.
-- `Float` and `Double` can retain `NaN` and positive/negative infinity in memory,
-  but these values are not JSON numbers. Default JSON encoding and
-  `asJsonObject` reject them. External JSONEncoder/JSONDecoder instances can use
-  matching `nonConformingFloatEncodingStrategy`/`nonConformingFloatDecodingStrategy`
-  settings. Enigma's own model/tree conversions expose no such settings; use
-  `Codec.Box` with a custom string strategy for an explicit representation.
+  the usual date/data handling in `PropertyListEncoder`. Data becomes a byte
+  array; Date becomes seconds since 2001-01-01. Use `@Codec.Box<Codec.Base64Data>`
+  for Base64 and `@Codec.Box<Codec.PlistDate>` for seconds since 2001-01-01, or
+  `Codec.UnixDate<0>` for Unix seconds on supported OS versions.
+- `Float` and `Double` can store `NaN` and positive or negative infinity in memory.
+  These values are not valid JSON numbers. Default JSON encoding and
+  `asJsonObject` reject them. When encoding or decoding the tree with your own
+  `JSONEncoder` and `JSONDecoder`, you can use matching
+  `nonConformingFloatEncodingStrategy` and `nonConformingFloatDecodingStrategy`
+  settings. Enigma's model/tree conversions do not have these settings. Use a
+  custom `Codec.Box` strategy to store these values as strings.
 
 See [explicit serialization strategies](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/codingstrategies/#Explicit-portable-representations)
-for a complete Data/Date/Float/Double example. `Codec.CanonicalFloat` changes
-finite Float representation; it does not make `NaN` or infinity JSON-compatible.
+for a complete Data/Date/Float/Double example. `Codec.CanonicalFloat` changes how
+finite floats are stored; it does not make `NaN` or infinity valid JSON.
 
 [API reference](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/) ·
 [Tree operations](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/treeoperations/) ·
