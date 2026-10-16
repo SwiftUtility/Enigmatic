@@ -3,17 +3,20 @@ name: Checks
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [labeled]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.event.label.name }}
   cancel-in-progress: true
 
 jobs:
   tests:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'run-ci'
     name: ${{ matrix.os }} / ${{ matrix.configuration }}
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
@@ -80,3 +83,43 @@ jobs:
           path: Enigmatic.doccarchive.tar.gz
           compression-level: 0
           if-no-files-found: error
+
+  windows:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'run-ci'
+    name: windows-2022 / ${{ matrix.configuration }}
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [debug, release]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Swift 6.4.1
+        uses: compnerd/gha-setup-swift@86d1ddeaf915c282137601aeb0654ea0e7b7f17e
+        with:
+          swift-version: swift-6.4.1-release
+          swift-build: 6.4.1-RELEASE
+      - name: Verify Swift 6.4.1 for Windows x64
+        run: |
+          $version = (swift --version) -join "`n"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Output $version
+          if ($version -notmatch 'Swift version 6\.4\.1(\s|$)') {
+            throw 'Expected Swift 6.4.1'
+          }
+          if ($version -notmatch 'Target: x86_64-unknown-windows-msvc') {
+            throw 'Expected the Windows x64 toolchain'
+          }
+      - name: Functional tests
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vsPath = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) { throw 'Visual Studio C++ tools not found' }
+          Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+          Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          # Work around Swift 6.4.1's build-system and debug-type assertion issues.
+          swift test -c ${{ matrix.configuration }} --build-system native -Xswiftc -Xfrontend -Xswiftc -disable-round-trip-debug-types --skip PerformanceTests
+          exit $LASTEXITCODE

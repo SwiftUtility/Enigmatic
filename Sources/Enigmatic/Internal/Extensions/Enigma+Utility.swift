@@ -1,5 +1,4 @@
 import Foundation
-import CoreFoundation
 
 extension Enigma {
   func collectPins(

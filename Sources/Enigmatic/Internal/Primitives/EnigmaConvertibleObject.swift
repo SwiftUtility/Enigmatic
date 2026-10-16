@@ -1,5 +1,7 @@
-import CoreFoundation
 import Foundation
+#if canImport(CoreFoundation)
+import CoreFoundation
+#endif
 
 protocol EnigmaConvertibleObject: EnigmaConvertible, AnyObject {}
 
@@ -52,7 +54,12 @@ extension NSValue: EnigmaConvertibleObject {
 
 extension NSNumber {
   var asEnigma: Enigma? {
+#if canImport(CoreFoundation)
     guard CFGetTypeID(self) != CFBooleanGetTypeID() else { return .bool(boolValue) }
+#else
+    // Foundation's boolean singletons distinguish Bool from numeric zero and one.
+    if self === NSNumber(value: true) || self === NSNumber(value: false) { return .bool(boolValue) }
+#endif
     return switch objCType.pointee {
     case ObjCType.signedLong: .int(intValue)
     case ObjCType.unsignedLong: .uint(uintValue)
