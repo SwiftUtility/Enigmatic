@@ -388,9 +388,7 @@ final class SerializationContractTests: XCTestCase {
         withUnsafeBytes(of: value) { bytes in
 #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
           NSValue(bytes: bytes.baseAddress!, objCType: type)
-#elseif os(Linux)
-          BitInt128Value(bytes: bytes.baseAddress!, objCType: type)
-#elseif os(Windows)
+#elseif os(Linux) || os(Windows)
           BitInt128Value(bytes: bytes.baseAddress!, objCType: type)
 #else
 #error("Unsupported platform: Enigmatic supports Apple platforms, Linux, and Windows.")
