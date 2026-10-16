@@ -109,9 +109,7 @@ final class CodableTests: XCTestCase {
     let key2 = "cafe\u{301}"
 #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     XCTAssertNotEqual(key1 as NSString, key2 as NSString)
-#elseif os(Linux)
-    XCTAssertEqual(key1 as NSString, key2 as NSString)
-#elseif os(Windows)
+#elseif os(Linux) || os(Windows)
     XCTAssertEqual(key1 as NSString, key2 as NSString)
 #else
 #error("Unsupported platform: Enigmatic supports Apple platforms, Linux, and Windows.")
