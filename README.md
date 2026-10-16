@@ -23,14 +23,19 @@ work on their own.
 | Native `Codable` | You only read or write known models with `JSONEncoder` and `JSONDecoder`. Custom `Codable` code can handle property formats too, without another library or tree. |
 | [SwiftyJSON](https://github.com/SwiftyJSON/SwiftyJSON) | You want JSON getters with defaults, edits, and simple merges. Enigmatic adds more merge rules and direct model/tree conversion. |
 | [AnyCodable](https://github.com/Flight-School/AnyCodable) | You only need mixed value types in `Codable` arrays or dictionaries. |
-| [PotentCodables](https://github.com/outfoxx/PotentCodables) | You need dedicated parsers, YAML or CBOR support, or more native value types. Enigmatic has no parser of its own. |
+| [PotentCodables](https://github.com/outfoxx/PotentCodables) | You need built-in support for YAML or CBOR, or more native value types. |
 | [CodableWrappers](https://github.com/GottaGetSwifty/CodableWrappers) | You want property wrappers or key-renaming macros. Enigmatic has no such macros. |
 | [BetterCodable](https://github.com/marksands/BetterCodable) | You want ready-made defaults or collections that skip invalid values. |
 
-In our local plain JSON tests, native tools used less time and memory.
-PotentCodables' own parser was much faster than decoding Enigma through
-Foundation's `JSONDecoder`. With that same decoder, Enigma and PotentCodables'
-`AnyValue` took similar time. Performance depends on what you do.
+Enigmatic includes its own JSON parser via `Codec.decode(json:as:)`. In our local
+tests, it read JSON faster than AnyCodable through `JSONDecoder`. AnyCodable
+wrapping native `JSONSerialization` objects was still faster and used less
+memory. Codec's JSON writer was slower than `JSONEncoder`.
+
+With the same Foundation `JSONDecoder`, AnyCodable read JSON faster and Enigma
+used less memory. See the [benchmark results](Benchmarks/BranchComparison/Results/REPORT.md)
+for the tested paths and limits. PotentCodables has not been retested against
+Enigmatic's new parser.
 
 ## Install
 

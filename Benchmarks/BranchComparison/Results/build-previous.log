@@ -1,0 +1,193 @@
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each2.swift:31:17: warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 29 | }
+ 30 | 
+ 31 | extension Codec.Each2: Sendable
+    |                 `- warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 32 | where Value0: Sendable, Value1: Sendable {}
+ 33 | 
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each2.swift:34:17: warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 32 | where Value0: Sendable, Value1: Sendable {}
+ 33 | 
+ 34 | extension Codec.Each2: Decodable
+    |                 `- warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 35 | where Value0: Decodable, Value1: Decodable {
+ 36 |   /// Decodes both component values from the same decoder.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each2.swift:48:17: warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 46 | }
+ 47 | 
+ 48 | extension Codec.Each2: Encodable
+    |                 `- warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 49 | where Value0: Encodable, Value1: Encodable {
+ 50 |   /// Encodes both component values into the same encoder.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each2.swift:59:17: warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 57 | }
+ 58 | 
+ 59 | extension Codec.Each2: Equatable
+    |                 `- warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 60 | where Value0: Equatable, Value1: Equatable {
+ 61 |   /// Compares the corresponding component values.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each2.swift:70:17: warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 68 | }
+ 69 | 
+ 70 | extension Codec.Each2: Hashable
+    |                 `- warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 71 | where Value0: Hashable, Value1: Hashable {
+ 72 |   /// Combines both component values into the hasher.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each2.swift:81:17: warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 79 | }
+ 80 | 
+ 81 | extension Codec.Each2: Codec.Strategy
+    |                 `- warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 82 | where Value0: Codec.Strategy, Value1: Codec.Strategy {
+ 83 |   /// A tuple of each component strategy's boxed value.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each2.swift:90:17: warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 88 | }
+ 89 | 
+ 90 | extension Codec.Each2: Codec.DecodeStrategy
+    |                 `- warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 91 | where Value0: Codec.DecodeStrategy, Value1: Codec.DecodeStrategy {
+ 92 |   /// Decodes both values with their corresponding strategies.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each2.swift:103:17: warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+101 | }
+102 | 
+103 | extension Codec.Each2: Codec.EncodeStrategy
+    |                 `- warning: 'Each2' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+104 | where Value0: Codec.EncodeStrategy, Value1: Codec.EncodeStrategy {
+105 |   /// Encodes both values with their corresponding strategies.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each3.swift:31:17: warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 29 | }
+ 30 | 
+ 31 | extension Codec.Each3: Sendable
+    |                 `- warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 32 | where Value0: Sendable, Value1: Sendable, Value2: Sendable {}
+ 33 | 
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each3.swift:34:17: warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 32 | where Value0: Sendable, Value1: Sendable, Value2: Sendable {}
+ 33 | 
+ 34 | extension Codec.Each3: Decodable
+    |                 `- warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 35 | where Value0: Decodable, Value1: Decodable, Value2: Decodable {
+ 36 |   /// Decodes all component values from the same decoder.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each3.swift:49:17: warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 47 | }
+ 48 | 
+ 49 | extension Codec.Each3: Encodable
+    |                 `- warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 50 | where Value0: Encodable, Value1: Encodable, Value2: Encodable {
+ 51 |   /// Encodes all component values into the same encoder.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each3.swift:61:17: warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 59 | }
+ 60 | 
+ 61 | extension Codec.Each3: Equatable
+    |                 `- warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 62 | where Value0: Equatable, Value1: Equatable, Value2: Equatable {
+ 63 |   /// Compares the corresponding component values.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each3.swift:73:17: warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 71 | }
+ 72 | 
+ 73 | extension Codec.Each3: Hashable
+    |                 `- warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 74 | where Value0: Hashable, Value1: Hashable, Value2: Hashable {
+ 75 |   /// Combines all component values into the hasher.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each3.swift:85:17: warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 83 | }
+ 84 | 
+ 85 | extension Codec.Each3: Codec.Strategy
+    |                 `- warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 86 | where Value0: Codec.Strategy, Value1: Codec.Strategy, Value2: Codec.Strategy {
+ 87 |   /// A tuple of each component strategy's boxed value.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each3.swift:95:17: warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 93 | }
+ 94 | 
+ 95 | extension Codec.Each3: Codec.DecodeStrategy
+    |                 `- warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 96 | where Value0: Codec.DecodeStrategy, Value1: Codec.DecodeStrategy, Value2: Codec.DecodeStrategy {
+ 97 |   /// Decodes all values with their corresponding strategies.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each3.swift:109:17: warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+107 | }
+108 | 
+109 | extension Codec.Each3: Codec.EncodeStrategy
+    |                 `- warning: 'Each3' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+110 | where Value0: Codec.EncodeStrategy, Value1: Codec.EncodeStrategy, Value2: Codec.EncodeStrategy {
+111 |   /// Encodes all values with their corresponding strategies.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each4.swift:31:17: warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 29 | }
+ 30 | 
+ 31 | extension Codec.Each4: Sendable
+    |                 `- warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 32 | where Value0: Sendable, Value1: Sendable, Value2: Sendable, Value3: Sendable {}
+ 33 | 
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each4.swift:34:17: warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 32 | where Value0: Sendable, Value1: Sendable, Value2: Sendable, Value3: Sendable {}
+ 33 | 
+ 34 | extension Codec.Each4: Decodable
+    |                 `- warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 35 | where Value0: Decodable, Value1: Decodable, Value2: Decodable, Value3: Decodable {
+ 36 |   /// Decodes all component values from the same decoder.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each4.swift:50:17: warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 48 | }
+ 49 | 
+ 50 | extension Codec.Each4: Encodable
+    |                 `- warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 51 | where Value0: Encodable, Value1: Encodable, Value2: Encodable, Value3: Encodable {
+ 52 |   /// Encodes all component values into the same encoder.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each4.swift:63:17: warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 61 | }
+ 62 | 
+ 63 | extension Codec.Each4: Equatable
+    |                 `- warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 64 | where Value0: Equatable, Value1: Equatable, Value2: Equatable, Value3: Equatable {
+ 65 |   /// Compares the corresponding component values.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each4.swift:76:17: warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 74 | }
+ 75 | 
+ 76 | extension Codec.Each4: Hashable
+    |                 `- warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 77 | where Value0: Hashable, Value1: Hashable, Value2: Hashable, Value3: Hashable {
+ 78 |   /// Combines all component values into the hasher.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each4.swift:89:17: warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 87 | }
+ 88 | 
+ 89 | extension Codec.Each4: Codec.Strategy
+    |                 `- warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 90 | where Value0: Codec.Strategy, Value1: Codec.Strategy, Value2: Codec.Strategy, Value3: Codec.Strategy {
+ 91 |   /// A tuple of each component strategy's boxed value.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each4.swift:100:17: warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+ 98 | }
+ 99 | 
+100 | extension Codec.Each4: Codec.DecodeStrategy
+    |                 `- warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+101 | where Value0: Codec.DecodeStrategy, Value1: Codec.DecodeStrategy, Value2: Codec.DecodeStrategy, Value3: Codec.DecodeStrategy {
+102 |   /// Decodes all values with their corresponding strategies.
+
+/Users/dima/Documents/Enigmatic/Benchmarks/BranchComparison/.build/previous-source/Sources/Enigmatic/Public/Codec/Codec+Each4.swift:115:17: warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+113 | }
+114 | 
+115 | extension Codec.Each4: Codec.EncodeStrategy
+    |                 `- warning: 'Each4' was deprecated in macOS 14.0: Use Codec.Each instead [#DeprecatedDeclaration]
+116 | where Value0: Codec.EncodeStrategy, Value1: Codec.EncodeStrategy, Value2: Codec.EncodeStrategy, Value3: Codec.EncodeStrategy {
+117 |   /// Encodes all values with their corresponding strategies.
+
+[#DeprecatedDeclaration]: <https://docs.swift.org/compiler/documentation/diagnostics/deprecated-declaration>

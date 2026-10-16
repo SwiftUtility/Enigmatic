@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-17T00:06:08.100513+02:00",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "swift": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0",
+  "hardware": {
+    "chip_type": "Apple M5 Pro",
+    "machine_model": "Mac17,9",
+    "number_processors": "proc 18:6:12:0",
+    "physical_memory": "48 GB"
+  },
+  "branch": "vova/json-codec",
+  "current_commit": "1c7615ff5ac3bdff3821e4bfe10eed3fcc1aee5e",
+  "previous_commit": "b28cb626f9af52ca8ad8754f1bb80670bff73741",
+  "current_source_sha256": "3ba8791a888a89276b21a6f932383a2eef098e33ce63b90ff52d169e3e177d14",
+  "previous_source_sha256": "fb3f3b55bd8365972df55414c8e2b7a0681d07d7d266aa7ea1aade0cc87a4496",
+  "anycodable_version": "0.6.7",
+  "anycodable_revision": "862808b2070cd908cb04f9aafe7de83d35f81b05",
+  "anycodable_source_sha256": "11a81dbb0be19671fddc37668058af2dcccd6d716f93e8b4842d3d601fdf6569",
+  "current_working_diff": "diff --git a/Package.swift b/Package.swift\nindex 2bb970a..ee25a45 100644\n--- a/Package.swift\n+++ b/Package.swift\n@@ -3,23 +3,16 @@\n \n import PackageDescription\n \n-#if compiler(>=6.3) && compiler(<6.4)\n-let swiftSettings: [SwiftSetting] = [.enableExperimentalFeature(\"AnyAppleOSAvailability\")]\n-#else\n-let swiftSettings: [SwiftSetting] = []\n-#endif\n-\n let package = Package(\n   name: \"Enigmatic\",\n   products: [\n     .library(name: \"Enigmatic\", targets: [\"Enigmatic\"]),\n   ],\n   targets: [\n-    .target(name: \"Enigmatic\", swiftSettings: swiftSettings),\n+    .target(name: \"Enigmatic\"),\n     .testTarget(\n       name: \"EnigmaticTests\",\n-      dependencies: [\"Enigmatic\"],\n-      swiftSettings: swiftSettings\n+      dependencies: [\"Enigmatic\"]\n     ),\n   ]\n )",
+  "harness_sha256": "ef2931a0d36fe6df384d94a86863c408eff2361c7c2ace29482bde33993baf7b",
+  "processes": 5,
+  "batches_per_process": 9,
+  "copies": 16,
+  "build_flags": "-O -whole-module-optimization; Enigmatic/benchmark Swift 6; AnyCodable Swift 5",
+  "fixtures": {
+    "100": {
+      "bytes": 16411,
+      "sha256": "c753b49fb0bc6592c56692f62b3c8b50da26871bfd0832c2c6d1c84118e1e009"
+    },
+    "10000": {
+      "bytes": 1697836,
+      "sha256": "dfa3d5e97d9979bfc177743a22a3fc2b51cf4a908b44ba802fe9893b5d905a60"
+    }
+  }
+}
