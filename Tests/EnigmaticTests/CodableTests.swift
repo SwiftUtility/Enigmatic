@@ -178,7 +178,7 @@ final class CodableTests: XCTestCase {
     XCTAssertEqual(direct, indirect)
   }
 
-  @available(anyAppleOS 26, *)
+  @available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
   func testUnixTime() throws {
     struct CodecDates: Codable, Equatable {
       @Codec.Box<Codec.UnixDate<0>>

@@ -4,7 +4,7 @@ extension Codec {
   /// Encodes seconds since 1970 multiplied by 10 to the given scale as Int, truncating toward zero.
   ///
   /// Rejects non-finite values, invalid scale factors and unrepresentable results.
-  @available(anyAppleOS 26, *)
+  @available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
   public enum UnixIntDate<let scale: Int>: Hashable, DecodeStrategy, EncodeStrategy, Error {
     /// Decodes an integer scaled timestamp into a date.
     /// - Throws: `DecodingError.dataCorrupted` when the scale is invalid or the result is non-finite.

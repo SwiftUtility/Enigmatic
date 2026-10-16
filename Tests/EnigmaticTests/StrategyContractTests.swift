@@ -741,7 +741,7 @@ final class StrategyContractTests: XCTestCase {
     }
   }
 
-  @available(anyAppleOS 26, *)
+  @available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
   func testScaledDatesAndTruncation() throws {
     let date = Date(timeIntervalSince1970: -123.25)
     try roundTrip(Codec.UnixDate<0>.self, date, expected: .double(-123.25))

@@ -3,7 +3,11 @@ import Foundation
 extension Codec {
   /// Encodes seconds since 1970 as a floating-point value.
   /// Prefer `UnixDate<0>` when the deployment target supports it.
-  @available(anyAppleOS, deprecated: 26.0)
+  @available(macOS, deprecated: 26.0)
+  @available(iOS, deprecated: 26.0)
+  @available(tvOS, deprecated: 26.0)
+  @available(watchOS, deprecated: 26.0)
+  @available(visionOS, deprecated: 26.0)
   public enum UnixSecondsDate: Hashable, DecodeStrategy, EncodeStrategy, Error {
     /// Decodes finite seconds since 1970 into a date.
     /// - Throws: `DecodingError.dataCorrupted` for non-finite input.

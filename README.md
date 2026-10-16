@@ -2,7 +2,7 @@
 
 [![Checks](https://github.com/SwiftUtility/Enigmatic/actions/workflows/checks.yml/badge.svg?branch=main&event=push)](https://github.com/SwiftUtility/Enigmatic/actions/workflows/checks.yml)
 [![Release](https://img.shields.io/github/v/release/SwiftUtility/Enigmatic)](https://github.com/SwiftUtility/Enigmatic/releases/latest)
-[![Swift](https://img.shields.io/badge/Swift-6.3%2B-orange?logo=swift)](Package.swift)
+[![Swift](https://img.shields.io/badge/Swift-6.2.3%2B-orange?logo=swift)](Package.swift)
 [![SwiftPM](https://img.shields.io/badge/Swift_Package_Manager-compatible-brightgreen)](#install)
 [![License](https://img.shields.io/github/license/SwiftUtility/Enigmatic)](LICENSE)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftutility.github.io%2FEnigmatic%2Fcoverage-badge.json)](https://github.com/SwiftUtility/Enigmatic/actions/workflows/release.yml)
@@ -34,7 +34,7 @@ Foundation's `JSONDecoder`. With that same decoder, Enigma and PotentCodables'
 
 ## Install
 
-Requires Swift 6.3 or newer. Add
+Requires Swift 6.2.3 or newer. Add
 [SwiftUtility/Enigmatic](https://github.com/SwiftUtility/Enigmatic) in Xcode and
 link the **Enigmatic** product to your target. For SwiftPM targets, use
 `.product(name: "Enigmatic", package: "Enigmatic")`.

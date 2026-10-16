@@ -9,7 +9,7 @@ dates and data. Encode a model into a tree, modify selected paths, merge a secon
 model, then decode the result. ``Codec`` provides reusable coding strategies that
 compose through a property wrapper.
 
-The package requires Swift 6.3. Availability annotations on individual declarations
+The package requires Swift 6.2.3. Availability annotations on individual declarations
 specify Apple runtime requirements; Linux and Windows use the toolchain runtime.
 
 ## Serialization limitations
