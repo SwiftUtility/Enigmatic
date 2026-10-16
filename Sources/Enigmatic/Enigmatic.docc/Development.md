@@ -122,6 +122,43 @@ be present on the default branch for their **Run workflow** buttons to appear.
 swift test -c release --filter PerformanceTests
 ```
 
+To compare Foundation's JSONEncoder/JSONDecoder with Codec on the approximately
+1 MB `BackendResponse` test fixture, run only the JSON benchmarks:
+
+```sh
+swift test -c release --filter PerformanceTests.testBackendJSON
+```
+
+All performance tests use the same measurement and output format. Each path is
+printed with its name and time ratio relative to the first (baseline) path,
+followed by the full path median and a separate median time per operation for
+each stage (for example, Data -> object, object -> tree, tree -> model). The ratio is
+`path median / baseline median`, so the baseline is 1.000 and lower is better.
+The output also labels how many times a path is faster or slower. Foundation's
+direct model coding is the baseline for format benchmarks; the dictionary
+benchmark uses the dictionary strategy as its baseline.
+
+Each result is the median of 25 individually timed operations, with rotating
+execution order. Fixture construction, correctness checks and warm-up are outside
+the measurements. Complete paths are timed together rather than adding stage medians. Stages are
+also timed independently using prepared intermediate inputs; their setup is
+outside those stage measurements. Stage medians need not sum to the full path
+median. There are no speed assertions; use Release without coverage
+for useful timings.
+
+The JSON and plist benchmarks use `PortablePayload` with 720 mixed records,
+targeting approximately 15 ms for direct Foundation JSON coding in local Release
+measurements. The workload is fixed; actual times depend on hardware, toolchain
+and format. URL and Data fields have explicit StringURL and Base64Data
+representations shared by all encoders. Every format path runs completely from model to Data or from Data to
+model.
+The BackendResponse JSON benchmarks compare direct JSONEncoder/JSONDecoder with
+Enigma plus JSONEncoder/JSONDecoder, Enigma plus Codec's Data overload,
+Enigma plus Codec's String overload (including UTF-8 conversion), and Enigma's
+Foundation object bridge plus JSONSerialization. Intermediate trees, strings
+and Foundation objects are constructed inside the timed operations. Encoding in
+these BackendResponse benchmarks uses sorted keys throughout.
+
 Build documentation with Swift 6.2.3 or newer and Xcode's documentation compiler
 so links to the generic Unix date strategies resolve. Set `enigmatic_symbols`
 to the directory printed by `dump-symbol-graph`; the location depends on SwiftPM's

@@ -3,26 +3,82 @@ import Foundation
 import XCTest
 
 final class PerformanceTests: XCTestCase {
-  func avarage<T>(run count: Int = 1000, _ block: () throws -> T, call: StaticString = #function) rethrows -> Double {
-    _ = try block()
-    let start = DispatchTime.now()
-    for _ in 0..<count {
-      try autoreleasepool {
-        _ = try block()
-      }
+  struct BenchmarkStage {
+    var name: String
+    var operation: () throws -> Int
+
+    init(_ name: String, _ operation: @escaping () throws -> Int) {
+      self.name = name
+      self.operation = operation
     }
-    let end = DispatchTime.now()
-    return Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / Double(count)
   }
 
-  func report(_ action: String, _ direct: Double, _ values: [Double]) throws {
-    let indirect = values.reduce(0, +)
-    let times = (indirect / direct).formatted(.number.precision(.fractionLength(3)))
-    var message: [String] = ["Performance of \(action) - \(times) slower:"]
-    message.append("\(direct.formatted(.number.precision(.fractionLength(3))))ns VS")
-    let values = values.map { "\($0.formatted(.number.precision(.fractionLength(3))))ns" }
-    message.append(values.joined(separator: " + "))
-    print(message.joined(separator: " "))
+  struct BenchmarkPath {
+    var name: String
+    var operation: () throws -> Int
+    var stages: [BenchmarkStage]
+
+    init(_ name: String, _ operation: @escaping () throws -> Int, stages: [BenchmarkStage] = []) {
+      self.name = name
+      self.operation = operation
+      self.stages = stages
+    }
+  }
+
+  /// Full paths and isolated stages are measured independently on prepared inputs.
+  func benchmark(_ title: String, paths: [BenchmarkPath], samples: Int = 25) throws {
+    precondition(!paths.isEmpty && samples > 0 && !samples.isMultiple(of: 2))
+    var operations = paths.map { BenchmarkStage($0.name, $0.operation) }
+    var stageIndices: [[Int]] = []
+    for (index, path) in paths.enumerated() {
+      if path.stages.isEmpty {
+        stageIndices.append([index])
+      } else {
+        stageIndices.append(Array(operations.count..<(operations.count + path.stages.count)))
+        operations.append(contentsOf: path.stages)
+      }
+    }
+    var timings = Array(repeating: [Double](), count: operations.count)
+    var checksum = 0
+    for operation in operations {
+      checksum &+= try autoreleasepool { try operation.operation() }
+    }
+    for sample in 0..<samples {
+      for offset in operations.indices {
+        let index = (offset + sample) % operations.count
+        let start = DispatchTime.now().uptimeNanoseconds
+        checksum &+= try autoreleasepool { try operations[index].operation() }
+        let elapsed = DispatchTime.now().uptimeNanoseconds - start
+        timings[index].append(Double(elapsed))
+      }
+    }
+    XCTAssertGreaterThan(checksum, 0)
+    let medians = timings.map { $0.sorted()[samples / 2] }
+    print("\(title): median of \(samples) individual operations")
+    print("  Time ratio = full path median / baseline median (lower is better)")
+    for index in paths.indices {
+      let ratio = medians[index] / medians[0]
+      let comparison: String
+      if index == 0 {
+        comparison = "baseline"
+      } else if ratio > 1 {
+        comparison = "\(number(ratio))x slower than baseline"
+      } else if ratio < 1 {
+        comparison = "\(number(1 / ratio))x faster than baseline"
+      } else {
+        comparison = "same as baseline"
+      }
+      print("  \(paths[index].name) | \(number(ratio))x | \(comparison)")
+      print("    Full path median: \(number(medians[index] / 1_000_000, precision: 6)) ms/op")
+      for stage in stageIndices[index] {
+        let name = operations[stage].name.components(separatedBy: ": ").last ?? operations[stage].name
+        print("    \(name) median: \(number(medians[stage] / 1_000_000, precision: 6)) ms/op")
+      }
+    }
+  }
+
+  private func number(_ value: Double, precision: Int = 3) -> String {
+    String(format: "%.*f", locale: Locale(identifier: "en_US_POSIX"), precision, value)
   }
 
   func testDictionaryStrategies() throws {
@@ -43,169 +99,158 @@ final class PerformanceTests: XCTestCase {
     let values = Dictionary(uniqueKeysWithValues: (0..<10_000).map { ("key\($0)", $0) })
     let box = Codec.Box<[String: Codec.Id<Int>]>(wrappedValue: values)
     let mapped = MappedDictionary(values: values)
+    let boxes = values.mapValues { Codec.Box<Codec.Id<Int>>(wrappedValue: $0) }
     let tree = try Enigma(encode: box)
     XCTAssertEqual(tree, try Enigma(encode: mapped))
     XCTAssertEqual(try tree.decode(type(of: box)).wrappedValue, values)
     XCTAssertEqual(try tree.decode(MappedDictionary.self).values, values)
 
-    var encoding: [Double] = []
-    var mappedEncoding: [Double] = []
-    var decoding: [Double] = []
-    var mappedDecoding: [Double] = []
-    for _ in 0..<5 {
-      try encoding.append(avarage(run: 25) { try Enigma(encode: box) })
-      try mappedEncoding.append(avarage(run: 25) { try Enigma(encode: mapped) })
-      try decoding.append(avarage(run: 25) { try tree.decode(type(of: box)) })
-      try mappedDecoding.append(avarage(run: 25) { try tree.decode(MappedDictionary.self) })
+    try benchmark("Dictionary encoding (10,000 entries)", paths: [
+      BenchmarkPath("Dictionary strategy: values -> tree", {
+        try Enigma(encode: box).asDictionary?.count ?? 0
+      }),
+      BenchmarkPath("Mapped boxes: values -> boxes -> tree", {
+        try Enigma(encode: mapped).asDictionary?.count ?? 0
+      }, stages: [
+        BenchmarkStage("values -> boxes", { values.mapValues { Codec.Box<Codec.Id<Int>>(wrappedValue: $0) }.count }),
+        BenchmarkStage("boxes -> tree", { try Enigma(encode: boxes).asDictionary?.count ?? 0 }),
+      ]),
+    ])
+    try benchmark("Dictionary decoding (10,000 entries)", paths: [
+      BenchmarkPath("Dictionary strategy: tree -> values", {
+        try tree.decode(type(of: box)).wrappedValue.count
+      }),
+      BenchmarkPath("Mapped boxes: tree -> boxes -> values", {
+        try tree.decode(MappedDictionary.self).values.count
+      }, stages: [
+        BenchmarkStage("tree -> boxes", { try tree.decode([String: Codec.Box<Codec.Id<Int>>].self).count }),
+        BenchmarkStage("boxes -> values", { boxes.mapValues(\.wrappedValue).count }),
+      ]),
+    ])
+  }
+
+  /// Uses explicit URL/Data representations shared by JSON, plist and Enigma.
+  struct PortablePayload: Codable, Equatable {
+    // Fixed workload: targets roughly 15 ms for direct JSON coding in Release.
+    var records = (0..<720).map { Record(id: $0) }
+
+    struct Record: Codable, Equatable {
+      var id: Int
+      var maxInts = MaxInts()
+      var minInts = MinInts()
+      var maxUInts = MaxUInts()
+      var floats = Floats()
+      var arrays = Arrays()
+      var dictionaries: [String: [Int]] = ["first": [1, 2, 3], "empty": []]
+      var strings = ["Hello", "Привет", "😀"]
+      var enabled = true
+      @Codec.Box<Codec.StringURL>
+      var url = URL(string: "https://example.com/path?query=value")!
+      @Codec.Box<Codec.Base64Data>
+      var bytes = Data([0, 1, 255])
     }
-    try report("mapped dictionary encoding", encoding.sorted()[2], [mappedEncoding.sorted()[2]])
-    try report("mapped dictionary decoding", decoding.sorted()[2], [mappedDecoding.sorted()[2]])
   }
 
   func testDecoding() throws {
-    let value = Regular()
-    let jsonData = try Coder.encode(value, \.nonConformingFloatJson)
-    let xmlData = try Coder.encode(value, \.xmlPlistEncoder)
-    let binData = try Coder.encode(value, \.binaryPlistEncoder)
-    let enigma = try Enigma(encode: value)
-    let jsonObject = try Coder.deserialize(jsonData, json: true)
-    let plistObject = try Coder.deserialize(xmlData, json: false)
-
-    let decodeValueFromJsonTime = try avarage {
-      try Coder.decode(Regular.self, jsonData, \.nonConformingFloatJson)
+    let value = PortablePayload()
+    let formats: [(String, Data, Bool)] = [
+      ("JSON", try Coder.encode(value, \.nonConformingFloatJson), true),
+      ("XML plist", try Coder.encode(value, \.xmlPlistEncoder), false),
+      ("Binary plist", try Coder.encode(value, \.binaryPlistEncoder), false),
+    ]
+    for (format, data, json) in formats {
+      let tree = try Coder.decode(Enigma.self, data, json ? \.nonConformingFloatJson : nil)
+      let object = try Coder.deserialize(data, json: json)
+      let treeToModel = BenchmarkStage("tree -> model", { try tree.decode(PortablePayload.self).records.count })
+      let decodeModel: () throws -> PortablePayload = {
+        try Coder.decode(PortablePayload.self, data, json ? \.nonConformingFloatJson : nil)
+      }
+      let decodeTree: () throws -> PortablePayload = {
+        try Coder.decode(Enigma.self, data, json ? \.nonConformingFloatJson : nil).decode(PortablePayload.self)
+      }
+      let deserialize: () throws -> PortablePayload = {
+        try Enigma(cast: Coder.deserialize(data, json: json)).decode(PortablePayload.self)
+      }
+      XCTAssertEqual(try decodeModel(), value)
+      XCTAssertEqual(try decodeTree(), value)
+      XCTAssertEqual(try deserialize(), value)
+      try benchmark("PortablePayload \(format) decoding", paths: [
+        BenchmarkPath("Foundation decoder: Data -> model", { try decodeModel().records.count }),
+        BenchmarkPath("Foundation decoder + Enigma: Data -> tree -> model", {
+          try decodeTree().records.count
+        }, stages: [
+          BenchmarkStage("Data -> tree", {
+            try Coder.decode(Enigma.self, data, json ? \.nonConformingFloatJson : nil).asDictionary?.count ?? 0
+          }),
+          treeToModel,
+        ]),
+        BenchmarkPath("Foundation serialization + Enigma: Data -> object -> tree -> model", {
+          try deserialize().records.count
+        }, stages: [
+          BenchmarkStage("Data -> object", { try (Coder.deserialize(data, json: json) as? [String: Any])?.count ?? 0 }),
+          BenchmarkStage("object -> tree", { try Enigma(cast: object).asDictionary?.count ?? 0 }),
+          treeToModel,
+        ]),
+      ])
     }
-    let decodeValueFromXmlTime = try avarage {
-      try Coder.decode(Regular.self, xmlData)
-    }
-    let decodeValueFromBinTime = try avarage {
-      try Coder.decode(Regular.self, binData)
-    }
-    let decodeEnigmaFromJsonTime = try avarage {
-      try Coder.decode(Enigma.self, jsonData, \.nonConformingFloatJson)
-    }
-    let decodeEnigmaFromXmlTime = try avarage {
-      try Coder.decode(Enigma.self, xmlData)
-    }
-    let decodeEnigmaFromBinTime = try avarage {
-      try Coder.decode(Enigma.self, binData)
-    }
-    let decodeValueFromEnigmaTime = try avarage {
-      try enigma.decode(Regular.self)
-    }
-    let deserializeJsonTime = try avarage {
-      try Coder.deserialize(jsonData, json: true)
-    }
-    let deserializeXmlTime = try avarage {
-      try Coder.deserialize(xmlData, json: false)
-    }
-    let deserializeBinTime = try avarage {
-      try Coder.deserialize(binData, json: false)
-    }
-    let castJsonTime = try avarage {
-      try Enigma(cast: jsonObject)
-    }
-    let castPlistTime = try avarage {
-      try Enigma(cast: plistObject)
-    }
-
-    try report("json decoding", decodeValueFromJsonTime, [
-        decodeEnigmaFromJsonTime,
-        decodeValueFromEnigmaTime,
-    ])
-    try report("json deserialization", decodeValueFromJsonTime, [
-        deserializeJsonTime,
-        castJsonTime,
-        decodeValueFromEnigmaTime,
-    ])
-    try report("xml plist decoding", decodeValueFromXmlTime, [
-        decodeEnigmaFromXmlTime,
-        decodeValueFromEnigmaTime,
-    ])
-    try report("xml plist deserialization", decodeValueFromXmlTime, [
-        deserializeXmlTime,
-        castPlistTime,
-        decodeValueFromEnigmaTime,
-    ])
-    try report("binary plist decoding", decodeValueFromBinTime, [
-        decodeEnigmaFromBinTime,
-        decodeValueFromEnigmaTime,
-    ])
-    try report("binary plist deserialization", decodeValueFromBinTime, [
-        deserializeBinTime,
-        castPlistTime,
-        decodeValueFromEnigmaTime,
-    ])
   }
 
   func testEncoding() throws {
-    let value = Regular()
-    let enigma = try Enigma(encode: value)
-    let jsonObject = try enigma.asJsonObject
-    let plistObject = try enigma.asPlistObject
-
-    let encodeValueJsonTime = try avarage {
-      try Coder.encode(value, \.nonConformingFloatJson)
+    let value = PortablePayload()
+    let formats: [(String, PropertyListSerialization.PropertyListFormat?)] = [
+      ("JSON", nil), ("XML plist", .xml), ("Binary plist", .binary),
+    ]
+    for (name, format) in formats {
+      let tree = try Enigma(encode: value)
+      let object = try format == nil ? tree.asJsonObject : tree.asPlistObject
+      let modelToTree = BenchmarkStage("model -> tree", { try Enigma(encode: value).asDictionary?.count ?? 0 })
+      let treeToData = BenchmarkStage("tree -> Data", {
+        switch format {
+        case .none: try Coder.encode(tree, \.nonConformingFloatJson).count
+        case .some(.xml): try Coder.encode(tree, \.xmlPlistEncoder).count
+        default: try Coder.encode(tree, \.binaryPlistEncoder).count
+        }
+      })
+      let encodeModel: () throws -> Data = {
+        switch format {
+        case .none: try Coder.encode(value, \.nonConformingFloatJson)
+        case .some(.xml): try Coder.encode(value, \.xmlPlistEncoder)
+        default: try Coder.encode(value, \.binaryPlistEncoder)
+        }
+      }
+      let encodeTree: () throws -> Data = {
+        let tree = try Enigma(encode: value)
+        return switch format {
+        case .none: try Coder.encode(tree, \.nonConformingFloatJson)
+        case .some(.xml): try Coder.encode(tree, \.xmlPlistEncoder)
+        default: try Coder.encode(tree, \.binaryPlistEncoder)
+        }
+      }
+      let serialize: () throws -> Data = {
+        let tree = try Enigma(encode: value)
+        let object = try format == nil ? tree.asJsonObject : tree.asPlistObject
+        return try Coder.serialize(object, format)
+      }
+      for operation in [encodeModel, encodeTree, serialize] {
+        XCTAssertEqual(try Coder.decode(
+          PortablePayload.self, operation(), format == nil ? \.nonConformingFloatJson : nil
+        ), value)
+      }
+      try benchmark("PortablePayload \(name) encoding", paths: [
+        BenchmarkPath("Foundation encoder: model -> Data", { try encodeModel().count }),
+        BenchmarkPath("Enigma + Foundation encoder: model -> tree -> Data", {
+          try encodeTree().count
+        }, stages: [modelToTree, treeToData]),
+        BenchmarkPath("Enigma + Foundation serialization: model -> tree -> object -> Data", {
+          try serialize().count
+        }, stages: [
+          modelToTree,
+          BenchmarkStage("tree -> object", {
+            try ((format == nil ? tree.asJsonObject : tree.asPlistObject) as? [String: Any])?.count ?? 0
+          }),
+          BenchmarkStage("object -> Data", { try Coder.serialize(object, format).count }),
+        ]),
+      ])
     }
-    let encodeValueXmlTime = try avarage {
-      try Coder.encode(value, \.xmlPlistEncoder)
-    }
-    let encodeValueBinTime = try avarage {
-      try Coder.encode(value, \.binaryPlistEncoder)
-    }
-    let encodeEnigmaTime = try avarage {
-      try Enigma(encode: value)
-    }
-    let encodeEnigmaJsonTime = try avarage {
-      try Coder.encode(enigma, \.nonConformingFloatJson)
-    }
-    let encodeEnigmaXmlTime = try avarage {
-      try Coder.encode(enigma, \.xmlPlistEncoder)
-    }
-    let encodeEnigmaBinTime = try avarage {
-      try Coder.encode(enigma, \.binaryPlistEncoder)
-    }
-    let castJsonObjectTime = try avarage {
-      try enigma.asJsonObject
-    }
-    let castPlistObjectTime = try avarage {
-      try enigma.asPlistObject
-    }
-    let serializeJsonTime = try avarage {
-      try Coder.serialize(jsonObject)
-    }
-    let serializeXmlTime = try avarage {
-      try Coder.serialize(plistObject, .xml)
-    }
-    let serializeBinTime = try avarage {
-      try Coder.serialize(plistObject, .binary)
-    }
-
-    try report("json encoding", encodeValueJsonTime, [
-        encodeEnigmaTime,
-        encodeEnigmaJsonTime,
-    ])
-    try report("json serialization", encodeValueJsonTime, [
-        encodeEnigmaTime,
-        castJsonObjectTime,
-        serializeJsonTime,
-    ])
-    try report("xml plist encoding", encodeValueXmlTime, [
-        encodeEnigmaTime,
-        encodeEnigmaXmlTime,
-    ])
-    try report("xml plist serialization", encodeValueXmlTime, [
-        encodeEnigmaTime,
-        castPlistObjectTime,
-        serializeXmlTime,
-    ])
-    try report("binary plist encoding", encodeValueBinTime, [
-        encodeEnigmaTime,
-        encodeEnigmaBinTime,
-    ])
-    try report("binary plist serialization", encodeValueBinTime, [
-        encodeEnigmaTime,
-        castPlistObjectTime,
-        serializeBinTime,
-    ])
   }
 }

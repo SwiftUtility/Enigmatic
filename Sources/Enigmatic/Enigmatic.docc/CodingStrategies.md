@@ -18,6 +18,21 @@ When `link` is nil, its key is omitted from keyed output. Decoding treats a
 missing or null key as nil. Use `Codec.OptionalBox` when working directly with
 the present payload of an optional strategy.
 
+Use `Codec.Nullable<Strategy>` when a key must be present even when its value
+is nil:
+
+```swift
+struct Customer: Codable {
+  @Codec.Box<Codec.Nullable<Codec.Id<String>>> var phone: String?
+  @Codec.Box<Codec.Nullable<Codec.Base64Data>> var avatar: Data?
+}
+```
+
+Nil properties encode as explicit null. Decoding accepts null as nil and delegates
+present values to the wrapped strategy. A missing key throws `keyNotFound`, and
+invalid present values retain the wrapped strategy's errors. Decoding and encoding
+capabilities are independent, just as for optional strategies.
+
 `Base64Data` encodes a Base64 string and rejects malformed input. `StringURL`
 uses Foundation's URL initializer, which permits relative URLs; it does not enforce
 an HTTP scheme. `PathURL` turns filesystem paths into file URLs and encodes their
