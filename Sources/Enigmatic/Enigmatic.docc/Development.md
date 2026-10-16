@@ -35,10 +35,10 @@ Windows SDK installed. Start a fresh shell after installing Swift so `PATH` and
 The functional suite passed locally in Debug and Release on Windows x64 with
 Swift 6.4.1 on 2026-10-16.
 
-Local Windows x64 validation with Swift 6.4.1 encountered two toolchain issues:
-the default build system failed to find `stdlib.h`, and the compiler's debug-type
-round-trip check asserted on negative integer generic arguments in the strategy
-tests. To reproduce the successful validation, use:
+Windows CI with Swift 6.2.3 and 6.4.1 needs the compiler's debug-type round-trip
+check disabled for negative integer generic arguments in the strategy tests.
+Swift 6.4.1 also needs the native build system because the default build system
+failed to find `stdlib.h`. To reproduce the successful local 6.4.1 validation, use:
 
 ```powershell
 $windowsSwiftFlags = @(
@@ -52,6 +52,11 @@ swift test @windowsSwiftFlags -c release --skip PerformanceTests
 These are toolchain workarounds, not package settings. The native build system is
 deprecated; recheck these workarounds when updating Swift. Windows validation
 does not replace the macOS and Linux CI jobs below.
+
+The Windows Swift 6.1 compiler also asserts while generating `Each`'s encoding
+witness for a tuple pack ([Swift issue #79870](https://github.com/swiftlang/swift/issues/79870)).
+A helper keeps the tuple inside `Codec.Box` across that
+witness boundary on Windows with Swift 6.1. Other compilers use the direct path.
 
 The Checks workflow runs each compiler independently on all three platforms in
 Debug and Release, producing 18 builds:
@@ -70,8 +75,11 @@ coverage, and builds DocC. It uploads the coverage report as `coverage.json` and
 the documentation as `Enigmatic.doccarchive.tar.gz`, preserving DocC filenames
 inside the archive.
 
-All Windows toolchains use Visual Studio's C++ environment. Only Swift 6.4.1
-uses the build-system and debug-type workarounds above.
+All Windows toolchains use Visual Studio's C++ environment. Swift 6.2.3 and
+6.4.1 use the debug-type workaround above; only 6.4.1 uses the native build system.
+The Linux 6.4.1 jobs also select the native build system to avoid a crash during
+Swift Build planning on the hosted x86_64 runner. These flags do not change the
+compiler versions or skip any functional tests.
 
 Release validation uses Swift 6.3.3 from Xcode 26.6 and the `swift:6.3.3`
 container so the API gate can build previous releases requiring Swift 6.3.

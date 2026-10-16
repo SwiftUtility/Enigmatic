@@ -275,6 +275,8 @@ final class StrategyContractTests: XCTestCase {
     let tree = try Enigma(encode: box)
     XCTAssertEqual(tree, .string(expected.path))
     XCTAssertEqual(try tree.decode(Codec.Box<Codec.PathURL>.self).wrappedValue.absoluteURL, expected)
+    let relative = URL(string: "file.txt", relativeTo: expected.deletingLastPathComponent())!
+    XCTAssertEqual(try Enigma(encode: Codec.Box<Codec.PathURL>(wrappedValue: relative)), tree)
   }
 
   func testPathURLEncodesOnlyTheUnescapedPathOfANonFileURL() throws {

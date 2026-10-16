@@ -21,7 +21,7 @@ the present payload of an optional strategy.
 `Base64Data` encodes a Base64 string and rejects malformed input. `StringURL`
 uses Foundation's URL initializer, which permits relative URLs; it does not enforce
 an HTTP scheme. `PathURL` turns filesystem paths into file URLs and encodes their
-unescaped paths. Relative paths resolve against the process's working directory;
+unescaped absolute paths. Relative paths resolve against the process's working directory;
 the original relative spelling and URL base are not preserved. Encoding a
 non-file URL still writes only its path.
 On Windows, `PathURL` accepts drive and network paths with either slash style.
