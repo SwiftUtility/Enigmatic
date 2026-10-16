@@ -107,11 +107,15 @@ final class CodableTests: XCTestCase {
   func testAnyHashable() throws {
     let key1 = "café"
     let key2 = "cafe\u{301}"
-    #if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     XCTAssertNotEqual(key1 as NSString, key2 as NSString)
-    #else
+#elseif os(Linux)
     XCTAssertEqual(key1 as NSString, key2 as NSString)
-    #endif
+#elseif os(Windows)
+    XCTAssertEqual(key1 as NSString, key2 as NSString)
+#else
+#error("Unsupported platform: Enigmatic supports Apple platforms, Linux, and Windows.")
+#endif
     XCTAssertEqual(key1, key2)
     let enigma1 = try Enigma(cast: [key1: 1])
     let enigma2 = try Enigma(cast: [key2: 1])

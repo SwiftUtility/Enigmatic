@@ -386,12 +386,14 @@ final class SerializationContractTests: XCTestCase {
     func boxed<T>(_ value: T, encoding: String) -> NSValue {
       encoding.withCString { type in
         withUnsafeBytes(of: value) { bytes in
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
           NSValue(bytes: bytes.baseAddress!, objCType: type)
-#else
-          // Corelibs Foundation cannot construct NSValue with t/T encodings.
-          // Supply the same encoding and bytes through NSValue's primitive API.
+#elseif os(Linux)
           BitInt128Value(bytes: bytes.baseAddress!, objCType: type)
+#elseif os(Windows)
+          BitInt128Value(bytes: bytes.baseAddress!, objCType: type)
+#else
+#error("Unsupported platform: Enigmatic supports Apple platforms, Linux, and Windows.")
 #endif
         }
       }
@@ -475,7 +477,7 @@ final class SerializationContractTests: XCTestCase {
     assertDecodingError("dataCorrupted", path: ["outer"]) {
       _ = try Enigma(cast: ["outer": unsupported])
     }
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
     // NSString can distinguish keys that Swift String considers canonically equal.
     let colliding = NSDictionary(objects: [1, 2], forKeys: ["café" as NSString, "cafe\u{301}" as NSString])
     XCTAssertEqual(colliding.count, 2)
@@ -589,7 +591,9 @@ final class SerializationContractTests: XCTestCase {
   }
 }
 
-#if !(os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS))
+#if os(Linux) || os(Windows)
+// Corelibs Foundation cannot construct NSValue with t/T encodings.
+// Expose the encoding and bytes through NSValue's primitive API instead.
 private final class BitInt128Value: NSValue, @unchecked Sendable {
   private let storage: Data
   private let encoding: UnsafeMutablePointer<CChar>

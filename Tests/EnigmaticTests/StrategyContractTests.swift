@@ -309,7 +309,7 @@ final class StrategyContractTests: XCTestCase {
   }
 #endif
 
-#if os(anyAppleOS) || os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
+#if os(macOS) || os(iOS) || os(tvOS) || os(watchOS) || os(visionOS)
   @available(macOS 13, iOS 16, tvOS 16, watchOS 9, *)
   func testPathURLKeepsFilePathNormalization() throws {
     for (input, path) in [
