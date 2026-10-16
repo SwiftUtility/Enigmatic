@@ -2,7 +2,7 @@
 
 [![Checks](https://github.com/SwiftUtility/Enigmatic/actions/workflows/checks.yml/badge.svg?branch=main&event=push)](https://github.com/SwiftUtility/Enigmatic/actions/workflows/checks.yml)
 [![Release](https://img.shields.io/github/v/release/SwiftUtility/Enigmatic)](https://github.com/SwiftUtility/Enigmatic/releases/latest)
-[![Swift](https://img.shields.io/badge/Swift-6.2.3%2B-orange?logo=swift)](Package.swift)
+[![Swift](https://img.shields.io/badge/Swift-6.1%2B-orange?logo=swift)](Package.swift)
 [![SwiftPM](https://img.shields.io/badge/Swift_Package_Manager-compatible-brightgreen)](#install)
 [![License](https://img.shields.io/github/license/SwiftUtility/Enigmatic)](LICENSE)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftutility.github.io%2FEnigmatic%2Fcoverage-badge.json)](https://github.com/SwiftUtility/Enigmatic/actions/workflows/release.yml)
@@ -34,12 +34,14 @@ Foundation's `JSONDecoder`. With that same decoder, Enigma and PotentCodables'
 
 ## Install
 
-Requires Swift 6.2.3 or newer. Add
+Requires Swift 6.1 or newer. Add
 [SwiftUtility/Enigmatic](https://github.com/SwiftUtility/Enigmatic) in Xcode and
 link the **Enigmatic** product to your target. For SwiftPM targets, use
 `.product(name: "Enigmatic", package: "Enigmatic")`.
 
-Some APIs require newer Apple OS versions; see the
+The generic Unix date strategies require Swift 6.2.3 or newer; use the named
+seconds/milliseconds strategies with older compilers. Some APIs also require
+newer Apple OS versions; see the
 [compatibility notes](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/#Compatibility).
 
 ## Edit a model
@@ -107,7 +109,8 @@ models that encode as dictionaries with no overlapping keys.
   the usual date/data handling in `PropertyListEncoder`. Data becomes a byte
   array; Date becomes seconds since 2001-01-01. Use `@Codec.Box<Codec.Base64Data>`
   for Base64 and `@Codec.Box<Codec.PlistDate>` for seconds since 2001-01-01, or
-  `Codec.UnixDate<0>` for Unix seconds on supported OS versions.
+  `Codec.UnixSecondsDate` for Unix seconds. With Swift 6.2.3 or newer, prefer
+  `Codec.UnixDate<0>` on supported OS versions.
 - `Float` and `Double` can store `NaN` and positive or negative infinity in memory.
   These values are not valid JSON numbers. Default JSON encoding and
   `asJsonObject` reject them. When encoding or decoding the tree with your own

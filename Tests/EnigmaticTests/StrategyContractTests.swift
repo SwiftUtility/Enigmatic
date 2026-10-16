@@ -275,6 +275,8 @@ final class StrategyContractTests: XCTestCase {
     let tree = try Enigma(encode: box)
     XCTAssertEqual(tree, .string(expected.path))
     XCTAssertEqual(try tree.decode(Codec.Box<Codec.PathURL>.self).wrappedValue.absoluteURL, expected)
+    let relative = URL(string: "file.txt", relativeTo: expected.deletingLastPathComponent())!
+    XCTAssertEqual(try Enigma(encode: Codec.Box<Codec.PathURL>(wrappedValue: relative)), tree)
   }
 
   func testPathURLEncodesOnlyTheUnescapedPathOfANonFileURL() throws {
@@ -741,7 +743,8 @@ final class StrategyContractTests: XCTestCase {
     }
   }
 
-#if compiler(<6.4)
+#if compiler(>=6.2.3)
+#if compiler(<6.3)
   @available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
 #else
   @available(anyAppleOS 26, *)
@@ -753,6 +756,9 @@ final class StrategyContractTests: XCTestCase {
     try roundTrip(Codec.UnixDate<6>.self, date, expected: -123250000)
     try roundTrip(Codec.UnixIntDate<3>.self, date, expected: -123250)
     try roundTrip(Codec.UnixIntDate<6>.self, date, expected: -123250000)
+    let negativeScaleDate = Date(timeIntervalSince1970: -125000)
+    try roundTrip(Codec.UnixDate< -3 >.self, negativeScaleDate, expected: .double(-125))
+    try roundTrip(Codec.UnixIntDate< -3 >.self, negativeScaleDate, expected: -125)
     let truncated = try Enigma(encode: Codec.Box<Codec.UnixIntDate<0>>(wrappedValue: date))
     XCTAssertEqual(truncated, -123)
     XCTAssertEqual(try truncated.decode(Codec.Box<Codec.UnixIntDate<0>>.self).wrappedValue, Date(timeIntervalSince1970: -123))
@@ -770,6 +776,7 @@ final class StrategyContractTests: XCTestCase {
     XCTAssertThrowsError(try Enigma.double(.greatestFiniteMagnitude).decode(Codec.Box<Codec.UnixDate< -3 >>.self))
     XCTAssertThrowsError(try Enigma.int(Int.max).decode(Codec.Box<Codec.UnixIntDate< -300 >>.self))
   }
+#endif
 
   private func checkInvalidScale<S: Codec.EncodeStrategy & Codec.DecodeStrategy>(_ strategy: S.Type) throws where S.BoxedValue == Date {
     assertDecodingError("dataCorrupted", path: []) { _ = try Enigma.int(1).decode(Codec.Box<S>.self) }

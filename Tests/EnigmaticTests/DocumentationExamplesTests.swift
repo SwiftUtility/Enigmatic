@@ -38,6 +38,18 @@ final class DocumentationExamplesTests: XCTestCase {
     XCTAssertNil(try Enigma.dictionary(["bytes": "AQID", "link": nil]).decode(Payload.self).link)
   }
 
+  func testDocCNamedUnixDateExample() throws {
+    struct Event: Codable {
+      @Codec.Box<Codec.UnixIntMillisecondsDate> var timestamp: Date
+    }
+    let event = Event(timestamp: Date(timeIntervalSince1970: -123.25))
+    let tree = try Enigma(encode: event)
+    XCTAssertEqual(tree, ["timestamp": -123250])
+    XCTAssertEqual(try tree.decode(Event.self).timestamp, event.timestamp)
+    let json = try JSONEncoder().encode(event)
+    XCTAssertEqual(try JSONDecoder().decode(Event.self, from: json).timestamp, event.timestamp)
+  }
+
   func testDocCTreeExample() {
     var tree: Enigma = ["items": [[:], ["name": "first"]]]
     tree["items", 1, "name"] = "second"

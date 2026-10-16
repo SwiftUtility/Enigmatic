@@ -1,9 +1,11 @@
 # Project guidance
 
 Enigmatic is a dependency-free SwiftPM library for Codable value trees and
-composable coding strategies. It requires Swift 6.2.3; Checks uses 6.2.4 on
-macOS 26 and 6.2.3 on Ubuntu 24.04. Release uses 6.3.3 to build the previous
-API baseline.
+composable coding strategies. It requires Swift 6.1; generic Unix date strategies
+require Swift 6.2.3. Checks separately tests the original Swift 6.1 release,
+Swift 6.2.3, and Swift 6.4.1 on macOS, Linux, and Windows in Debug and Release.
+Coverage and DocC use macOS with Swift 6.2.3. Release uses 6.3.3 to build the
+previous API baseline.
 
 Follow the existing two-space Swift style. Preserve typed throws, runtime
 availability guards, and visibility required by `@inlinable` code. Update the

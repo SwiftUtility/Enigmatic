@@ -21,7 +21,7 @@ the present payload of an optional strategy.
 `Base64Data` encodes a Base64 string and rejects malformed input. `StringURL`
 uses Foundation's URL initializer, which permits relative URLs; it does not enforce
 an HTTP scheme. `PathURL` turns filesystem paths into file URLs and encodes their
-unescaped paths. Relative paths resolve against the process's working directory;
+unescaped absolute paths. Relative paths resolve against the process's working directory;
 the original relative spelling and URL base are not preserved. Encoding a
 non-file URL still writes only its path.
 On Windows, `PathURL` accepts drive and network paths with either slash style.
@@ -70,9 +70,9 @@ when choosing a specific representation.
 > the exact behavior.
 
 Apply `Codec.Box` strategies before building the tree. Use `Base64Data` for Data
-and `PlistDate` for seconds since 2001-01-01; `UnixDate<0>` is an alternative for
-Unix seconds on supported runtimes. For Float and Double, define a string strategy
-that preserves special values explicitly:
+and `PlistDate` for seconds since 2001-01-01; `UnixSecondsDate` is an alternative
+for Unix seconds on all supported compilers. For Float and Double, define a string
+strategy that preserves special values explicitly:
 
 ```swift
 import Foundation
@@ -173,8 +173,25 @@ timestamp need not survive a decode/encode round trip unchanged. For example,
 the stored interval is just below two milliseconds, and encoding truncates toward
 zero. The named integer strategies have the same precision limitation.
 
-The generic Unix strategies require Apple OS 26; the named seconds and
-milliseconds strategies remain available for older deployment targets.
+The generic Unix strategies require Swift 6.2.3 or newer. On Apple platforms,
+they also require OS 26. With earlier compilers or older deployment targets, use
+`UnixSecondsDate` / `UnixIntSecondsDate` or
+`UnixMillisecondsDate` / `UnixIntMillisecondsDate`. The named strategies are
+deprecated on Apple OS 26 only when compiled with Swift 6.2.3 or newer; earlier
+compilers retain them without deprecation warnings. Other scales require the
+generic strategies or a custom strategy.
+
+For example, this model uses integer milliseconds on every supported compiler:
+
+```swift
+struct Event: Codable {
+  @Codec.Box<Codec.UnixIntMillisecondsDate> var timestamp: Date
+}
+
+let event = Event(timestamp: Date(timeIntervalSince1970: -123.25))
+let tree = try Enigma(encode: event)
+// {"timestamp": -123250}
+```
 
 ## Complexity
 

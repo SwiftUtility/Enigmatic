@@ -1,10 +1,11 @@
 import Foundation
 
+#if compiler(>=6.2.3)
 extension Codec {
   /// Encodes seconds since 1970 multiplied by 10 to the given scale as Double.
   ///
   /// Rejects non-finite values, invalid scale factors and unrepresentable results.
-#if compiler(<6.4)
+#if compiler(<6.3)
   @available(macOS 26, iOS 26, tvOS 26, watchOS 26, visionOS 26, *)
 #else
   @available(anyAppleOS 26, *)
@@ -72,3 +73,4 @@ extension Codec {
     public typealias BoxedValue = Date
   }
 }
+#endif

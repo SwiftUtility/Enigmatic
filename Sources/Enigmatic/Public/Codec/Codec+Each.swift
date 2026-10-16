@@ -89,6 +89,30 @@ extension Codec.Each: Codec.DecodeStrategy where repeat each Value: Codec.Decode
   }
 }
 
+#if os(Windows) && compiler(<6.2)
+// Swift 6.1's asserting compiler crashes when a witness unpacks a tuple pack.
+// Keep the tuple inside Box across the witness boundary instead.
+@usableFromInline
+protocol EachEncodeStrategy: Codec.EncodeStrategy {
+  static func encodeBox(_ box: Codec.Box<Self>, encoder: some Encoder) throws
+}
+
+extension EachEncodeStrategy {
+  @inlinable
+  public static func encode(value: BoxedValue, encoder: some Encoder) throws {
+    try encodeBox(Codec.Box(wrappedValue: value), encoder: encoder)
+  }
+}
+
+extension Codec.Each: Codec.EncodeStrategy, EachEncodeStrategy where repeat each Value: Codec.EncodeStrategy {
+  @usableFromInline
+  static func encodeBox(_ box: Codec.Box<Self>, encoder: some Encoder) throws {
+    for (value, type) in repeat (each box.wrappedValue, (each Value).self) {
+      try type.encode(value: value, encoder: encoder)
+    }
+  }
+}
+#else
 @available(macOS 14.0, iOS 17.0, tvOS 17.0, watchOS 10.0, *)
 extension Codec.Each: Codec.EncodeStrategy where repeat each Value: Codec.EncodeStrategy {
   /// Encodes each component with its corresponding strategy into one encoder.
@@ -100,3 +124,4 @@ extension Codec.Each: Codec.EncodeStrategy where repeat each Value: Codec.Encode
     }
   }
 }
+#endif

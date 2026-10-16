@@ -17,51 +17,129 @@ concurrency:
 jobs:
   tests:
     if: github.event_name != 'pull_request' || github.event.label.name == 'run-ci'
-    name: ${{ matrix.os }} / ${{ matrix.configuration }}
-    runs-on: ${{ matrix.os }}
+    name: Swift ${{ matrix.swift }} / ${{ matrix.platform }} / ${{ matrix.configuration }}
+    runs-on: ${{ matrix.runner }}
     container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-26, ubuntu-24.04]
+        swift: ['6.1', '6.2.3', '6.4.1']
+        platform: [macos, linux, windows]
         configuration: [debug, release]
         include:
-          - os: macos-26
-            swift-version: 6.2.4
-          - os: ubuntu-24.04
+          - platform: macos
+            runner: macos-26
+          - platform: linux
+            runner: ubuntu-24.04
+          - platform: windows
+            runner: windows-2022
+          - swift: '6.1'
+            platform: macos
+            runner: macos-15
+            xcode: '16.3'
+          - swift: '6.2.3'
+            platform: macos
+            xcode: '26.2'
+          - swift: '6.4.1'
+            platform: macos
+            xcode: '26.6'
+          - swift: '6.1'
+            platform: linux
+            container: swift:6.1.0
+          - swift: '6.2.3'
+            platform: linux
             container: swift:6.2.3
-            swift-version: 6.2.3
+          - swift: '6.4.1'
+            platform: linux
+            container: swift:6.4.1
+    env:
+      SWIFT_VERSION: ${{ matrix.swift }}
+      BUILD_CONFIGURATION: ${{ matrix.configuration }}
     steps:
       - uses: actions/checkout@v6
-      - name: Select Xcode 26.3
+      - name: Select Xcode ${{ matrix.xcode }}
         if: runner.os == 'macOS'
-        run: echo 'DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer' >> "$GITHUB_ENV"
-      - name: Verify Swift ${{ matrix.swift-version }}
         env:
-          EXPECTED_SWIFT_VERSION: ${{ matrix.swift-version }}
+          XCODE_VERSION: ${{ matrix.xcode }}
+        run: echo "DEVELOPER_DIR=/Applications/Xcode_${XCODE_VERSION}.app/Contents/Developer" >> "$GITHUB_ENV"
+      - name: Install Swift ${{ matrix.swift }}
+        if: runner.os == 'Windows' || (runner.os == 'macOS' && matrix.swift == '6.4.1')
+        uses: compnerd/gha-setup-swift@86d1ddeaf915c282137601aeb0654ea0e7b7f17e
+        with:
+          swift-version: swift-${{ matrix.swift }}-release
+          swift-build: ${{ matrix.swift }}-RELEASE
+      - name: Verify Swift ${{ matrix.swift }}
+        if: runner.os != 'Windows'
         run: |
           swift --version
-          swift --version | grep -F "Swift version $EXPECTED_SWIFT_VERSION "
+          if [ "$SWIFT_VERSION" = '6.1' ]; then
+            swift --version | grep -Eq 'Swift version 6\.1(\.0)?[[:space:]]'
+          else
+            swift --version | grep -F "Swift version $SWIFT_VERSION "
+          fi
+      - name: Verify Swift ${{ matrix.swift }} for Windows x64
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (swift --version) -join "`n"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Output $version
+          $expectedVersion = [regex]::Escape($env:SWIFT_VERSION)
+          if ($env:SWIFT_VERSION -eq '6.1') { $expectedVersion += '(\.0)?' }
+          if ($version -notmatch "Swift version $expectedVersion(\s|$)") {
+            throw "Expected Swift $env:SWIFT_VERSION"
+          }
+          if ($version -notmatch 'Target: x86_64-unknown-windows-msvc') {
+            throw 'Expected the Windows x64 toolchain'
+          }
       - name: Functional tests
-        run: swift test -c ${{ matrix.configuration }} --skip PerformanceTests
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          swiftFlags=()
+          if [ "$RUNNER_OS" = 'Linux' ] && [ "$SWIFT_VERSION" = '6.4.1' ]; then
+            # Avoid Swift 6.4.1's Swift Build planning crash on Linux.
+            swiftFlags+=(--build-system native)
+          fi
+          swift test -c "$BUILD_CONFIGURATION" "${swiftFlags[@]}" --skip PerformanceTests
+      - name: Windows functional tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vsPath = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) { throw 'Visual Studio C++ tools not found' }
+          Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+          Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+          $swiftFlags = @()
+          if ($env:SWIFT_VERSION -eq '6.2.3' -or $env:SWIFT_VERSION -eq '6.4.1') {
+            # Negative integer generic arguments trip the compiler's debug-type check.
+            $swiftFlags += @('-Xswiftc', '-Xfrontend', '-Xswiftc', '-disable-round-trip-debug-types')
+          }
+          if ($env:SWIFT_VERSION -eq '6.4.1') {
+            # Work around Swift 6.4.1's build-system header lookup issue.
+            $swiftFlags += @('--build-system', 'native')
+          }
+          swift test -c $env:BUILD_CONFIGURATION @swiftFlags --skip PerformanceTests
+          exit $LASTEXITCODE
       - name: Coverage gate tests
-        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        if: matrix.platform == 'macos' && matrix.swift == '6.2.3' && matrix.configuration == 'debug'
         run: python3 -m unittest discover -s Scripts/tests
       - name: Coverage
-        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        if: matrix.platform == 'macos' && matrix.swift == '6.2.3' && matrix.configuration == 'debug'
         run: |
           swift test --enable-code-coverage --skip PerformanceTests
           cp "$(swift test --show-codecov-path)" coverage.json
           python3 Scripts/check-coverage.py coverage.json --minimum 95
       - name: Upload coverage
-        if: always() && matrix.os == 'macos-26' && matrix.configuration == 'debug' && hashFiles('coverage.json') != ''
+        if: always() && matrix.platform == 'macos' && matrix.swift == '6.2.3' && matrix.configuration == 'debug' && hashFiles('coverage.json') != ''
         uses: actions/upload-artifact@v6
         with:
           name: coverage
           path: coverage.json
           if-no-files-found: error
       - name: Build documentation
-        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        if: matrix.platform == 'macos' && matrix.swift == '6.2.3' && matrix.configuration == 'debug'
         run: |
           swift package dump-symbol-graph --minimum-access-level public
           enigmatic_symbols="$(dirname "$(swift build --show-bin-path)")/symbolgraph"
@@ -78,53 +156,13 @@ jobs:
             --hosting-base-path Enigmatic \
             --warnings-as-errors
       - name: Pack documentation
-        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        if: matrix.platform == 'macos' && matrix.swift == '6.2.3' && matrix.configuration == 'debug'
         run: tar -czf Enigmatic.doccarchive.tar.gz -C .build Enigmatic.doccarchive
       - name: Upload documentation
-        if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
+        if: matrix.platform == 'macos' && matrix.swift == '6.2.3' && matrix.configuration == 'debug'
         uses: actions/upload-artifact@v6
         with:
           name: documentation
           path: Enigmatic.doccarchive.tar.gz
           compression-level: 0
           if-no-files-found: error
-
-  windows:
-    if: github.event_name != 'pull_request' || github.event.label.name == 'run-ci'
-    name: windows-2022 / ${{ matrix.configuration }}
-    runs-on: windows-2022
-    strategy:
-      fail-fast: false
-      matrix:
-        configuration: [debug, release]
-    defaults:
-      run:
-        shell: pwsh
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install Swift 6.4.1
-        uses: compnerd/gha-setup-swift@86d1ddeaf915c282137601aeb0654ea0e7b7f17e
-        with:
-          swift-version: swift-6.4.1-release
-          swift-build: 6.4.1-RELEASE
-      - name: Verify Swift 6.4.1 for Windows x64
-        run: |
-          $version = (swift --version) -join "`n"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          Write-Output $version
-          if ($version -notmatch 'Swift version 6\.4\.1(\s|$)') {
-            throw 'Expected Swift 6.4.1'
-          }
-          if ($version -notmatch 'Target: x86_64-unknown-windows-msvc') {
-            throw 'Expected the Windows x64 toolchain'
-          }
-      - name: Functional tests
-        run: |
-          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-          $vsPath = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          if (-not $vsPath) { throw 'Visual Studio C++ tools not found' }
-          Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
-          Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
-          # Work around Swift 6.4.1's build-system and debug-type assertion issues.
-          swift test -c ${{ matrix.configuration }} --build-system native -Xswiftc -Xfrontend -Xswiftc -disable-round-trip-debug-types --skip PerformanceTests
-          exit $LASTEXITCODE

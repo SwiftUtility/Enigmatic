@@ -89,8 +89,9 @@ this JSON even with `.secondsSince1970` and `.base64` selected:
 ```
 
 Use `@Codec.Box<Codec.Base64Data>` for Base64 data and a date strategy such as
-`Codec.PlistDate` (reference-date seconds) or `Codec.UnixDate<0>` (Unix seconds
-on supported runtimes) before building the tree to choose a wire format.
+`Codec.PlistDate` (reference-date seconds) or `Codec.UnixSecondsDate` (Unix
+seconds) before building the tree to choose a wire format. With Swift 6.2.3 or
+newer, prefer `Codec.UnixDate<0>` on supported runtimes.
 `Enigma.init(from:)` does not recognize date units or Base64 text on its own.
 Decoding a native `.date` or `.data` node as Date or Data returns the stored value;
 other representations follow Foundation's Decodable implementation.
