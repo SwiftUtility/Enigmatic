@@ -45,8 +45,9 @@ These are toolchain workarounds, not package settings. The native build system i
 deprecated; recheck these workarounds when updating Swift. Windows validation
 does not replace the macOS and Linux CI jobs below.
 
-The Checks workflow uses Swift 6.2.3 from Xcode 26.3 on macOS 26 and the
-`swift:6.2.3` container on Ubuntu 24.04. Benchmarks uses the same Xcode version.
+The Checks workflow uses Swift 6.2.4 from Xcode 26.3 on macOS 26 and the
+`swift:6.2.3` container on Ubuntu 24.04 to test the minimum supported compiler.
+Benchmarks uses the same Xcode version as Checks.
 Each job verifies the compiler version before testing.
 The macOS Debug job also checks the coverage script, enforces 95% library line
 coverage, and builds DocC. It uploads the coverage report as `coverage.json` and
@@ -59,7 +60,7 @@ These jobs do not change the macOS/Linux checks or the Release workflow.
 
 Release validation uses Swift 6.3.3 from Xcode 26.6 and the `swift:6.3.3`
 container so the API gate can build previous releases requiring Swift 6.3.
-Checks validates compatibility with the minimum supported compiler.
+The Linux Checks jobs validate compatibility with the minimum supported compiler.
 
 The Release workflow publishes the DocC site to GitHub Pages after all release
 validation jobs pass and before creating the GitHub release. The site is at
