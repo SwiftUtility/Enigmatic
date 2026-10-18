@@ -91,6 +91,7 @@ Linux and Windows use the toolchain runtime without Apple OS availability limits
 ### Development
 
 - <Development>
+- <CompetitorBenchmarks>
 
 ## Complexity notes
 
