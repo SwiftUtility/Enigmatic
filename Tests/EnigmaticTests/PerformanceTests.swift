@@ -55,20 +55,21 @@ final class PerformanceTests: XCTestCase {
     XCTAssertGreaterThan(checksum, 0)
     let medians = timings.map { $0.sorted()[samples / 2] }
     print("\(title): median of \(samples) individual operations")
-    print("  Time ratio = full path median / baseline median (lower is better)")
+    print("  Time relative to baseline: 100% baseline, lower is faster")
     for index in paths.indices {
       let ratio = medians[index] / medians[0]
+      let percentage = String(
+        format: "%.3f%%", locale: Locale(identifier: "en_US_POSIX"), ratio * 100
+      )
       let comparison: String
       if index == 0 {
-        comparison = "baseline"
-      } else if ratio > 1 {
-        comparison = "\(number(ratio))x slower than baseline"
+        comparison = "\(percentage) | baseline"
       } else if ratio < 1 {
-        comparison = "\(number(1 / ratio))x faster than baseline"
+        comparison = "\(percentage) (\(number(1 / ratio))x faster)"
       } else {
-        comparison = "same as baseline"
+        comparison = "\(percentage) (\(number(ratio))x slower)"
       }
-      print("  \(paths[index].name) | \(number(ratio))x | \(comparison)")
+      print("  \(paths[index].name) | \(comparison)")
       print("    Full path median: \(number(medians[index] / 1_000_000, precision: 6)) ms/op")
       for stage in stageIndices[index] {
         let name = operations[stage].name.components(separatedBy: ": ").last ?? operations[stage].name

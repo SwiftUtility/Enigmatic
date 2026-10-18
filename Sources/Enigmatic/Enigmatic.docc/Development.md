@@ -130,12 +130,14 @@ swift test -c release --filter PerformanceTests.testBackendJSON
 ```
 
 All performance tests use the same measurement and output format. Each path is
-printed with its name and time ratio relative to the first (baseline) path,
+printed with its name and time as a percentage relative to the first (baseline) path,
 followed by the full path median and a separate median time per operation for
-each stage (for example, Data -> object, object -> tree, tree -> model). The ratio is
-`path median / baseline median`, so the baseline is 1.000 and lower is better.
-The output also labels how many times a path is faster or slower. Foundation's
-direct model coding is the baseline for format benchmarks; the dictionary
+each stage (for example, Data -> object, object -> tree, tree -> model). The percentage is
+`path median / baseline median * 100%`: below 100% means faster, above 100% means
+slower, and the baseline is 100.000%. Percentages are unsigned. Other paths also show the speed factor in
+parentheses, for example `80.000% (1.250x faster)` or
+`120.000% (1.200x slower)`.
+Foundation's direct model coding is the baseline for format benchmarks; the dictionary
 benchmark uses the dictionary strategy as its baseline.
 
 Each result is the median of 25 individually timed operations, with rotating
