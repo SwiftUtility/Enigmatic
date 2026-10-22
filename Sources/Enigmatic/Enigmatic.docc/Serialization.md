@@ -26,6 +26,36 @@ rounds to `16_777_216`, but `.int64(9_007_199_254_740_993).asFloat` returns nil
 even though that integer is within Float's range. Float decoding uses the same
 accessor.
 
+## JSON text with Codec
+
+`Codec.encode(json:)` writes compact JSON from a tree; `Codec.decode(json:)`
+parses a string, including a substring. The overloads with `as:` write or read
+`Data` using the specified `String.Encoding`, without lossy text conversion.
+Both operations support scalar roots as well as arrays and dictionaries.
+
+```swift
+let tree: Enigma = ["name": "Ada", "active": true]
+let json = try Codec.encode(json: tree)
+let restored = try Codec.decode(json: json)
+let bytes = try Codec.encode(json: tree, as: .utf8)
+let fromBytes = try Codec.decode(json: bytes, as: .utf8)
+```
+
+Object keys are written in sorted order. Repeated object keys are decoded using
+their last value. Strings support JSON escapes and Unicode surrogate pairs;
+unpaired surrogates, malformed syntax, trailing content and invalid text bytes
+are rejected. A leading Unicode BOM is accepted. Nesting is limited to paths
+with fewer than 512 components for both encoding and decoding.
+
+Integer tokens are read as `Int`, `UInt64`, then Int128/UInt128 on supported
+runtimes, without rounding through Double. Integers outside these ranges are
+rejected. Fractional and exponent tokens use finite `Double` values and its
+rounding behavior. Original integer storage widths are not retained in JSON.
+Unlike `asJsonObject`, this text codec supports 128-bit integer literals on
+supported runtimes. Date, Data, NaN and infinity require an explicit coding
+strategy before JSON encoding. Encoding failures throw `EncodingError`;
+decoding failures throw `DecodingError`, carrying the offending tree path.
+
 ## Foundation and external encoders
 
 > Warning: Enigma trees bypass Foundation's Date/Data serialization strategies.

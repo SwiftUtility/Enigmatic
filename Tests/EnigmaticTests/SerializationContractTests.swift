@@ -3,6 +3,67 @@ import XCTest
 @testable import Enigmatic
 
 final class SerializationContractTests: XCTestCase {
+  func testCodecJSONRoundTrips() throws {
+    let tree: Enigma = [
+      "text": .string("Ключ 😀 \" \\ \n\t\r\u{0}"),
+      "values": [.null, true, -12, .uint64(.max), .double(-0.0), .double(1e-200)],
+      "empty": [:],
+    ]
+    let json = try Codec.encode(json: tree)
+    XCTAssertEqual(try Codec.decode(json: json[...]), tree)
+    XCTAssertNoThrow(try JSONSerialization.jsonObject(with: Data(json.utf8)))
+    for encoding in [String.Encoding.utf8, .utf16, .utf16BigEndian, .utf32, .utf32LittleEndian] {
+      let data = try Codec.encode(json: tree, as: encoding)
+      XCTAssertEqual(try Codec.decode(json: data, as: encoding), tree)
+      XCTAssertEqual(try Codec.decode(json: data[...], as: encoding), tree)
+    }
+    for value: Enigma in [.null, true, 42, "hello", [], [:]] {
+      XCTAssertEqual(try Codec.decode(json: Codec.encode(json: value)), value)
+    }
+    XCTAssertEqual(try Codec.decode(json: #""\uD83D\uDE00\n\t\b\f\r\/\\\"""#), .string("😀\n\t\u{8}\u{C}\r/\\\""))
+    XCTAssertEqual(try Codec.decode(json: " \n[1.5e+2, -2E-2]\t"), [150.0, -0.02])
+    XCTAssertEqual(try Codec.decode(json: #"{"a":1,"a":2}"#), ["a": 2])
+  }
+
+  func testCodecJSONRejectsMalformedDocuments() throws {
+    let invalid = [
+      "", " ", "nil", "True", "null false", "01", "-01", "+1", "-", ".1", "1.",
+      "1e", "1e+", "1e9999", "[1,]", "[,1]", "[1 2]", "{", #"{"a" 1}"#,
+      #"{"a":1,}"#, #"{1:2}"#, #""\x""#, #""\uD800""#, #""\uDC00""#,
+      #""\uD800\u0041""#, #""\uZZZZ""#, "\"unclosed", "\"\n\"",
+      String(repeating: "[", count: 513) + "0" + String(repeating: "]", count: 513),
+    ]
+    for json in invalid {
+      XCTAssertThrowsError(try Codec.decode(json: json), json) { error in
+        guard case DecodingError.dataCorrupted = error else { return XCTFail("\(error)") }
+      }
+    }
+    XCTAssertThrowsError(try Codec.decode(json: Data([0xFF]), as: .utf8))
+    XCTAssertThrowsError(try Codec.encode(json: "😀", as: .ascii))
+    XCTAssertThrowsError(try Codec.decode(json: #"{"items":[0,?]}"#)) { error in
+      guard case DecodingError.dataCorrupted(let context) = error else { return XCTFail("\(error)") }
+      XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["items", 1])
+    }
+    for value: Enigma in [.date(Date()), .data(Data()), .double(.nan), .double(.infinity)] {
+      XCTAssertThrowsError(try Codec.encode(json: .dictionary(["items": .array([value])]))) { error in
+        guard case EncodingError.invalidValue(_, let context) = error else { return XCTFail("\(error)") }
+        XCTAssertEqual(context.codingPath.map(Enigma.Pin.init), ["items", 0])
+      }
+    }
+  }
+
+  func testCodecJSONIntegerBoundaries() throws {
+    for value: Enigma in [.int64(.min), .int64(.max), .uint64(.max)] {
+      XCTAssertEqual(try Codec.decode(json: Codec.encode(json: value)), value)
+    }
+    if #available(macOS 15, iOS 18, tvOS 18, watchOS 11, visionOS 2, *) {
+      for value: Enigma in [.int128(.init(.min)), .int128(.init(.max)), .uint128(.init(.max))] {
+        XCTAssertEqual(try Codec.decode(json: Codec.encode(json: value)), value)
+      }
+      XCTAssertThrowsError(try Codec.decode(json: "340282366920938463463374607431768211456"))
+    }
+  }
+
   private var exactDecoderValues: [(Any, Enigma)] {
     let date = Date(timeIntervalSince1970: 12)
     let data = Data([0, 1, 255])

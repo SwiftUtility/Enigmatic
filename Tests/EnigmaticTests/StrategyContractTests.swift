@@ -14,6 +14,51 @@ final class StrategyContractTests: XCTestCase {
     XCTAssertEqual(try JSONDecoder().decode(Codec.Box<S>.self, from: JSONEncoder().encode(box)), box, file: file, line: line)
   }
 
+  func testNullableStrategy() throws {
+    struct Payload: Codable, Equatable {
+      @Codec.Box<Codec.Nullable<Codec.Base64Data>> var value: Data?
+    }
+
+    let absent = Payload(value: nil)
+    XCTAssertEqual(try Enigma(encode: absent), ["value": .null])
+    XCTAssertEqual(String(decoding: try JSONEncoder().encode(absent), as: UTF8.self), #"{"value":null}"#)
+    XCTAssertEqual(try JSONDecoder().decode(Payload.self, from: Data(#"{"value":null}"#.utf8)), absent)
+    XCTAssertEqual(try Enigma.dictionary(["value": .null]).decode(Payload.self), absent)
+    let present = Payload(value: Data([1, 2, 3]))
+    XCTAssertEqual(try Enigma(encode: present), ["value": "AQID"])
+    XCTAssertEqual(try JSONDecoder().decode(Payload.self, from: JSONEncoder().encode(present)), present)
+    XCTAssertEqual(try Enigma(encode: present).decode(Payload.self), present)
+    for json in ["{}", #"{"value":"!"}"#] {
+      XCTAssertThrowsError(try JSONDecoder().decode(Payload.self, from: Data(json.utf8)))
+    }
+    assertDecodingError("keyNotFound", path: []) {
+      _ = try Enigma.dictionary([:]).decode(Payload.self)
+    }
+    assertDecodingError("dataCorrupted", path: ["value"]) {
+      _ = try Enigma.dictionary(["value": "!"]).decode(Payload.self)
+    }
+    try roundTrip(Codec.Nullable<Codec.Id<Int>>.self, nil, expected: .null)
+    try roundTrip(Codec.Nullable<Codec.Id<Int>>.self, 42, expected: 42)
+    try roundTrip([Codec.Nullable<Codec.Id<Int>>].self, [1, nil, 3], expected: [1, nil, 3])
+    try roundTrip([String: Codec.Nullable<Codec.Id<Int>>].self, ["a": nil, "b": 1], expected: ["a": nil, "b": 1])
+  }
+
+  func testNullableSeparatesEncodingAndDecodingCapabilities() throws {
+    struct ReadOnly: Decodable, Equatable {
+      var value: Int
+    }
+    struct WriteOnly: Encodable {
+      var value: Int
+    }
+    typealias ReadStrategy = Codec.Nullable<Codec.Id<ReadOnly>>
+    typealias WriteStrategy = Codec.Nullable<Codec.Id<WriteOnly>>
+    let decoded = try Enigma.dictionary(["value": 42]).decode(Codec.Box<ReadStrategy>.self)
+    XCTAssertEqual(decoded.wrappedValue, ReadOnly(value: 42))
+    XCTAssertNil(try Enigma.null.decode(Codec.Box<ReadStrategy>.self).wrappedValue)
+    XCTAssertEqual(try Enigma(encode: Codec.Box<WriteStrategy>(wrappedValue: WriteOnly(value: 42))), ["value": 42])
+    XCTAssertEqual(try Enigma(encode: Codec.Box<WriteStrategy>(wrappedValue: nil)), .null)
+  }
+
   func testScalarAndCollectionStrategies() throws {
     try roundTrip(Codec.Id<Int>.self, 42, expected: 42)
     try roundTrip(Codec.Base64Data.self, Data([1, 2, 3]), expected: "AQID")

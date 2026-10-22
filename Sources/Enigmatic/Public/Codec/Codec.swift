@@ -1,62 +1,46 @@
+import Foundation
+
 /// Composable strategies for choosing a Codable representation.
 ///
 /// See [composing coding strategies](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/codingstrategies/) for wrappers, collections, and examples.
 public enum Codec {
-  /// Associates a coding strategy with its unwrapped Swift value.
-  public protocol Strategy {
-    /// The value stored by a property wrapper using this strategy.
-    associatedtype BoxedValue
+  /// Parses a JSON document, including a scalar root.
+  public static func decode(
+    json string: some StringProtocol
+  ) throws(DecodingError) -> Enigma {
+    var decoder = JsonDecoder(String(string))
+    return try decoder.decode()
   }
 
-  /// A strategy whose boxed value can be absent.
-  public protocol OptionalStrategy: Strategy {
-    /// The non-optional value handled when the optional is present.
-    associatedtype WrappedBoxedValue where BoxedValue == WrappedBoxedValue?
+  /// Parses JSON bytes in the specified text encoding. Invalid text is rejected.
+  public static func decode(
+    json data: some DataProtocol,
+    as encoding: String.Encoding
+  ) throws(DecodingError) -> Enigma {
+    guard let string = String(data: Data(data), encoding: encoding) else {
+      throw .dataCorrupted(.init(codingPath: [], debugDescription: "Invalid JSON text encoding"))
+    }
+    return try decode(json: string)
   }
 
-  /// Reads a value from a decoder using a chosen representation.
-  public protocol DecodeStrategy: Strategy {
-    /// Decodes one value using this strategy's representation.
-    /// - Complexity: Defined by the conforming strategy and its input representation.
-    static func decode(decoder: some Decoder) throws -> BoxedValue
+  /// Writes compact JSON. Date, Data and non-finite numbers are rejected.
+  public static func encode(
+    json enigma: Enigma
+  ) throws(EncodingError) -> String {
+    try JsonEncoder.encode(enigma)
   }
 
-  /// Decodes the non-null payload of an optional strategy.
-  public protocol DecodeOptionalStrategy: DecodeStrategy, OptionalStrategy {
-    /// Reads the wrapped value after the decoder has selected a present value.
-    /// - Complexity: Defined by the conforming strategy and its wrapped representation.
-    static func decodePresent(decoder: some Decoder) throws -> WrappedBoxedValue
-  }
-
-  /// Lets keyed decoding initialize an optional wrapper for a missing or null key.
-  public protocol OptionalDecoder: Decodable {
-    /// Creates a wrapper with a present payload or nil.
-    /// - Complexity: Defined by the conforming wrapper.
-    init(wrappedValue: Strategy.WrappedBoxedValue?)
-    /// The strategy used to decode a present payload.
-    associatedtype Strategy: DecodeOptionalStrategy
-  }
-
-  /// Writes a value to an encoder using a chosen representation.
-  public protocol EncodeStrategy: Strategy {
-    /// Encodes one boxed value using this strategy's representation.
-    /// - Complexity: Defined by the conforming strategy and boxed value.
-    static func encode(value: BoxedValue, encoder: some Encoder) throws
-  }
-
-  /// Encodes the non-null payload of an optional strategy.
-  public protocol EncodeOptionalStrategy: EncodeStrategy, OptionalStrategy {
-    /// Writes the wrapped value after the caller has selected a present value.
-    /// - Complexity: Defined by the conforming strategy and wrapped value.
-    static func encodePresent(value: WrappedBoxedValue, encoder: some Encoder) throws
-  }
-
-  /// Lets keyed encoding omit a nil optional wrapper and encode a present payload.
-  public protocol OptionalEncoder: Encodable {
-    /// The optional payload; nil causes keyed encoding to omit its key.
-    /// - Complexity: Defined by the conforming wrapper.
-    var wrappedValue: Strategy.WrappedBoxedValue? { get }
-    /// The strategy used to encode a present payload.
-    associatedtype Strategy: EncodeOptionalStrategy
+  /// Writes JSON bytes without lossy text conversion.
+  public static func encode(
+    json enigma: Enigma,
+    as encoding: String.Encoding
+  ) throws(EncodingError) -> Data {
+    let string = try encode(json: enigma)
+    guard let data = string.data(using: encoding, allowLossyConversion: false) else {
+      throw .invalidValue(enigma, .init(
+        codingPath: [], debugDescription: "JSON cannot be represented in the requested text encoding"
+      ))
+    }
+    return data
   }
 }

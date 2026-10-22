@@ -101,7 +101,7 @@ jobs:
             # Avoid Swift 6.4.1's Swift Build planning crash on Linux.
             swiftFlags+=(--build-system native)
           fi
-          swift test -c "$BUILD_CONFIGURATION" "${swiftFlags[@]}" --skip PerformanceTests
+          swift test -c "$BUILD_CONFIGURATION" "${swiftFlags[@]}"
       - name: Windows functional tests
         if: runner.os == 'Windows'
         shell: pwsh
@@ -120,7 +120,7 @@ jobs:
             # Work around Swift 6.4.1's build-system header lookup issue.
             $swiftFlags += @('--build-system', 'native')
           }
-          swift test -c $env:BUILD_CONFIGURATION @swiftFlags --skip PerformanceTests
+          swift test -c $env:BUILD_CONFIGURATION @swiftFlags
           exit $LASTEXITCODE
       - name: Coverage gate tests
         if: matrix.platform == 'macos' && matrix.swift == '6.2.3' && matrix.configuration == 'debug'
@@ -128,7 +128,7 @@ jobs:
       - name: Coverage
         if: matrix.platform == 'macos' && matrix.swift == '6.2.3' && matrix.configuration == 'debug'
         run: |
-          swift test --enable-code-coverage --skip PerformanceTests
+          swift test --enable-code-coverage
           cp "$(swift test --show-codecov-path)" coverage.json
           python3 Scripts/check-coverage.py coverage.json --minimum 95
       - name: Upload coverage

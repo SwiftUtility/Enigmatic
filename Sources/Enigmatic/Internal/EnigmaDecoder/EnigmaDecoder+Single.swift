@@ -2,10 +2,10 @@ import Foundation
 
 extension EnigmaDecoder {
   @usableFromInline
-  struct Single: Decoder, SingleValueDecodingContainer {
+  final class Single: Decoder, SingleValueDecodingContainer {
     let state: EnigmaDecoder
-    let value: Enigma
     let pathId: Int
+    let value: Enigma
 
     init(state: EnigmaDecoder, value: Enigma, pathId: Int) {
       self.state = state

@@ -75,7 +75,7 @@ jobs:
           swift --version
           swift --version | grep -Eq 'Swift version 6\.3\.3([[:space:]]|$)'
       - name: Run tests
-        run: swift test -c ${{ matrix.configuration }} --skip PerformanceTests
+        run: swift test -c ${{ matrix.configuration }}
       - name: Install API gate dependencies
         if: runner.os == 'Linux' && matrix.configuration == 'debug' && needs.prepare.outputs.bump != 'major'
         run: |
@@ -91,7 +91,7 @@ jobs:
         if: matrix.os == 'macos-26' && matrix.configuration == 'debug'
         run: |
           python3 -m unittest discover -s Scripts/tests
-          swift test --enable-code-coverage --skip PerformanceTests
+          swift test --enable-code-coverage
           cp "$(swift test --show-codecov-path)" coverage.json
           python3 Scripts/check-coverage.py coverage.json --minimum 95 --badge-output coverage-badge.json
       - name: Build documentation

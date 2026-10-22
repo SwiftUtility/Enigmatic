@@ -27,10 +27,9 @@ work on their own.
 | [CodableWrappers](https://github.com/GottaGetSwifty/CodableWrappers) | You want property wrappers or key-renaming macros. Enigmatic has no such macros. |
 | [BetterCodable](https://github.com/marksands/BetterCodable) | You want ready-made defaults or collections that skip invalid values. |
 
-In our local plain JSON tests, native tools used less time and memory.
-PotentCodables' own parser was much faster than decoding Enigma through
-Foundation's `JSONDecoder`. With that same decoder, Enigma and PotentCodables'
-`AnyValue` took similar time. Performance depends on what you do.
+The [competitor benchmarks](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/competitorbenchmarks/)
+compare shared samples and roundtrip contracts. Results distinguish native parsers,
+Foundation bridges, and model wrappers, including the cost of required conversions.
 
 ## Install
 
@@ -128,5 +127,10 @@ finite floats are stored; it does not make `NaN` or infinity valid JSON.
 [Coding strategies](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/codingstrategies/) ·
 [Serialization](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/serialization/) ·
 [Development](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/development/)
+
+Performance comparisons live in the independent `Benchmarks` package. Run
+`./Benchmarks/Run.command` to regenerate the
+[competitor report](https://swiftutility.github.io/Enigmatic/documentation/enigmatic/competitorbenchmarks/).
+The main package's `swift test` runs functional tests only.
 
 Apache 2.0. See [LICENSE](LICENSE).

@@ -3,8 +3,8 @@
 Run functional tests in Debug and Release:
 
 ```sh
-swift test --skip PerformanceTests
-swift test -c release --skip PerformanceTests
+swift test
+swift test -c release
 ```
 
 To check Linux compatibility with the minimum compiler version from macOS, run
@@ -13,9 +13,9 @@ read-only; build artifacts stay in the container:
 
 ```sh
 docker run --rm -v "$PWD:/package:ro" -w /package swift:6.1.0 \
-  swift test --scratch-path /tmp/enigmatic-build --skip PerformanceTests
+  swift test --scratch-path /tmp/enigmatic-build
 docker run --rm -v "$PWD:/package:ro" -w /package swift:6.1.0 \
-  swift test --scratch-path /tmp/enigmatic-build -c release --skip PerformanceTests
+  swift test --scratch-path /tmp/enigmatic-build -c release
 ```
 
 These commands pin the original Swift 6.1 release. The shorter `swift:6.1` tag
@@ -45,8 +45,8 @@ $windowsSwiftFlags = @(
   '--build-system', 'native',
   '-Xswiftc', '-Xfrontend', '-Xswiftc', '-disable-round-trip-debug-types'
 )
-swift test @windowsSwiftFlags --skip PerformanceTests
-swift test @windowsSwiftFlags -c release --skip PerformanceTests
+swift test @windowsSwiftFlags
+swift test @windowsSwiftFlags -c release
 ```
 
 These are toolchain workarounds, not package settings. The native build system is
@@ -67,7 +67,7 @@ Debug and Release, producing 18 builds:
 | 6.2.3 | `macos-26`, Xcode 26.2 | `swift:6.2.3` | `swift-6.2.3-RELEASE` installer |
 | 6.4.1 | `macos-26`, official 6.4.1 toolchain with Xcode 26.6's SDK | `swift:6.4.1` | `swift-6.4.1-RELEASE` installer |
 
-Benchmarks uses Xcode 26.3.
+Benchmarks uses Xcode 26.6 with Swift 6.3.3.
 Each job verifies its compiler version before testing. The 6.1 builds require
 the original release (reported as 6.1 or 6.1.0), rejecting later patch versions.
 The macOS 6.2.3 Debug job also checks the coverage script, enforces 95% library line
@@ -108,19 +108,32 @@ These manual branch runs do not appear as PR checks.
 
 ```sh
 python3 -m unittest discover -s Scripts/tests
-swift test --enable-code-coverage --skip PerformanceTests
+swift test --enable-code-coverage
 python3 Scripts/check-coverage.py "$(swift test --show-codecov-path)" --minimum 95
 ```
 
-Benchmarks run separately without coverage. They report relative timings without
-CI timing thresholds. Start them independently from
-**Actions → Benchmarks → Run workflow** and select the branch to measure.
-The workflow uploads `benchmarks.log` with the results. Checks and Benchmarks must
-be present on the default branch for their **Run workflow** buttons to appear.
+Performance measurements live exclusively in the independent `Benchmarks` package;
+the main package's `swift test` commands run functional tests only.
+Benchmarks run separately in Release without coverage or CI timing thresholds.
+Start them from **Actions → Benchmarks → Run workflow** and select a branch.
+The workflow uploads `benchmarks.log`, the Markdown comparison report, and its raw
+JSON sidecar. Checks and Benchmarks must be present on the default branch for
+their **Run workflow** buttons to appear.
+
+The independent `Benchmarks` package compares Enigmatic with eight competing libraries
+without adding dependencies to the library target. Run from the repository root:
 
 ```sh
-swift test -c release --filter PerformanceTests
+./Benchmarks/Run.command
 ```
+
+The command builds Release and regenerates <CompetitorBenchmarks> in this DocC
+catalog, plus a JSON sidecar containing raw timings and probe diagnostics.
+It checks typed roundtrips, native plist Data/Date storage, numeric limits,
+non-finite values, and JSON Optional/null policies in isolated processes.
+Tables report median operation time and the mean and population variance of paired
+time ratios against Foundation Codable. See `Benchmarks/README.md` for adapter
+scope, fixed versions, and options such as `--samples 51 --records 900`.
 
 Build documentation with Swift 6.2.3 or newer and Xcode's documentation compiler
 so links to the generic Unix date strategies resolve. Set `enigmatic_symbols`

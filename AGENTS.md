@@ -33,8 +33,7 @@ command output in a temporary log and report the result and relevant failures.
 ## Validation
 
 While iterating, use `swift test --filter <TestClass>`. For Swift behavior changes,
-finish with `swift test --skip PerformanceTests` and
-`swift test -c release --skip PerformanceTests`.
+finish with `swift test` and `swift test -c release`.
 
 For coverage, benchmarks, DocC, or CI work, read
 [Development.md](Sources/Enigmatic/Enigmatic.docc/Development.md) and the relevant
